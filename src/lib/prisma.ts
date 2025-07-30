@@ -51,7 +51,7 @@ export async function checkDatabaseHealth() {
 
 // Transaction wrapper utility
 export async function withTransaction<T>(
-  callback: (tx: PrismaClient) => Promise<T>
+  callback: (tx: any) => Promise<T>
 ): Promise<T> {
   return await prisma.$transaction(callback)
 }

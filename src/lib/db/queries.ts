@@ -172,15 +172,13 @@ export async function getTaxPeriod(
   quarter?: number,
   month?: number
 ) {
-  return await prisma.taxPeriod.findUnique({
+  return await prisma.taxPeriod.findFirst({
     where: {
-      organizationId_type_year_quarter_month: {
-        organizationId,
-        type,
-        year,
-        quarter,
-        month
-      }
+      organizationId,
+      type,
+      year,
+      ...(quarter !== undefined && { quarter }),
+      ...(month !== undefined && { month })
     }
   })
 }

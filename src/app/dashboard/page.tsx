@@ -1,12 +1,10 @@
-import { Metadata } from 'next'
+'use client'
+
 import TaxTracker from '@/components/dashboard/TaxTracker'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
-
-export const metadata: Metadata = {
-  title: 'Tax Tracker Dashboard - Know How Much to Set Aside',
-  description: 'View your tax collection summary and know exactly how much money to set aside from your sales.',
-}
+import { ConnectionStatus } from '@/components/shopify/ConnectionStatus'
+import { useRouter } from 'next/navigation'
 
 // Sample data - in a real app this would come from your API
 const sampleData = {
@@ -54,16 +52,26 @@ const sampleData = {
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
+  
+  const handleConnect = () => {
+    console.log('Connect button clicked - navigating to /connect')
+    router.push('/connect')
+  }
+
   return (
     <AuthGuard>
       <DashboardLayout>
-        <TaxTracker 
-          totalTaxToSetAside={sampleData.totalTaxToSetAside}
-          totalSales={sampleData.totalSales}
-          transactionCount={sampleData.transactionCount}
-          recentTransactions={sampleData.recentTransactions}
-          isConnected={sampleData.isConnected}
-        />
+        <div className="space-y-6">
+          <ConnectionStatus onConnect={handleConnect} />
+          <TaxTracker 
+            totalTaxToSetAside={sampleData.totalTaxToSetAside}
+            totalSales={sampleData.totalSales}
+            transactionCount={sampleData.transactionCount}
+            recentTransactions={sampleData.recentTransactions}
+            isConnected={sampleData.isConnected}
+          />
+        </div>
       </DashboardLayout>
     </AuthGuard>
   )

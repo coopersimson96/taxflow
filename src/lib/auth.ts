@@ -43,8 +43,33 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile }) {
-      // Database sync temporarily disabled - will implement separately
-      console.log('User signed in:', user.email)
+      // Sync user to database via API route (avoids URL parsing issues)
+      if (user.email) {
+        try {
+          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/sync-user`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: user.name,
+              image: user.image,
+              googleId: account?.providerAccountId,
+            }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('✅ User synced via API:', result.user.email)
+          } else {
+            console.error('❌ User sync API failed:', response.status)
+          }
+        } catch (error) {
+          console.error('❌ User sync error:', error)
+          // Don't fail sign-in if sync fails
+        }
+      }
       return true
     },
   },

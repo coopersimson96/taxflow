@@ -57,7 +57,7 @@ export function usePermissions(organizationId?: string) {
     isAdmin: () => isAdmin(session, organizationId),
     canManage: () => canManageOrganization(session, organizationId),
     canView: () => canViewOrganization(session, organizationId),
-    role: getUserOrganizationRole(session, organizationId),
+    role: organizationId ? getUserOrganizationRole(session, organizationId) : null,
   }
 }
 
