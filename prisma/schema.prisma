@@ -1,0 +1,365 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User account management
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  avatar          String?
+  emailVerified   DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  organizations   OrganizationMember[]
+  notifications   Notification[]
+  sessions        Session[]
+  accounts        Account[]
+
+  @@map("users")
+}
+
+// Multi-tenant organization support
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  logo            String?
+  taxId           String?  // EIN or other tax identifier
+  address         Json?    // Store full address as JSON
+  timezone        String   @default("America/New_York")
+  settings        Json     @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relationships
+  members         OrganizationMember[]
+  integrations    Integration[]
+  transactions    Transaction[]
+  taxPeriods      TaxPeriod[]
+  notifications   Notification[]
+
+  @@map("organizations")
+}
+
+// Organization membership with roles
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role     @default(MEMBER)
+  joinedAt       DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relationships
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@map("organization_members")
+}
+
+// Third-party integrations (Shopify, Square, etc.)
+model Integration {
+  id                String          @id @default(cuid())
+  organizationId    String
+  type              IntegrationType
+  name              String
+  status            IntegrationStatus @default(DISCONNECTED)
+  
+  // Integration-specific configuration
+  config            Json            @default("{}")
+  credentials       Json?           // Encrypted sensitive data
+  
+  // Metadata
+  lastSyncAt        DateTime?
+  syncStatus        SyncStatus      @default(IDLE)
+  syncError         String?
+  webhookUrl        String?
+  webhookSecret     String?
+  
+  // Timestamps
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  // Relationships
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transactions      Transaction[]
+
+  @@unique([organizationId, type])
+  @@map("integrations")
+}
+
+// Transaction records from all integrated platforms
+model Transaction {
+  id               String      @id @default(cuid())
+  organizationId   String
+  integrationId    String
+  
+  // Transaction identifiers
+  externalId       String      // ID from the source platform
+  orderNumber      String?
+  invoiceNumber    String?
+  
+  // Transaction details
+  type             TransactionType
+  status           TransactionStatus
+  currency         String      @default("USD")
+  
+  // Financial amounts (stored as cents/smallest unit)
+  subtotal         Int         // Amount before tax
+  taxAmount        Int         // Total tax amount
+  totalAmount      Int         // Final total amount
+  discountAmount   Int         @default(0)
+  shippingAmount   Int         @default(0)
+  
+  // Tax breakdown
+  taxDetails       Json        @default("[]") // Array of tax line items
+  taxExempt        Boolean     @default(false)
+  taxExemptReason  String?
+  
+  // Location and customer info
+  customerEmail    String?
+  customerName     String?
+  customerPhone    String?
+  billingAddress   Json?
+  shippingAddress  Json?
+  
+  // Product/service details
+  items            Json        @default("[]") // Array of line items
+  
+  // Timestamps
+  transactionDate  DateTime    // When the transaction occurred
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  // Additional metadata
+  metadata         Json        @default("{}")
+  notes            String?
+
+  // Relationships
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  integration      Integration  @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, integrationId, externalId])
+  @@index([organizationId, transactionDate])
+  @@index([organizationId, type])
+  @@index([transactionDate])
+  @@map("transactions")
+}
+
+// Tax reporting periods
+model TaxPeriod {
+  id             String        @id @default(cuid())
+  organizationId String
+  
+  // Period definition
+  name           String        // e.g., "Q1 2024", "January 2024"
+  type           PeriodType    // MONTHLY, QUARTERLY, ANNUAL
+  year           Int
+  quarter        Int?          // 1-4 for quarterly
+  month          Int?          // 1-12 for monthly
+  
+  // Date range
+  startDate      DateTime
+  endDate        DateTime
+  
+  // Filing information
+  dueDate        DateTime?
+  filedDate      DateTime?
+  status         FilingStatus  @default(DRAFT)
+  
+  // Calculated totals (stored as cents)
+  totalSales     Int           @default(0)
+  totalTax       Int           @default(0)
+  taxOwed        Int           @default(0)
+  taxPaid        Int           @default(0)
+  
+  // Report data
+  reportData     Json          @default("{}")
+  filingData     Json?         // Data submitted to tax authorities
+  
+  // Timestamps
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relationships
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, type, year, quarter, month])
+  @@index([organizationId, dueDate])
+  @@map("tax_periods")
+}
+
+// System notifications and alerts
+model Notification {
+  id             String            @id @default(cuid())
+  userId         String?           // Null for organization-wide notifications
+  organizationId String?           // Null for system-wide notifications
+  
+  // Notification content
+  title          String
+  message        String
+  type           NotificationType
+  priority       NotificationPriority @default(MEDIUM)
+  
+  // Delivery channels
+  channels       Json              @default("[]") // Array of delivery methods
+  
+  // Status tracking
+  status         NotificationStatus @default(PENDING)
+  readAt         DateTime?
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  
+  // Metadata
+  metadata       Json              @default("{}")
+  expiresAt      DateTime?
+  
+  // Timestamps
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  // Relationships
+  user           User?             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([organizationId, status])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// User sessions for authentication
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// OAuth accounts
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+// Enums
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum IntegrationType {
+  SHOPIFY
+  SQUARE
+  STRIPE
+  PAYPAL
+  QUICKBOOKS
+  XERO
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  SUCCESS
+  ERROR
+}
+
+enum TransactionType {
+  SALE
+  REFUND
+  PARTIAL_REFUND
+  VOID
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum PeriodType {
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum FilingStatus {
+  DRAFT
+  READY
+  FILED
+  AMENDED
+  OVERDUE
+}
+
+enum NotificationType {
+  TAX_DUE
+  SYNC_ERROR
+  INTEGRATION_DISCONNECTED
+  REPORT_READY
+  SYSTEM_UPDATE
+  WELCOME
+  REMINDER
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
