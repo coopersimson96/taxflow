@@ -49,7 +49,7 @@ const Hero = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                href="/signup"
+                href="/auth/signin"
                 className="btn-primary text-center px-8 py-3 text-lg"
               >
                 Start Free Trial

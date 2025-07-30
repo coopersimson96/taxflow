@@ -47,13 +47,13 @@ const Header = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <Link
-              href="/login"
+              href="/auth/signin"
               className="text-secondary-600 hover:text-primary-600 font-medium transition-colors"
             >
               Sign In
             </Link>
             <Link
-              href="/signup"
+              href="/auth/signin"
               className="btn-primary"
             >
               Get Started
@@ -101,13 +101,13 @@ const Header = () => {
               </Link>
               <div className="pt-4 border-t border-secondary-200">
                 <Link
-                  href="/login"
+                  href="/auth/signin"
                   className="block px-3 py-2 text-secondary-600 hover:text-primary-600 font-medium"
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/auth/signin"
                   className="block px-3 py-2 btn-primary mt-2"
                 >
                   Get Started

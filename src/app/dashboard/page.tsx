@@ -1,5 +1,7 @@
 import { Metadata } from 'next'
 import TaxTracker from '@/components/dashboard/TaxTracker'
+import AuthGuard from '@/components/auth/AuthGuard'
+import DashboardLayout from '@/components/dashboard/DashboardLayout'
 
 export const metadata: Metadata = {
   title: 'Tax Tracker Dashboard - Know How Much to Set Aside',
@@ -53,14 +55,16 @@ const sampleData = {
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-secondary-50 py-8">
-      <TaxTracker 
-        totalTaxToSetAside={sampleData.totalTaxToSetAside}
-        totalSales={sampleData.totalSales}
-        transactionCount={sampleData.transactionCount}
-        recentTransactions={sampleData.recentTransactions}
-        isConnected={sampleData.isConnected}
-      />
-    </main>
+    <AuthGuard>
+      <DashboardLayout>
+        <TaxTracker 
+          totalTaxToSetAside={sampleData.totalTaxToSetAside}
+          totalSales={sampleData.totalSales}
+          transactionCount={sampleData.transactionCount}
+          recentTransactions={sampleData.recentTransactions}
+          isConnected={sampleData.isConnected}
+        />
+      </DashboardLayout>
+    </AuthGuard>
   )
 }
