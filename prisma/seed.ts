@@ -183,7 +183,7 @@ async function main() {
         type: 'QUARTERLY',
         year: 2024,
         quarter: 1,
-        month: null,
+        month: undefined,
       },
     },
     update: {},

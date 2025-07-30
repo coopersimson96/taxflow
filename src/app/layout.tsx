@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-// import SessionProvider from '@/components/providers/SessionProvider'
+import SessionProvider from '@/components/providers/SessionProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -19,11 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {/* <SessionProvider> */}
+        <SessionProvider>
           <div className="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
             {children}
           </div>
-        {/* </SessionProvider> */}
+        </SessionProvider>
       </body>
     </html>
   )

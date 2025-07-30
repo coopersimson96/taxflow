@@ -79,7 +79,7 @@ export default function UserProfile() {
               </div>
             </div>
 
-            {user.organizations.length > 0 && (
+            {user.organizations && user.organizations.length > 0 && (
               <div className="p-4 border-b border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">
                   Organizations
