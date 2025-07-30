@@ -3,6 +3,9 @@ import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
 
+export const dynamic = 'force-dynamic'
+
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
