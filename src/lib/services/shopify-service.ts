@@ -15,7 +15,7 @@ export interface ShopifyWebhookData {
 
 export class ShopifyService {
   private static readonly API_VERSION = '2024-01'
-  private static readonly REQUIRED_SCOPES = ['read_orders', 'read_products', 'write_webhooks']
+  private static readonly REQUIRED_SCOPES = ['read_orders', 'read_products']
 
   /**
    * Generate the Shopify OAuth authorization URL

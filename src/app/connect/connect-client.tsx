@@ -159,7 +159,7 @@ export default function ConnectClient() {
                   onChange={handleShopDomainChange}
                   onBlur={(e) => setShopDomain(formatShopDomain(e.target.value))}
                   placeholder="your-store-name"
-                  className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-32"
+                  className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 pr-32 text-gray-900 bg-white"
                   disabled={isConnecting}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">

@@ -38,7 +38,7 @@ DATABASE_URL=your-supabase-connection-string
 # Shopify Integration
 SHOPIFY_API_KEY=your-shopify-api-key
 SHOPIFY_API_SECRET=your-shopify-api-secret
-SHOPIFY_SCOPES=read_orders,read_products,write_webhooks
+SHOPIFY_SCOPES=read_orders,read_products
 ```
 
 ### Vercel Project Settings
