@@ -67,16 +67,17 @@ export default function DashboardPage() {
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
-          {/* Debug: Test button */}
-          <div className="p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
-            <p className="text-sm text-yellow-800 mb-2">Debug: Click this button to test navigation</p>
+          {/* Debug: Test deployment */}
+          <div className="p-4 bg-red-100 border border-red-300 rounded-lg">
+            <p className="text-sm text-red-800 mb-2">🚨 DEBUG: Deployment Test - Commit 315dc98</p>
+            <p className="text-xs text-red-600">If you see this, the deployment is working</p>
             <button 
               onClick={() => {
                 console.log('Debug button clicked')
                 alert('Debug button works!')
                 handleConnect()
               }}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mt-2"
             >
               Debug: Connect Shopify
             </button>
