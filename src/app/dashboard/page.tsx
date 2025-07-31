@@ -56,13 +56,32 @@ export default function DashboardPage() {
   
   const handleConnect = () => {
     console.log('Connect button clicked - navigating to /connect')
-    router.push('/connect')
+    try {
+      router.push('/connect')
+    } catch (error) {
+      console.error('Navigation error:', error)
+    }
   }
 
   return (
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
+          {/* Debug: Test button */}
+          <div className="p-4 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <p className="text-sm text-yellow-800 mb-2">Debug: Click this button to test navigation</p>
+            <button 
+              onClick={() => {
+                console.log('Debug button clicked')
+                alert('Debug button works!')
+                handleConnect()
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Debug: Connect Shopify
+            </button>
+          </div>
+          
           <ConnectionStatus onConnect={handleConnect} />
           <TaxTracker 
             totalTaxToSetAside={sampleData.totalTaxToSetAside}
