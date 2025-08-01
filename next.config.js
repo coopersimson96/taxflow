@@ -9,29 +9,19 @@ const nextConfig = {
   // Ensure proper handling of static/dynamic pages
   experimental: {
     // Enable proper Suspense support
-    serverComponentsExternalPackages: ['@prisma/client'],
+    serverComponentsExternalPackages: ['@prisma/client', 'pg'],
   },
-  // Disable static optimization for API routes that need dynamic features
+  // Force rebuild for dependency changes
   generateBuildId: async () => {
-    return `build-${Date.now()}`
+    return `build-${Date.now()}-pg-fix`
   },
   // Configure static export behavior
   trailingSlash: false,
-  // Force specific routes to be dynamic
-  async rewrites() {
-    return []
-  },
   // Ensure proper handling of dynamic routes
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: false,
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: false,
   },
 }
