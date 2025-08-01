@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
 
     try {
       console.log('Starting callback process for shop:', normalizedShop)
+      console.log('Code received:', code ? `${code.substring(0, 10)}...` : 'null')
       
       // Exchange code for access token
       console.log('Exchanging code for token...')
@@ -185,6 +186,12 @@ export async function GET(request: NextRequest) {
 
     } catch (tokenError) {
       console.error('Token exchange failed:', tokenError)
+      console.error('Error details:', {
+        message: tokenError instanceof Error ? tokenError.message : 'Unknown error',
+        stack: tokenError instanceof Error ? tokenError.stack : 'No stack trace',
+        shop: normalizedShop,
+        codePresent: !!code
+      })
       return NextResponse.redirect(
         new URL('/connect?error=token_exchange_failed', request.url)
       )

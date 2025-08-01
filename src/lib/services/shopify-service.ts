@@ -48,29 +48,47 @@ export class ShopifyService {
     const shopifyApiSecret = process.env.SHOPIFY_API_SECRET
     const redirectUri = `${process.env.NEXTAUTH_URL}/api/shopify/callback`
 
+    console.log('Token exchange parameters:', {
+      shop,
+      codeLength: code?.length,
+      hasApiKey: !!shopifyApiKey,
+      hasApiSecret: !!shopifyApiSecret,
+      redirectUri
+    })
+
     if (!shopifyApiKey || !shopifyApiSecret) {
       throw new Error('Shopify API credentials are not configured')
     }
 
-    const response = await fetch(`https://${shop}.myshopify.com/admin/oauth/access_token`, {
+    const tokenUrl = `https://${shop}.myshopify.com/admin/oauth/access_token`
+    const requestBody = {
+      client_id: shopifyApiKey,
+      client_secret: shopifyApiSecret,
+      code,
+      redirect_uri: redirectUri,
+    }
+
+    console.log('Making token exchange request to:', tokenUrl)
+    console.log('Request body keys:', Object.keys(requestBody))
+
+    const response = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        client_id: shopifyApiKey,
-        client_secret: shopifyApiSecret,
-        code,
-        redirect_uri: redirectUri,
-      }),
+      body: JSON.stringify(requestBody),
     })
+
+    console.log('Token exchange response status:', response.status)
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('Token exchange error response:', errorText)
       throw new Error(`Failed to exchange code for token: ${response.status} ${errorText}`)
     }
 
     const data = await response.json()
+    console.log('Token exchange successful, received keys:', Object.keys(data))
     
     return {
       accessToken: data.access_token,
