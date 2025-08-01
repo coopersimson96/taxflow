@@ -101,8 +101,8 @@ export async function GET(request: NextRequest) {
       } catch (orgError) {
         console.error('Organization setup error:', orgError)
         console.error('Error details:', {
-          message: orgError.message,
-          stack: orgError.stack
+          message: orgError instanceof Error ? orgError.message : 'Unknown error',
+          stack: orgError instanceof Error ? orgError.stack : 'No stack trace'
         })
         // Fallback to a default organization ID
         organizationId = 'default-org'
