@@ -41,11 +41,17 @@ export async function GET(request: NextRequest) {
     const normalizedShop = ShopifyService.normalizeShopDomain(shop)
 
     try {
+      console.log('Starting callback process for shop:', normalizedShop)
+      
       // Exchange code for access token
+      console.log('Exchanging code for token...')
       const tokens = await ShopifyService.exchangeCodeForToken(normalizedShop, code)
+      console.log('Token exchange successful, scopes:', tokens.scope)
       
       // Get shop information
+      console.log('Getting shop information...')
       const shopInfo = await ShopifyService.getShopInfo(normalizedShop, tokens.accessToken)
+      console.log('Shop info retrieved:', shopInfo.shop.name)
       
       // TODO: In production, verify state parameter matches stored value
       // For now, we'll proceed with storing the integration
@@ -59,6 +65,7 @@ export async function GET(request: NextRequest) {
       let organizationId: string
       
       try {
+        console.log('Setting up organization...')
         // Try to find an existing organization or create a default one
         // This is a simplified approach - in production, get from authenticated user context
         const existingIntegration = await prisma.integration.findFirst({
@@ -72,8 +79,10 @@ export async function GET(request: NextRequest) {
         })
 
         if (existingIntegration) {
+          console.log('Found existing integration, using org:', existingIntegration.organizationId)
           organizationId = existingIntegration.organizationId
         } else {
+          console.log('Creating new organization...')
           // Create a new organization for this shop
           const organization = await prisma.organization.create({
             data: {
@@ -86,14 +95,20 @@ export async function GET(request: NextRequest) {
               }
             }
           })
+          console.log('Organization created:', organization.id)
           organizationId = organization.id
         }
       } catch (orgError) {
         console.error('Organization setup error:', orgError)
+        console.error('Error details:', {
+          message: orgError.message,
+          stack: orgError.stack
+        })
         // Fallback to a default organization ID
         organizationId = 'default-org'
       }
 
+      console.log('Creating/updating integration...')
       const integration = await prisma.integration.upsert({
         where: {
           organizationId_type: {
