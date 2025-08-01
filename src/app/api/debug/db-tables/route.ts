@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       'accounts', 'sessions', 'organization_members'
     ]
     
-    const existingTables = tablesResult.rows.map(row => row.table_name)
+    const existingTables = tablesResult.rows.map((row: any) => row.table_name)
     const missingTables = expectedTables.filter(table => !existingTables.includes(table))
 
     await client.end()

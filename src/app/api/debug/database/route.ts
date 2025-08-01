@@ -18,21 +18,21 @@ export async function GET(request: NextRequest) {
       await prisma.organization.findFirst({ take: 1 })
       organizationExists = true
     } catch (e) {
-      console.log('Organization table not accessible:', e.message)
+      console.log('Organization table not accessible:', e instanceof Error ? e.message : 'Unknown error')
     }
     
     try {
       await prisma.integration.findFirst({ take: 1 })
       integrationExists = true
     } catch (e) {
-      console.log('Integration table not accessible:', e.message)
+      console.log('Integration table not accessible:', e instanceof Error ? e.message : 'Unknown error')
     }
     
     try {
       await prisma.user.findFirst({ take: 1 })
       userExists = true
     } catch (e) {
-      console.log('User table not accessible:', e.message)
+      console.log('User table not accessible:', e instanceof Error ? e.message : 'Unknown error')
     }
 
     return NextResponse.json({
