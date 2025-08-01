@@ -47,7 +47,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate authorization URL
+    console.log('Generating auth URL for shop:', normalizedShop)
+    console.log('Environment check:', {
+      hasApiKey: !!process.env.SHOPIFY_API_KEY,
+      hasApiSecret: !!process.env.SHOPIFY_API_SECRET,
+      scopes: process.env.SHOPIFY_SCOPES,
+      nextAuthUrl: process.env.NEXTAUTH_URL
+    })
+    
     const authUrl = ShopifyService.generateAuthUrl(normalizedShop, state)
+    console.log('Generated auth URL:', authUrl)
 
     return NextResponse.json({
       success: true,
