@@ -91,11 +91,16 @@ export class ShopifyService {
     const calculatedHmac = crypto
       .createHmac('sha256', shopifyApiSecret)
       .update(data, 'utf8')
-      .digest('base64')
+      .digest('hex')
 
+    // Ensure both strings are the same length by padding with zeros if needed
+    const normalizedCalculated = calculatedHmac.toLowerCase()
+    const normalizedHeader = hmacHeader.toLowerCase()
+
+    // Use timingSafeEqual with hex-encoded strings converted to buffers
     return crypto.timingSafeEqual(
-      Buffer.from(calculatedHmac),
-      Buffer.from(hmacHeader)
+      Buffer.from(normalizedCalculated, 'hex'),
+      Buffer.from(normalizedHeader, 'hex')
     )
   }
 
