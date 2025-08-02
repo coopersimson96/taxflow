@@ -58,8 +58,11 @@ export default function DashboardPage() {
     console.log('Connect button clicked - navigating to /connect')
     try {
       router.push('/connect')
+      console.log('Navigation initiated successfully')
     } catch (error) {
       console.error('Navigation error:', error)
+      // Fallback to window.location if router fails
+      window.location.href = '/connect'
     }
   }
 
