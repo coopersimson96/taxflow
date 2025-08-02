@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('Attempting database connection with pooled connection...')
+    console.log('Attempting database connection with updated environment...')
     await client.connect()
     console.log('Database connection successful')
     
