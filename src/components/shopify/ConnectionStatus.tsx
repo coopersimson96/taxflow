@@ -148,9 +148,15 @@ export function ConnectionStatus({ organizationId, onConnect, className = '' }: 
           Shopify Connections
         </h3>
         {shopifyIntegrations.length === 0 && (
-          <a href="/connect" className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 px-3 py-1.5 text-sm bg-primary-600 text-white hover:bg-primary-700">
+          <Button 
+            onClick={() => {
+              console.log('Connect Store button clicked')
+              onConnect?.()
+            }} 
+            size="sm"
+          >
             Connect Store
-          </a>
+          </Button>
         )}
       </div>
 
@@ -173,9 +179,14 @@ export function ConnectionStatus({ organizationId, onConnect, className = '' }: 
           <p className="text-secondary-600 mb-4">
             Connect your Shopify store to start tracking tax collected from sales automatically.
           </p>
-          <a href="/connect" className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 px-4 py-2 bg-primary-600 text-white hover:bg-primary-700">
+          <Button 
+            onClick={() => {
+              console.log('Connect Your First Store button clicked')
+              onConnect?.()
+            }}
+          >
             Connect Your First Store
-          </a>
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -261,9 +272,14 @@ export function ConnectionStatus({ organizationId, onConnect, className = '' }: 
           ))}
 
           <div className="pt-4 border-t border-secondary-200">
-            <a href="/connect" className="inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 w-full px-3 py-1.5 text-sm border border-secondary-300 text-secondary-700 hover:bg-secondary-50">
+            <Button
+              onClick={onConnect}
+              variant="outline"
+              size="sm"
+              className="w-full"
+            >
               + Connect Another Store
-            </a>
+            </Button>
           </div>
         </div>
       )}
