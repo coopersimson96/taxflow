@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
     })
 
     console.log('Attempting database connection with pooled connection...')
+    console.log('Using hostname:', client.connectionParameters.host)
+    console.log('Using port:', client.connectionParameters.port)
     await client.connect()
     console.log('Database connection successful')
     
