@@ -225,7 +225,8 @@ export class ShopifyService {
       'orders/create',
       'orders/updated',
       'orders/cancelled',
-      'orders/refunded'
+      'orders/refunded',
+      'app/uninstalled'
     ]
 
     // Get existing webhooks
