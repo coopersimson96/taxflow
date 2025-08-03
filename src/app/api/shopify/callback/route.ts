@@ -135,6 +135,8 @@ export async function GET(request: NextRequest) {
       }
 
       console.log('Creating/updating integration...')
+      // Disconnect and reconnect to avoid prepared statement conflicts
+      await prisma.$disconnect()
       const integration = await prisma.integration.upsert({
         where: {
           organizationId_type: {
@@ -169,6 +171,8 @@ export async function GET(request: NextRequest) {
           syncStatus: 'SUCCESS'
         }
       })
+
+      console.log('Integration created/updated successfully:', integration.id)
 
       // Setup webhooks
       try {
