@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text()
