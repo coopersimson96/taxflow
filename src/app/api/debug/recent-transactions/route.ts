@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Fetching recent transactions...')
+    console.log('Fetching recent transactions from database...')
     
     // Get recent transactions with integration details
     const transactions = await prisma.transaction.findMany({
