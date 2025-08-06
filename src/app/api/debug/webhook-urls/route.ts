@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Checking webhook URLs...')
     // Find a connected Shopify integration
     const integration = await prisma.integration.findFirst({
       where: {
