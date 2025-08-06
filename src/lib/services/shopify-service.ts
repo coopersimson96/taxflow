@@ -233,10 +233,10 @@ export class ShopifyService {
     const existingWebhooks = await this.listWebhooks(shop, accessToken)
     const existingTopics = existingWebhooks.webhooks?.map((w: any) => w.topic) || []
 
-    // Create missing webhooks
+    // Create missing webhooks  
     for (const topic of webhookTopics) {
       if (!existingTopics.includes(topic)) {
-        const address = `${baseUrl}/api/shopify/webhooks/${topic.replace('/', '-')}`
+        const address = `${baseUrl}/api/webhooks/shopify`
         try {
           await this.createWebhook(shop, accessToken, topic, address)
           console.log(`✅ Created webhook for ${topic}`)
