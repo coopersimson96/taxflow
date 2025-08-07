@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,10 +20,30 @@ export async function GET(request: NextRequest) {
       SHOPIFY_SCOPES: process.env.SHOPIFY_SCOPES,
     }
 
+    // Also check if we can access webhook info
+    let webhookInfo = null
+    try {
+      const integration = await prisma.integration.findFirst({
+        where: { type: 'SHOPIFY', status: 'CONNECTED' }
+      })
+      
+      if (integration) {
+        const credentials = integration.credentials as any
+        webhookInfo = {
+          shop: credentials?.shop,
+          hasAccessToken: !!credentials?.accessToken,
+          integrationId: integration.id
+        }
+      }
+    } catch (dbError) {
+      webhookInfo = { error: 'Cannot access integration data' }
+    }
+
     return NextResponse.json({
       success: true,
       environmentStatus: envCheck,
       partialValues,
+      webhookInfo,
       allRequiredSet: Object.values(envCheck).every(status => status !== 'MISSING'),
       timestamp: new Date().toISOString()
     })
