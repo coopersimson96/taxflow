@@ -4,6 +4,23 @@ import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Unified Shopify Webhook Endpoint v3.0',
+    method: 'POST',
+    description: 'This endpoint handles all Shopify webhook events',
+    supportedTopics: [
+      'orders/create',
+      'orders/updated', 
+      'orders/cancelled',
+      'refunds/create',
+      'app/uninstalled'
+    ],
+    timestamp: new Date().toISOString(),
+    status: 'active'
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('=== UNIFIED SHOPIFY WEBHOOK HANDLER ===')
