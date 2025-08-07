@@ -236,14 +236,19 @@ export class WebhookManager {
       `Webhook health check failed: ${health.webhooks.filter(w => w.status !== 'healthy').length} unhealthy webhooks` :
       null
 
+    const currentIntegration = await prisma.integration.findUnique({ 
+      where: { id: integrationId },
+      select: { config: true }
+    })
+
     await prisma.integration.update({
       where: { id: integrationId },
       data: {
         syncStatus,
         syncError,
         lastSyncAt: health.lastSync,
-        metadata: {
-          ...((await prisma.integration.findUnique({ where: { id: integrationId } })) as any)?.metadata || {},
+        config: {
+          ...(currentIntegration?.config as any || {}),
           webhookHealth: {
             overallStatus: health.overallStatus,
             lastHealthCheck: health.lastSync.toISOString(),
@@ -252,7 +257,7 @@ export class WebhookManager {
           }
         },
         updatedAt: new Date()
-      } as any
+      }
     })
   }
 

@@ -342,8 +342,8 @@ async function handleAppUninstalled(appData: any, shop: string) {
       syncStatus: 'IDLE',
       syncError: 'App uninstalled by user',
       lastSyncAt: new Date(),
-      metadata: {
-        ...(((integration as any).metadata) || {}),
+      config: {
+        ...(((integration as any).config) || {}),
         uninstalledAt: new Date().toISOString(),
         uninstallReason: 'user_initiated'
       },
