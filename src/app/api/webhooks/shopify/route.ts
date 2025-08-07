@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
       if (!webhookSecret) {
         throw new Error('SHOPIFY_WEBHOOK_SECRET not configured')
       }
+      console.log('🔐 Webhook secret configured:', !!webhookSecret)
+      console.log('🔐 Webhook secret (first 10 chars):', webhookSecret.substring(0, 10))
       
       const calculatedHmac = require('crypto')
         .createHmac('sha256', webhookSecret)
@@ -82,6 +84,9 @@ export async function POST(request: NextRequest) {
       
       if (calculatedHmac !== hmacHeader) {
         console.error('❌ HMAC verification failed - invalid signature')
+        console.error('Full calculated HMAC:', calculatedHmac)
+        console.error('Full received HMAC:', hmacHeader)
+        console.error('Secret length:', webhookSecret.length)
         console.error('This could indicate a security issue or webhook misconfiguration')
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
       }

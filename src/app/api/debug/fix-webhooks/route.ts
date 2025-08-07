@@ -75,9 +75,12 @@ export async function GET(request: NextRequest) {
       errors: [] as string[]
     }
 
-    // Delete ALL existing webhooks to clean slate
+    // Delete ALL existing webhooks to clean slate (including duplicates)
+    console.log(`🧹 Force deleting ALL ${existingWebhooks.length} webhooks to ensure clean slate`)
+    
     for (const webhook of existingWebhooks) {
       try {
+        console.log(`🧹 Deleting webhook: ${webhook.topic} (${webhook.id}) -> ${webhook.address}`)
         await ShopifyService.deleteWebhook(shop, accessToken, webhook.id)
         results.deleted.push({
           id: webhook.id,
@@ -90,6 +93,10 @@ export async function GET(request: NextRequest) {
         console.error(`❌ Failed to delete webhook ${webhook.id}:`, deleteError)
       }
     }
+    
+    // Wait 5 seconds to ensure all deletions are processed
+    console.log('🧹 Waiting 5 seconds before creating new webhooks...')
+    await new Promise(resolve => setTimeout(resolve, 5000))
 
     // Create new webhooks with correct endpoint
     const webhookTopics = [
