@@ -225,7 +225,7 @@ export class ShopifyService {
       'orders/create',
       'orders/updated',
       'orders/cancelled',
-      'orders/refunded',
+      'refunds/create',
       'app/uninstalled'
     ]
 

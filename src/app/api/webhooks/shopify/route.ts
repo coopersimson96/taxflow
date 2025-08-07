@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       case 'orders/cancelled':
         return await handleOrderCancelled(JSON.parse(rawBody), shop)
       
-      case 'orders/refunded':
+      case 'refunds/create':
         return await handleOrderRefunded(JSON.parse(rawBody), shop)
       
       case 'app/uninstalled':
