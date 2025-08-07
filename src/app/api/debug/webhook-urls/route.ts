@@ -45,27 +45,32 @@ export async function GET(request: NextRequest) {
       updated_at: webhook.updated_at
     })) || []
 
-    // Show what URLs we would generate
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    // Show what URLs we would generate (now using unified endpoint)
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://taxflow-smoky.vercel.app'
+    const unifiedEndpoint = `${baseUrl}/api/webhooks/shopify`
     const expectedUrls = [
       'orders/create',
       'orders/updated', 
       'orders/cancelled',
-      'orders/refunded',
+      'refunds/create',
       'app/uninstalled'
     ].map(topic => ({
       topic,
-      expectedUrl: `${baseUrl}/api/shopify/webhooks/${topic.replace('/', '-')}`,
-      actualWebhook: webhookInfo.find(w => w.topic === topic)
+      expectedUrl: unifiedEndpoint,
+      actualWebhook: webhookInfo.find(w => w.topic === topic),
+      isCorrectUrl: webhookInfo.find(w => w.topic === topic)?.address === unifiedEndpoint
     }))
 
     return NextResponse.json({
       success: true,
       shop: shop,
       baseUrl: baseUrl,
+      unifiedEndpoint: unifiedEndpoint,
       existingWebhooks: webhookInfo,
       expectedUrls: expectedUrls,
       webhookCount: webhookInfo.length,
+      correctUrlCount: expectedUrls.filter(u => u.isCorrectUrl).length,
+      systemStatus: expectedUrls.filter(u => u.isCorrectUrl).length === expectedUrls.length ? 'HEALTHY' : 'NEEDS_UPDATE',
       timestamp: new Date().toISOString()
     })
 

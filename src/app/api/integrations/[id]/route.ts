@@ -109,9 +109,10 @@ export async function DELETE(
             credentials.accessToken
           )
 
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+          const baseUrl = process.env.NEXTAUTH_URL || 'https://taxflow-smoky.vercel.app'
           const ourWebhooks = webhooks.webhooks?.filter((webhook: any) =>
-            webhook.address?.startsWith(`${baseUrl}/api/shopify/webhooks/`)
+            webhook.address?.startsWith(`${baseUrl}/api/shopify/webhooks/`) ||
+            webhook.address === `${baseUrl}/api/webhooks/shopify`
           ) || []
 
           for (const webhook of ourWebhooks) {

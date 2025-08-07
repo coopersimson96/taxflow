@@ -220,7 +220,7 @@ export class ShopifyService {
    * Setup required webhooks for tax tracking
    */
   static async setupWebhooks(shop: string, accessToken: string): Promise<void> {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://taxflow-smoky.vercel.app'
     const webhookTopics = [
       'orders/create',
       'orders/updated',
