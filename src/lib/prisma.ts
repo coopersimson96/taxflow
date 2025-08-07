@@ -8,6 +8,11 @@ declare global {
 // Prevent multiple instances of Prisma Client in development
 export const prisma = globalThis.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL
+    }
+  }
 })
 
 if (process.env.NODE_ENV !== 'production') {
@@ -54,4 +59,37 @@ export async function withTransaction<T>(
   callback: (tx: any) => Promise<T>
 ): Promise<T> {
   return await prisma.$transaction(callback)
+}
+
+// Webhook-specific database operations with connection retry
+export async function withWebhookDb<T>(
+  operation: (client: PrismaClient) => Promise<T>,
+  retries: number = 2
+): Promise<T> {
+  let lastError: Error | null = null
+  
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await operation(prisma)
+    } catch (error) {
+      lastError = error as Error
+      console.error(`Database operation failed (attempt ${i + 1}/${retries + 1}):`, error)
+      
+      // If it's a prepared statement error, try to disconnect and reconnect
+      if (error instanceof Error && error.message.includes('prepared statement')) {
+        console.log('Attempting to reset connection...')
+        try {
+          await prisma.$disconnect()
+          await new Promise(resolve => setTimeout(resolve, 100)) // Brief delay
+        } catch (disconnectError) {
+          console.error('Error during disconnect:', disconnectError)
+        }
+      } else {
+        // For other errors, don't retry
+        throw error
+      }
+    }
+  }
+  
+  throw lastError
 }

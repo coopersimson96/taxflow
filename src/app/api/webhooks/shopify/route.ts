@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyService } from '@/lib/services/shopify-service'
-import { prisma } from '@/lib/prisma'
+import { prisma, withWebhookDb } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
@@ -434,8 +434,8 @@ async function handleAppUninstalled(appData: any, shop: string) {
 
 // Helper Functions
 async function findIntegration(shop: string) {
-  try {
-    return await prisma.integration.findFirst({
+  return await withWebhookDb(async (client) => {
+    return await client.integration.findFirst({
       where: {
         type: 'SHOPIFY',
         credentials: {
@@ -447,33 +447,18 @@ async function findIntegration(shop: string) {
         organization: true
       }
     })
-  } catch (error) {
-    // Handle Prisma connection issues
-    console.error('Database connection error in findIntegration:', error)
-    await prisma.$disconnect()
-    // Retry once
-    return await prisma.integration.findFirst({
-      where: {
-        type: 'SHOPIFY',
-        credentials: {
-          path: ['shop'],
-          equals: shop.replace('.myshopify.com', '')
-        }
-      },
-      include: {
-        organization: true
-      }
-    })
-  }
+  })
 }
 
 async function updateIntegrationSync(integrationId: string) {
-  await prisma.integration.update({
-    where: { id: integrationId },
-    data: {
-      lastSyncAt: new Date(),
-      syncStatus: 'SUCCESS'
-    }
+  await withWebhookDb(async (client) => {
+    return await client.integration.update({
+      where: { id: integrationId },
+      data: {
+        lastSyncAt: new Date(),
+        syncStatus: 'SUCCESS'
+      }
+    })
   })
 }
 
