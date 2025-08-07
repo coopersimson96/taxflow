@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('=== UNIFIED SHOPIFY WEBHOOK HANDLER ===')
+    console.log('=== UNIFIED SHOPIFY WEBHOOK HANDLER v3.0 ===')
+    console.log('Webhook received at:', new Date().toISOString())
     
     // Get webhook topic from headers
     const topic = request.headers.get('x-shopify-topic')
@@ -42,12 +43,20 @@ export async function POST(request: NextRequest) {
     console.log('Webhook payload size:', rawBody.length)
 
     // Verify webhook authenticity
-    if (!ShopifyService.verifyWebhookHmac(rawBody, hmacHeader)) {
-      console.error('Invalid webhook HMAC signature')
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    console.log('Attempting HMAC verification...')
+    console.log('HMAC Header present:', !!hmacHeader)
+    console.log('Webhook secret configured:', !!process.env.SHOPIFY_WEBHOOK_SECRET)
+    
+    try {
+      if (!ShopifyService.verifyWebhookHmac(rawBody, hmacHeader)) {
+        console.error('Invalid webhook HMAC signature')
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+      console.log('✅ HMAC verification successful')
+    } catch (hmacError) {
+      console.error('HMAC verification error:', hmacError)
+      return NextResponse.json({ error: 'HMAC verification failed' }, { status: 401 })
     }
-
-    console.log('✅ Webhook HMAC verification successful')
 
     // Route to appropriate handler based on topic
     switch (topic) {
