@@ -22,7 +22,7 @@ async function checkRecentTransactions() {
   try {
     await client.connect();
     
-    // Get recent transactions from the last 24 hours
+    // Get recent transactions from the last 24 hours with enhanced tax breakdown
     const result = await client.query(`
       SELECT 
         id,
@@ -30,8 +30,22 @@ async function checkRecentTransactions() {
         "orderNumber", 
         type,
         status,
+        currency,
         "totalAmount",
         "taxAmount",
+        
+        -- Enhanced tax breakdown fields
+        "gstAmount",
+        "pstAmount",
+        "hstAmount", 
+        "qstAmount",
+        "stateTaxAmount",
+        "localTaxAmount",
+        "otherTaxAmount",
+        "taxCountry",
+        "taxProvince",
+        "taxCity",
+        
         "customerEmail",
         "transactionDate",
         "createdAt",
@@ -57,8 +71,27 @@ async function checkRecentTransactions() {
         console.log(`   Order Number: ${transaction.orderNumber || 'N/A'}`);
         console.log(`   Type: ${transaction.type}`);
         console.log(`   Status: ${transaction.status}`);
-        console.log(`   Total: $${(transaction.totalAmount / 100).toFixed(2)}`);
+        console.log(`   Total: $${(transaction.totalAmount / 100).toFixed(2)} ${transaction.currency || 'USD'}`);
         console.log(`   Tax: $${(transaction.taxAmount / 100).toFixed(2)}`);
+        
+        // Display enhanced tax breakdown if available
+        const taxBreakdown = [];
+        if (transaction.gstAmount > 0) taxBreakdown.push(`GST: $${(transaction.gstAmount / 100).toFixed(2)}`);
+        if (transaction.pstAmount > 0) taxBreakdown.push(`PST: $${(transaction.pstAmount / 100).toFixed(2)}`);
+        if (transaction.hstAmount > 0) taxBreakdown.push(`HST: $${(transaction.hstAmount / 100).toFixed(2)}`);
+        if (transaction.qstAmount > 0) taxBreakdown.push(`QST: $${(transaction.qstAmount / 100).toFixed(2)}`);
+        if (transaction.stateTaxAmount > 0) taxBreakdown.push(`State: $${(transaction.stateTaxAmount / 100).toFixed(2)}`);
+        if (transaction.localTaxAmount > 0) taxBreakdown.push(`Local: $${(transaction.localTaxAmount / 100).toFixed(2)}`);
+        if (transaction.otherTaxAmount > 0) taxBreakdown.push(`Other: $${(transaction.otherTaxAmount / 100).toFixed(2)}`);
+        
+        if (taxBreakdown.length > 0) {
+          console.log(`   ├─ Tax Breakdown: ${taxBreakdown.join(' + ')}`);
+          const location = [transaction.taxCity, transaction.taxProvince, transaction.taxCountry].filter(Boolean).join(', ');
+          if (location) {
+            console.log(`   └─ Tax Location: ${location}`);
+          }
+        }
+        
         console.log(`   Customer: ${transaction.customerEmail || 'N/A'}`);
         console.log(`   Order Date: ${transaction.transactionDate}`);
         console.log(`   Created: ${transaction.createdAt}`);
