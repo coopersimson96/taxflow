@@ -110,8 +110,51 @@ async function handleOrderCreate(orderData: any, shop: string) {
     return NextResponse.json({ error: 'Integration not found' }, { status: 404 })
   }
 
-  const transaction = await prisma.transaction.create({
-    data: {
+  const transaction = await prisma.transaction.upsert({
+    where: {
+      organizationId_integrationId_externalId: {
+        organizationId: integration.organizationId,
+        integrationId: integration.id,
+        externalId: orderData.id.toString()
+      }
+    },
+    update: {
+      // Update existing transaction with latest data
+      orderNumber: orderData.order_number?.toString(),
+      type: 'SALE',
+      status: getTransactionStatus(orderData.fulfillment_status, orderData.financial_status),
+      currency: orderData.currency || 'USD',
+      subtotal: Math.round((parseFloat(orderData.subtotal_price || '0')) * 100),
+      taxAmount: Math.round((parseFloat(orderData.total_tax || '0')) * 100),
+      totalAmount: Math.round((parseFloat(orderData.total_price || '0')) * 100),
+      discountAmount: Math.round((parseFloat(orderData.total_discounts || '0')) * 100),
+      shippingAmount: Math.round((parseFloat(orderData.shipping_lines?.[0]?.price || '0')) * 100),
+      taxDetails: orderData.tax_lines || [],
+      customerEmail: orderData.customer?.email,
+      customerName: orderData.customer ? 
+        `${orderData.customer.first_name || ''} ${orderData.customer.last_name || ''}`.trim() : 
+        null,
+      billingAddress: orderData.billing_address,
+      shippingAddress: orderData.shipping_address,
+      items: orderData.line_items?.map((item: any) => ({
+        id: item.id,
+        productId: item.product_id,
+        variantId: item.variant_id,
+        title: item.title,
+        quantity: item.quantity,
+        price: item.price,
+        totalDiscount: item.total_discount
+      })) || [],
+      transactionDate: new Date(orderData.created_at),
+      metadata: {
+        shopifyOrderId: orderData.id,
+        fulfillmentStatus: orderData.fulfillment_status,
+        financialStatus: orderData.financial_status,
+        gateway: orderData.gateway,
+        sourceIdentifier: orderData.source_identifier
+      }
+    },
+    create: {
       organizationId: integration.organizationId,
       integrationId: integration.id,
       externalId: orderData.id.toString(),
@@ -391,18 +434,37 @@ async function handleAppUninstalled(appData: any, shop: string) {
 
 // Helper Functions
 async function findIntegration(shop: string) {
-  return await prisma.integration.findFirst({
-    where: {
-      type: 'SHOPIFY',
-      credentials: {
-        path: ['shop'],
-        equals: shop.replace('.myshopify.com', '')
+  try {
+    return await prisma.integration.findFirst({
+      where: {
+        type: 'SHOPIFY',
+        credentials: {
+          path: ['shop'],
+          equals: shop.replace('.myshopify.com', '')
+        }
+      },
+      include: {
+        organization: true
       }
-    },
-    include: {
-      organization: true
-    }
-  })
+    })
+  } catch (error) {
+    // Handle Prisma connection issues
+    console.error('Database connection error in findIntegration:', error)
+    await prisma.$disconnect()
+    // Retry once
+    return await prisma.integration.findFirst({
+      where: {
+        type: 'SHOPIFY',
+        credentials: {
+          path: ['shop'],
+          equals: shop.replace('.myshopify.com', '')
+        }
+      },
+      include: {
+        organization: true
+      }
+    })
+  }
 }
 
 async function updateIntegrationSync(integrationId: string) {
