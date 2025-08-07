@@ -51,12 +51,18 @@ export async function POST(request: NextRequest) {
       console.log('Raw body (first 100 chars):', rawBody.substring(0, 100))
       console.log('HMAC header (first 20 chars):', hmacHeader?.substring(0, 20))
       
-      // TEMPORARY: Skip HMAC verification for debugging
-      console.log('⚠️ TEMPORARILY SKIPPING HMAC VERIFICATION FOR DEBUGGING')
-      const isValid = true // ShopifyService.verifyWebhookHmac(rawBody, hmacHeader)
-      console.log('HMAC verification result (bypassed):', isValid)
+      // Re-enabled HMAC verification
+      const isValid = ShopifyService.verifyWebhookHmac(rawBody, hmacHeader)
+      console.log('HMAC verification result:', isValid)
       
-      console.log('✅ HMAC verification bypassed - proceeding with webhook processing')
+      if (!isValid) {
+        console.error('❌ Invalid webhook HMAC signature')
+        console.error('Expected webhook secret configured:', !!process.env.SHOPIFY_WEBHOOK_SECRET)
+        console.error('Webhook secret value (first 10 chars):', process.env.SHOPIFY_WEBHOOK_SECRET?.substring(0, 10))
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+      }
+      
+      console.log('✅ HMAC verification successful - proceeding with webhook processing')
     } catch (hmacError) {
       console.error('HMAC verification error:', hmacError)
       return NextResponse.json({ error: 'HMAC verification failed' }, { status: 401 })
