@@ -22,25 +22,38 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 === UNIFIED SHOPIFY WEBHOOK HANDLER v3.0 ENTRY ===')
+  console.log('🚀 Webhook received at:', new Date().toISOString())
+  console.log('🚀 Request method:', request.method)
+  console.log('🚀 Request URL:', request.url)
+  
   try {
-    console.log('=== UNIFIED SHOPIFY WEBHOOK HANDLER v3.0 ===')
-    console.log('Webhook received at:', new Date().toISOString())
+    // Get all headers for debugging
+    const headers = Object.fromEntries(request.headers.entries())
+    console.log('🚀 All request headers:', headers)
     
     // Get webhook topic from headers
     const topic = request.headers.get('x-shopify-topic')
     const hmacHeader = request.headers.get('x-shopify-hmac-sha256')
     const shop = request.headers.get('x-shopify-shop-domain')
     
-    console.log('Webhook received:', { topic, shop, hasHmac: !!hmacHeader })
+    console.log('🚀 Webhook details:', { topic, shop, hasHmac: !!hmacHeader })
+    console.log('🚀 HMAC header value:', hmacHeader)
 
     if (!topic || !hmacHeader || !shop) {
-      console.error('Missing required webhook headers')
+      console.error('🚨 Missing required webhook headers:')
+      console.error('- topic:', topic)
+      console.error('- hmacHeader:', !!hmacHeader)
+      console.error('- shop:', shop)
       return NextResponse.json({ error: 'Missing headers' }, { status: 400 })
     }
 
+    console.log('🚀 Headers validation passed - getting request body...')
+    
     // Get raw body for HMAC verification
     const rawBody = await request.text()
-    console.log('Webhook payload size:', rawBody.length)
+    console.log('🚀 Webhook payload size:', rawBody.length)
+    console.log('🚀 Webhook payload preview:', rawBody.substring(0, 200))
 
     // Verify webhook authenticity
     console.log('Attempting HMAC verification...')
