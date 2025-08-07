@@ -15,10 +15,12 @@ export default withAuth(
       return NextResponse.next()
     }
 
-    // Allow access to public pages
+    // Allow access to public pages and webhook endpoints
     if (
       pathname === '/' ||
       pathname.startsWith('/api/auth/') ||
+      pathname.startsWith('/api/webhooks/') ||
+      pathname.startsWith('/api/shopify/') ||
       pathname.startsWith('/terms') ||
       pathname.startsWith('/privacy') ||
       pathname.startsWith('/_next/') ||
@@ -59,11 +61,13 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Always allow access to auth pages and public routes
+        // Always allow access to auth pages, public routes, and webhook endpoints
         if (
           pathname.startsWith('/auth/') ||
           pathname === '/' ||
           pathname.startsWith('/api/auth/') ||
+          pathname.startsWith('/api/webhooks/') ||
+          pathname.startsWith('/api/shopify/') ||
           pathname.startsWith('/terms') ||
           pathname.startsWith('/privacy') ||
           pathname.startsWith('/_next/') ||
