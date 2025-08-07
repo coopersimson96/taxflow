@@ -231,20 +231,44 @@ export class ShopifyService {
 
     // Get existing webhooks
     const existingWebhooks = await this.listWebhooks(shop, accessToken)
-    const existingTopics = existingWebhooks.webhooks?.map((w: any) => w.topic) || []
+    const existingWebhooksByTopic = new Map()
+    
+    // Index existing webhooks by topic
+    for (const webhook of existingWebhooks.webhooks || []) {
+      existingWebhooksByTopic.set(webhook.topic, webhook)
+    }
 
-    // Create missing webhooks  
+    // Ensure all webhooks use the correct unified endpoint
     for (const topic of webhookTopics) {
-      if (!existingTopics.includes(topic)) {
-        const address = `${baseUrl}/api/webhooks/shopify`
+      const correctAddress = `${baseUrl}/api/webhooks/shopify`
+      const existingWebhook = existingWebhooksByTopic.get(topic)
+      
+      if (existingWebhook) {
+        // Check if existing webhook has wrong URL
+        if (existingWebhook.address !== correctAddress) {
+          console.log(`🔄 Updating webhook for ${topic}: ${existingWebhook.address} -> ${correctAddress}`)
+          try {
+            // Delete old webhook
+            await this.deleteWebhook(shop, accessToken, existingWebhook.id)
+            console.log(`🗑️ Deleted old webhook for ${topic}`)
+            
+            // Create new webhook with correct URL
+            await this.createWebhook(shop, accessToken, topic, correctAddress)
+            console.log(`✅ Created updated webhook for ${topic}`)
+          } catch (error) {
+            console.error(`❌ Failed to update webhook for ${topic}:`, error)
+          }
+        } else {
+          console.log(`ℹ️ Webhook for ${topic} already has correct URL`)
+        }
+      } else {
+        // Create new webhook
         try {
-          await this.createWebhook(shop, accessToken, topic, address)
-          console.log(`✅ Created webhook for ${topic}`)
+          await this.createWebhook(shop, accessToken, topic, correctAddress)
+          console.log(`✅ Created new webhook for ${topic}`)
         } catch (error) {
           console.error(`❌ Failed to create webhook for ${topic}:`, error)
         }
-      } else {
-        console.log(`ℹ️ Webhook for ${topic} already exists`)
       }
     }
   }
