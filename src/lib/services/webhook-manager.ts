@@ -243,7 +243,7 @@ export class WebhookManager {
         syncError,
         lastSyncAt: health.lastSync,
         metadata: {
-          ...(await prisma.integration.findUnique({ where: { id: integrationId } }))?.metadata as any,
+          ...((await prisma.integration.findUnique({ where: { id: integrationId } })) as any)?.metadata || {},
           webhookHealth: {
             overallStatus: health.overallStatus,
             lastHealthCheck: health.lastSync.toISOString(),
@@ -252,7 +252,7 @@ export class WebhookManager {
           }
         },
         updatedAt: new Date()
-      }
+      } as any
     })
   }
 

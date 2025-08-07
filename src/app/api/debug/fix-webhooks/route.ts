@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
     console.log(`Found ${existingWebhooks.length} existing webhooks`)
 
     const results = {
-      deleted: [],
-      created: [],
-      errors: []
+      deleted: [] as any[],
+      created: [] as any[],
+      errors: [] as string[]
     }
 
     // Delete ALL existing webhooks to clean slate
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         })
         console.log(`✅ Deleted webhook: ${webhook.topic}`)
       } catch (deleteError) {
-        results.errors.push(`Failed to delete ${webhook.topic}: ${deleteError.message}`)
+        results.errors.push(`Failed to delete ${webhook.topic}: ${deleteError instanceof Error ? deleteError.message : 'Unknown error'}`)
         console.error(`❌ Failed to delete webhook ${webhook.id}:`, deleteError)
       }
     }
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         })
         console.log(`✅ Created webhook: ${topic} -> ${correctEndpoint}`)
       } catch (createError) {
-        results.errors.push(`Failed to create ${topic}: ${createError.message}`)
+        results.errors.push(`Failed to create ${topic}: ${createError instanceof Error ? createError.message : 'Unknown error'}`)
         console.error(`❌ Failed to create webhook for ${topic}:`, createError)
       }
     }

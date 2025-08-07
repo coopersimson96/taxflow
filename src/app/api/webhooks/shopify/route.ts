@@ -343,12 +343,12 @@ async function handleAppUninstalled(appData: any, shop: string) {
       syncError: 'App uninstalled by user',
       lastSyncAt: new Date(),
       metadata: {
-        ...integration.metadata as any,
+        ...(((integration as any).metadata) || {}),
         uninstalledAt: new Date().toISOString(),
         uninstallReason: 'user_initiated'
       },
       updatedAt: new Date()
-    }
+    } as any
   })
 
   // Create notification

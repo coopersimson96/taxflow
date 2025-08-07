@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
     ].map(topic => ({
       topic,
       expectedUrl: unifiedEndpoint,
-      actualWebhook: webhookInfo.find(w => w.topic === topic),
-      isCorrectUrl: webhookInfo.find(w => w.topic === topic)?.address === unifiedEndpoint
+      actualWebhook: webhookInfo.find((w: any) => w.topic === topic),
+      isCorrectUrl: webhookInfo.find((w: any) => w.topic === topic)?.address === unifiedEndpoint
     }))
 
     return NextResponse.json({
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
       existingWebhooks: webhookInfo,
       expectedUrls: expectedUrls,
       webhookCount: webhookInfo.length,
-      correctUrlCount: expectedUrls.filter(u => u.isCorrectUrl).length,
-      systemStatus: expectedUrls.filter(u => u.isCorrectUrl).length === expectedUrls.length ? 'HEALTHY' : 'NEEDS_UPDATE',
+      correctUrlCount: expectedUrls.filter((u: any) => u.isCorrectUrl).length,
+      systemStatus: expectedUrls.filter((u: any) => u.isCorrectUrl).length === expectedUrls.length ? 'HEALTHY' : 'NEEDS_UPDATE',
       timestamp: new Date().toISOString()
     })
 
