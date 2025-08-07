@@ -175,12 +175,13 @@ export async function GET(request: NextRequest) {
 
       console.log('Integration created/updated successfully:', integration.id)
 
-      // Initialize robust webhook management
+      // Initialize robust webhook management with WebhookManager (v2.0)
       try {
-        console.log('🏥 Initializing webhook health management...')
+        console.log('🏥 Starting WebhookManager v2.0 initialization...')
         const webhookHealth = await WebhookManager.initializeWebhooks(integration.id)
-        console.log(`✅ Webhook health management initialized: ${webhookHealth.overallStatus}`)
-        console.log(`   - ${webhookHealth.webhooks.filter(w => w.status === 'healthy').length}/${webhookHealth.webhooks.length} webhooks healthy`)
+        console.log(`✅ WebhookManager v2.0 completed: ${webhookHealth.overallStatus}`)
+        console.log(`   - Healthy webhooks: ${webhookHealth.webhooks.filter(w => w.status === 'healthy').length}/${webhookHealth.webhooks.length}`)
+        console.log(`   - All webhooks use unified endpoint: /api/webhooks/shopify`)
       } catch (webhookError) {
         console.error('❌ Webhook health initialization failed:', webhookError)
         // Don't fail the entire flow for webhook issues, but log the error
