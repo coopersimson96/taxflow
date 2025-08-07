@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma, withWebhookDb } from '@/lib/prisma'
+import { processTaxBreakdown, validateTaxBreakdown, formatTaxBreakdownSummary } from '@/lib/utils/tax-processor'
 
 export const dynamic = 'force-dynamic'
 
@@ -146,6 +147,27 @@ async function handleOrderCreate(orderData: any, shop: string) {
     return NextResponse.json({ error: 'Integration not found' }, { status: 404 })
   }
 
+  // Process tax breakdown for detailed analytics
+  const taxBreakdown = processTaxBreakdown(
+    orderData.tax_lines || [],
+    orderData.billing_address,
+    orderData.shipping_address
+  )
+
+  // Validate tax calculations
+  const expectedTaxAmount = Math.round((parseFloat(orderData.total_tax || '0')) * 100)
+  const validation = validateTaxBreakdown(taxBreakdown, expectedTaxAmount)
+  
+  if (!validation.isValid) {
+    console.warn(`⚠️ Tax breakdown validation failed for order ${orderData.order_number}:`, {
+      expected: expectedTaxAmount,
+      calculated: validation.calculatedTotal,
+      difference: validation.difference
+    })
+  }
+
+  console.log(`💰 ${formatTaxBreakdownSummary(taxBreakdown)}`)
+
   const transaction = await prisma.transaction.upsert({
     where: {
       organizationId_integrationId_externalId: {
@@ -166,6 +188,21 @@ async function handleOrderCreate(orderData: any, shop: string) {
       discountAmount: Math.round((parseFloat(orderData.total_discounts || '0')) * 100),
       shippingAmount: Math.round((parseFloat(orderData.shipping_lines?.[0]?.price || '0')) * 100),
       taxDetails: orderData.tax_lines || [],
+      
+      // Enhanced tax breakdown fields
+      gstAmount: taxBreakdown.gstAmount,
+      pstAmount: taxBreakdown.pstAmount,
+      hstAmount: taxBreakdown.hstAmount,
+      qstAmount: taxBreakdown.qstAmount,
+      stateTaxAmount: taxBreakdown.stateTaxAmount,
+      localTaxAmount: taxBreakdown.localTaxAmount,
+      otherTaxAmount: taxBreakdown.otherTaxAmount,
+      taxBreakdown: taxBreakdown.taxBreakdown,
+      taxCountry: taxBreakdown.taxCountry,
+      taxProvince: taxBreakdown.taxProvince,
+      taxCity: taxBreakdown.taxCity,
+      taxPostalCode: taxBreakdown.taxPostalCode,
+      
       customerEmail: orderData.customer?.email,
       customerName: orderData.customer ? 
         `${orderData.customer.first_name || ''} ${orderData.customer.last_name || ''}`.trim() : 
@@ -204,6 +241,21 @@ async function handleOrderCreate(orderData: any, shop: string) {
       discountAmount: Math.round((parseFloat(orderData.total_discounts || '0')) * 100),
       shippingAmount: Math.round((parseFloat(orderData.shipping_lines?.[0]?.price || '0')) * 100),
       taxDetails: orderData.tax_lines || [],
+      
+      // Enhanced tax breakdown fields
+      gstAmount: taxBreakdown.gstAmount,
+      pstAmount: taxBreakdown.pstAmount,
+      hstAmount: taxBreakdown.hstAmount,
+      qstAmount: taxBreakdown.qstAmount,
+      stateTaxAmount: taxBreakdown.stateTaxAmount,
+      localTaxAmount: taxBreakdown.localTaxAmount,
+      otherTaxAmount: taxBreakdown.otherTaxAmount,
+      taxBreakdown: taxBreakdown.taxBreakdown,
+      taxCountry: taxBreakdown.taxCountry,
+      taxProvince: taxBreakdown.taxProvince,
+      taxCity: taxBreakdown.taxCity,
+      taxPostalCode: taxBreakdown.taxPostalCode,
+      
       customerEmail: orderData.customer?.email,
       customerName: orderData.customer ? 
         `${orderData.customer.first_name || ''} ${orderData.customer.last_name || ''}`.trim() : 
@@ -262,6 +314,15 @@ async function handleOrderUpdated(orderData: any, shop: string) {
     return await handleOrderCreate(orderData, shop)
   }
 
+  // Process tax breakdown for updates too
+  const taxBreakdown = processTaxBreakdown(
+    orderData.tax_lines || [],
+    orderData.billing_address,
+    orderData.shipping_address
+  )
+
+  console.log(`💰 Updated order tax breakdown: ${formatTaxBreakdownSummary(taxBreakdown)}`)
+
   // Update existing transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: existingTransaction.id },
@@ -271,6 +332,20 @@ async function handleOrderUpdated(orderData: any, shop: string) {
       taxAmount: Math.round((parseFloat(orderData.total_tax || '0')) * 100),
       totalAmount: Math.round((parseFloat(orderData.total_price || '0')) * 100),
       taxDetails: orderData.tax_lines || [],
+      
+      // Update tax breakdown fields
+      gstAmount: taxBreakdown.gstAmount,
+      pstAmount: taxBreakdown.pstAmount,
+      hstAmount: taxBreakdown.hstAmount,
+      qstAmount: taxBreakdown.qstAmount,
+      stateTaxAmount: taxBreakdown.stateTaxAmount,
+      localTaxAmount: taxBreakdown.localTaxAmount,
+      otherTaxAmount: taxBreakdown.otherTaxAmount,
+      taxBreakdown: taxBreakdown.taxBreakdown,
+      taxCountry: taxBreakdown.taxCountry,
+      taxProvince: taxBreakdown.taxProvince,
+      taxCity: taxBreakdown.taxCity,
+      taxPostalCode: taxBreakdown.taxPostalCode,
       metadata: {
         ...existingTransaction.metadata as any,
         fulfillmentStatus: orderData.fulfillment_status,

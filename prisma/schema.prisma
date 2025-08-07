@@ -96,6 +96,25 @@ model Transaction {
   discountAmount  Int               @default(0)
   shippingAmount  Int               @default(0)
   taxDetails      Json              @default("[]")
+  
+  // Enhanced tax breakdown fields for compliance reporting
+  gstAmount       Int               @default(0)     // GST amount in cents (Canadian Goods and Services Tax)
+  pstAmount       Int               @default(0)     // PST amount in cents (Provincial Sales Tax)  
+  hstAmount       Int               @default(0)     // HST amount in cents (Harmonized Sales Tax)
+  qstAmount       Int               @default(0)     // QST amount in cents (Quebec Sales Tax)
+  stateTaxAmount  Int               @default(0)     // State tax amount in cents (US state taxes)
+  localTaxAmount  Int               @default(0)     // Local tax amount in cents (municipal/county taxes)
+  otherTaxAmount  Int               @default(0)     // Other tax amount in cents (VAT, customs, etc.)
+  
+  // Detailed tax breakdown with rates, jurisdictions, and amounts
+  taxBreakdown    Json              @default("[]")
+  
+  // Tax jurisdiction information
+  taxCountry      String?           // Tax jurisdiction country (ISO 3166-1 alpha-3)
+  taxProvince     String?           // Tax jurisdiction province/state code
+  taxCity         String?           // Tax jurisdiction city name  
+  taxPostalCode   String?           // Tax jurisdiction postal/zip code
+  
   taxExempt       Boolean           @default(false)
   taxExemptReason String?
   customerEmail   String?
@@ -116,6 +135,7 @@ model Transaction {
   @@index([organizationId, transactionDate])
   @@index([organizationId, type])
   @@index([transactionDate])
+  @@index([organizationId, taxCountry, taxProvince, transactionDate], name: "idx_tax_jurisdiction")
   @@map("transactions")
 }
 
