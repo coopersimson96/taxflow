@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
+import { WebhookManager } from '@/lib/services/webhook-manager'
 
 export const dynamic = 'force-dynamic'
 
@@ -174,13 +175,23 @@ export async function GET(request: NextRequest) {
 
       console.log('Integration created/updated successfully:', integration.id)
 
-      // Setup webhooks
+      // Initialize robust webhook management
       try {
-        await ShopifyService.setupWebhooks(normalizedShop, tokens.accessToken)
-        console.log(`✅ Webhooks setup completed for ${normalizedShop}`)
+        console.log('🏥 Initializing webhook health management...')
+        const webhookHealth = await WebhookManager.initializeWebhooks(integration.id)
+        console.log(`✅ Webhook health management initialized: ${webhookHealth.overallStatus}`)
+        console.log(`   - ${webhookHealth.webhooks.filter(w => w.status === 'healthy').length}/${webhookHealth.webhooks.length} webhooks healthy`)
       } catch (webhookError) {
-        console.error('Webhook setup failed:', webhookError)
-        // Don't fail the entire flow for webhook issues
+        console.error('❌ Webhook health initialization failed:', webhookError)
+        // Don't fail the entire flow for webhook issues, but log the error
+        // Update integration with webhook error
+        await prisma.integration.update({
+          where: { id: integration.id },
+          data: {
+            syncStatus: 'ERROR',
+            syncError: `Webhook initialization failed: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`
+          }
+        })
       }
 
       // Redirect to success page
