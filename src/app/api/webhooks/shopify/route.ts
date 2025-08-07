@@ -61,16 +61,36 @@ export async function POST(request: NextRequest) {
     console.log('Webhook secret configured:', !!process.env.SHOPIFY_WEBHOOK_SECRET)
     
     try {
-      console.log('🚀 Starting HMAC verification process...')
-      console.log('🚀 Raw body (first 100 chars):', rawBody.substring(0, 100))
-      console.log('🚀 HMAC header (first 20 chars):', hmacHeader?.substring(0, 20))
+      console.log('🔐 Starting HMAC verification...')
+      console.log('🔐 Raw body length:', rawBody.length)
+      console.log('🔐 HMAC header present:', !!hmacHeader)
       
-      // TEMPORARY: Skip HMAC verification to test webhook processing
-      console.log('⚠️ TEMPORARILY SKIPPING HMAC VERIFICATION FOR DEBUGGING')
-      console.log('✅ HMAC verification bypassed - proceeding with webhook processing')
+      // Shopify webhook HMAC verification
+      const webhookSecret = process.env.SHOPIFY_WEBHOOK_SECRET
+      if (!webhookSecret) {
+        throw new Error('SHOPIFY_WEBHOOK_SECRET not configured')
+      }
+      
+      const calculatedHmac = require('crypto')
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody, 'utf8')
+        .digest('base64')
+      
+      console.log('🔐 Calculated HMAC (first 20):', calculatedHmac.substring(0, 20))
+      console.log('🔐 Received HMAC (first 20):', hmacHeader.substring(0, 20))
+      console.log('🔐 HMACs match:', calculatedHmac === hmacHeader)
+      
+      if (calculatedHmac !== hmacHeader) {
+        console.error('❌ HMAC verification failed - invalid signature')
+        console.error('This could indicate a security issue or webhook misconfiguration')
+        return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
+      }
+      
+      console.log('✅ HMAC verification successful - webhook authenticated')
+      
     } catch (hmacError) {
-      console.error('HMAC verification error:', hmacError)
-      return NextResponse.json({ error: 'HMAC verification failed' }, { status: 401 })
+      console.error('❌ HMAC verification error:', hmacError)
+      return NextResponse.json({ error: 'HMAC verification failed' }, { status: 500 })
     }
 
     // Route to appropriate handler based on topic

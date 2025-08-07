@@ -131,31 +131,15 @@ export class ShopifyService {
       throw new Error('SHOPIFY_WEBHOOK_SECRET is not configured')
     }
 
-    console.log('🔐 HMAC Debug Info:')
-    console.log('- Webhook secret length:', webhookSecret.length)
-    console.log('- Raw body length:', rawBody.length)
-    console.log('- HMAC header length:', hmacHeader?.length)
-
     const calculatedHmac = crypto
       .createHmac('sha256', webhookSecret)
       .update(rawBody, 'utf8')
       .digest('base64')
 
-    console.log('- Calculated HMAC (first 20 chars):', calculatedHmac.substring(0, 20))
-    console.log('- Received HMAC (first 20 chars):', hmacHeader?.substring(0, 20))
-    console.log('- HMAC match:', calculatedHmac === hmacHeader)
-
-    try {
-      const isValid = crypto.timingSafeEqual(
-        Buffer.from(calculatedHmac),
-        Buffer.from(hmacHeader)
-      )
-      console.log('- TimingSafeEqual result:', isValid)
-      return isValid
-    } catch (bufferError) {
-      console.error('- Buffer comparison error:', bufferError)
-      return false
-    }
+    return crypto.timingSafeEqual(
+      Buffer.from(calculatedHmac),
+      Buffer.from(hmacHeader)
+    )
   }
 
   /**
