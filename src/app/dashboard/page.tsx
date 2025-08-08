@@ -1,59 +1,64 @@
 'use client'
 
-import TaxTracker from '@/components/dashboard/TaxTracker'
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import { ConnectionStatus } from '@/components/shopify/ConnectionStatus'
-import { useRouter } from 'next/navigation'
+import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
 
-// Sample data - in a real app this would come from your API
-const sampleData = {
-  totalTaxToSetAside: 4892.73,
-  totalSales: 67234.50,
-  transactionCount: 234,
-  isConnected: true,
-  recentTransactions: [
-    {
-      id: '1234',
-      date: '2024-01-15',
-      amount: 299.99,
-      taxAmount: 24.80,
-      platform: 'shopify' as const
-    },
-    {
-      id: '1233',
-      date: '2024-01-15',
-      amount: 149.95,
-      taxAmount: 18.65,
-      platform: 'square' as const
-    },
-    {
-      id: '1232',
-      date: '2024-01-14',
-      amount: 399.00,
-      taxAmount: 31.20,
-      platform: 'shopify' as const
-    },
-    {
-      id: '1231',
-      date: '2024-01-14',
-      amount: 89.99,
-      taxAmount: 7.20,
-      platform: 'square' as const
-    },
-    {
-      id: '1230',
-      date: '2024-01-13',
-      amount: 199.99,
-      taxAmount: 16.00,
-      platform: 'shopify' as const
-    }
-  ]
+interface UserOrganization {
+  id: string
+  name: string
+  slug: string
 }
 
 export default function DashboardPage() {
+  const { data: session } = useSession()
   const router = useRouter()
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('')
+  const [userOrganizations, setUserOrganizations] = useState<UserOrganization[]>([])
+  const [isLoadingOrgs, setIsLoadingOrgs] = useState(true)
+  const [hasShopifyConnection, setHasShopifyConnection] = useState(false)
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true)
   
+  // Fetch user's organizations on mount
+  useEffect(() => {
+    const fetchUserOrganizations = async () => {
+      if (!session?.user?.email) return
+
+      try {
+        setIsLoadingOrgs(true)
+        
+        // For now, create a mock organization - in production you'd fetch from your API
+        const mockOrganization: UserOrganization = {
+          id: 'demo-org-1',
+          name: 'Demo Store',
+          slug: 'demo-store'
+        }
+        
+        setUserOrganizations([mockOrganization])
+        setSelectedOrganizationId(mockOrganization.id)
+        
+        // Check for Shopify connection
+        setIsCheckingConnection(true)
+        // Mock connection check - replace with real API call
+        setTimeout(() => {
+          setHasShopifyConnection(true) // Mock as connected for demo
+          setIsCheckingConnection(false)
+        }, 1000)
+        
+      } catch (error) {
+        console.error('Error fetching organizations:', error)
+      } finally {
+        setIsLoadingOrgs(false)
+      }
+    }
+
+    fetchUserOrganizations()
+  }, [session])
+
   const handleConnect = () => {
     console.log('Connect button clicked - navigating to /connect')
     try {
@@ -66,18 +71,115 @@ export default function DashboardPage() {
     }
   }
 
+  const handleConnectionStatusChange = (isConnected: boolean) => {
+    setHasShopifyConnection(isConnected)
+  }
+
+  // Show loading state while checking organizations
+  if (isLoadingOrgs) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your dashboard...</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
+
+  // Show organization selection if multiple organizations
+  if (userOrganizations.length === 0) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="text-center py-16">
+            <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m0 0h2M9 7h6m-6 4h6m-6 4h6m-6 4h6" />
+            </svg>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No Organizations Found</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You need to be part of an organization to view the tax dashboard.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => router.push('/setup')}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Create Organization
+              </button>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
+
   return (
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
-          <ConnectionStatus onConnect={handleConnect} />
-          <TaxTracker 
-            totalTaxToSetAside={sampleData.totalTaxToSetAside}
-            totalSales={sampleData.totalSales}
-            transactionCount={sampleData.transactionCount}
-            recentTransactions={sampleData.recentTransactions}
-            isConnected={sampleData.isConnected}
+          {/* Organization selector if multiple organizations */}
+          {userOrganizations.length > 1 && (
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <label htmlFor="organization-select" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Organization
+              </label>
+              <select
+                id="organization-select"
+                value={selectedOrganizationId}
+                onChange={(e) => setSelectedOrganizationId(e.target.value)}
+                className="block w-full max-w-xs rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              >
+                {userOrganizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Connection Status */}
+          <ConnectionStatus 
+            onConnect={handleConnect}
+            isConnected={hasShopifyConnection}
+            isLoading={isCheckingConnection}
+            onConnectionChange={handleConnectionStatusChange}
           />
+
+          {/* Main Dashboard Content */}
+          {selectedOrganizationId && (
+            <>
+              {hasShopifyConnection ? (
+                <TaxAnalyticsDashboard 
+                  organizationId={selectedOrganizationId}
+                  className="pb-8"
+                />
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-8 text-center">
+                  <svg className="mx-auto h-12 w-12 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="mt-4 text-lg font-medium text-blue-900">Connect Your Shopify Store</h3>
+                  <p className="mt-2 text-sm text-blue-700 max-w-md mx-auto">
+                    Connect your Shopify store to start tracking tax analytics. Once connected, you'll see detailed insights about your tax obligations and money to set aside.
+                  </p>
+                  <div className="mt-6">
+                    <button
+                      onClick={handleConnect}
+                      className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Connect Shopify Store
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </DashboardLayout>
     </AuthGuard>

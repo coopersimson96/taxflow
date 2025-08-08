@@ -29,16 +29,41 @@ interface ConnectionStatusProps {
   organizationId?: string
   onConnect?: () => void
   className?: string
+  isConnected?: boolean
+  isLoading?: boolean
+  onConnectionChange?: (isConnected: boolean) => void
 }
 
-export function ConnectionStatus({ organizationId, onConnect, className = '' }: ConnectionStatusProps) {
+export function ConnectionStatus({ 
+  organizationId, 
+  onConnect, 
+  className = '', 
+  isConnected,
+  isLoading,
+  onConnectionChange 
+}: ConnectionStatusProps) {
   const [integrations, setIntegrations] = useState<Integration[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(isLoading ?? true)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    // If external loading state is provided, don't fetch
+    if (isLoading !== undefined) {
+      setLoading(isLoading)
+      return
+    }
     fetchIntegrations()
-  }, [organizationId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [organizationId, isLoading]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    // Notify parent of connection status changes
+    if (onConnectionChange && integrations.length > 0) {
+      const hasConnectedIntegration = integrations.some(integration => 
+        integration.type === 'SHOPIFY' && integration.status === 'CONNECTED'
+      )
+      onConnectionChange(hasConnectedIntegration)
+    }
+  }, [integrations, onConnectionChange])
 
   const fetchIntegrations = async () => {
     try {
