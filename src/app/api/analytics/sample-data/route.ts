@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { TaxDashboardData } from '@/types/tax-dashboard'
 
+// Force this route to be dynamic
+export const dynamic = 'force-dynamic'
+
 // Sample data generator for testing the dashboard
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const days = parseInt(searchParams.get('days') || '30')
+    const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
 
     // Generate sample data
     const sampleData: TaxDashboardData = {
