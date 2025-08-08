@@ -141,18 +141,20 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Connection Status */}
-          <ConnectionStatus 
-            onConnect={handleConnect}
-            isConnected={hasShopifyConnection}
-            isLoading={isCheckingConnection}
-            onConnectionChange={handleConnectionStatusChange}
-          />
-
-          {/* Main Dashboard Content */}
+          {/* Main Dashboard Content - Show dashboard directly */}
           {selectedOrganizationId && (
             <TaxAnalyticsDashboard 
               organizationId={selectedOrganizationId}
+            />
+          )}
+
+          {/* Connection Status - Hidden for now to show dashboard */}
+          {false && (
+            <ConnectionStatus 
+              onConnect={handleConnect}
+              isConnected={hasShopifyConnection}
+              isLoading={isCheckingConnection}
+              onConnectionChange={handleConnectionStatusChange}
             />
           )}
         </div>
