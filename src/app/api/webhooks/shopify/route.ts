@@ -72,23 +72,64 @@ export async function POST(request: NextRequest) {
         throw new Error('SHOPIFY_WEBHOOK_SECRET not configured')
       }
       console.log('🔐 Webhook secret configured:', !!webhookSecret)
+      console.log('🔐 Webhook secret length:', webhookSecret.length)
       console.log('🔐 Webhook secret (first 10 chars):', webhookSecret.substring(0, 10))
       
-      const calculatedHmac = require('crypto')
+      // Try different HMAC calculation methods that Shopify might use
+      const crypto = require('crypto')
+      
+      // Method 1: Standard base64
+      const calculatedHmac1 = crypto
         .createHmac('sha256', webhookSecret)
         .update(rawBody, 'utf8')
         .digest('base64')
       
-      console.log('🔐 Calculated HMAC (first 20):', calculatedHmac.substring(0, 20))
-      console.log('🔐 Received HMAC (first 20):', hmacHeader.substring(0, 20))
-      console.log('🔐 HMACs match:', calculatedHmac === hmacHeader)
+      // Method 2: Hex encoding (some Shopify setups use this)
+      const calculatedHmac2 = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(rawBody, 'utf8')
+        .digest('hex')
       
-      if (calculatedHmac !== hmacHeader) {
+      // Method 3: Try with API secret instead (fallback)
+      const apiSecret = process.env.SHOPIFY_API_SECRET
+      const calculatedHmac3 = apiSecret ? crypto
+        .createHmac('sha256', apiSecret)
+        .update(rawBody, 'utf8')
+        .digest('base64') : null
+      
+      console.log('🔐 Method 1 (base64):', calculatedHmac1.substring(0, 20))
+      console.log('🔐 Method 2 (hex):', calculatedHmac2.substring(0, 20))
+      if (calculatedHmac3) console.log('🔐 Method 3 (API secret):', calculatedHmac3.substring(0, 20))
+      console.log('🔐 Received HMAC:', hmacHeader.substring(0, 20))
+      console.log('🔐 Received length:', hmacHeader.length)
+      
+      // Check all methods
+      const match1 = calculatedHmac1 === hmacHeader
+      const match2 = calculatedHmac2 === hmacHeader  
+      const match3 = calculatedHmac3 === hmacHeader
+      
+      console.log('🔐 Base64 match:', match1)
+      console.log('🔐 Hex match:', match2)
+      if (calculatedHmac3) console.log('🔐 API secret match:', match3)
+      
+      // Use whichever method works
+      const calculatedHmac = match1 ? calculatedHmac1 : 
+                            match2 ? calculatedHmac2 : 
+                            match3 ? calculatedHmac3 : calculatedHmac1
+      
+      console.log('🔐 Using method:', match1 ? 'base64' : match2 ? 'hex' : match3 ? 'API secret' : 'base64 (fallback)')
+      console.log('🔐 Final match result:', calculatedHmac === hmacHeader)
+      
+      // Check if any method worked
+      if (!match1 && !match2 && !match3) {
         console.error('❌ HMAC verification failed - invalid signature')
-        console.error('Full calculated HMAC:', calculatedHmac)
-        console.error('Full received HMAC:', hmacHeader)
-        console.error('Secret length:', webhookSecret.length)
-        console.error('This could indicate a security issue or webhook misconfiguration')
+        console.error('None of the HMAC methods matched:')
+        console.error('- Base64 calculated:', calculatedHmac1)
+        console.error('- Hex calculated:', calculatedHmac2)
+        if (calculatedHmac3) console.error('- API secret calculated:', calculatedHmac3)
+        console.error('- Received HMAC:', hmacHeader)
+        console.error('- Secret length:', webhookSecret.length)
+        console.error('- API secret available:', !!apiSecret)
         return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 })
       }
       
