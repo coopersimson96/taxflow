@@ -43,11 +43,9 @@ export default function DashboardPage() {
         
         // Check for Shopify connection
         setIsCheckingConnection(true)
-        // Mock connection check - replace with real API call
-        setTimeout(() => {
-          setHasShopifyConnection(true) // Mock as connected for demo
-          setIsCheckingConnection(false)
-        }, 1000)
+        // Force connection as true to show dashboard immediately
+        setHasShopifyConnection(true) 
+        setIsCheckingConnection(false)
         
       } catch (error) {
         console.error('Error fetching organizations:', error)
