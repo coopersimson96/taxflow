@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import { ConnectionStatus } from '@/components/shopify/ConnectionStatus'
-import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
+// import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
 
 interface UserOrganization {
   id: string
