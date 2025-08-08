@@ -1,12 +1,42 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Component, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import { ConnectionStatus } from '@/components/shopify/ConnectionStatus'
 import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
+
+// Simple Error Boundary
+class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error?: Error}> {
+  constructor(props: {children: ReactNode}) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('Dashboard Error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 bg-red-50 border border-red-200 rounded">
+          <h3 className="text-red-800 font-semibold">Dashboard Error</h3>
+          <p className="text-red-600">Something went wrong loading the tax analytics dashboard.</p>
+          <p className="text-sm text-gray-600 mt-2">{this.state.error?.message}</p>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 
 interface UserOrganization {
   id: string
@@ -141,11 +171,31 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Debug info */}
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+            <h4 className="font-semibold">Debug Info:</h4>
+            <p>selectedOrganizationId: {selectedOrganizationId || 'null'}</p>
+            <p>userOrganizations.length: {userOrganizations.length}</p>
+            <p>isLoadingOrgs: {isLoadingOrgs.toString()}</p>
+            <p>hasShopifyConnection: {hasShopifyConnection.toString()}</p>
+          </div>
+
           {/* Main Dashboard Content - Show dashboard directly */}
-          {selectedOrganizationId && (
-            <TaxAnalyticsDashboard 
-              organizationId={selectedOrganizationId}
-            />
+          {selectedOrganizationId ? (
+            <div>
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
+                <p>✅ Loading TaxAnalyticsDashboard with organizationId: {selectedOrganizationId}</p>
+              </div>
+              <ErrorBoundary>
+                <TaxAnalyticsDashboard 
+                  organizationId={selectedOrganizationId}
+                />
+              </ErrorBoundary>
+            </div>
+          ) : (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
+              <p>❌ TaxAnalyticsDashboard not loading - no selectedOrganizationId</p>
+            </div>
           )}
 
           {/* Connection Status - Hidden for now to show dashboard */}
