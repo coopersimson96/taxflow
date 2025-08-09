@@ -21,6 +21,12 @@ export async function GET(request: NextRequest) {
 
     // Generate sample data
     const sampleData: TaxDashboardData = {
+      storeInfo: {
+        storeName: 'Sample Store',
+        domain: 'sample-store.myshopify.com',
+        email: 'sample@store.com',
+        connectedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      },
       taxToSetAside: {
         totalAmount: 4892.73,
         currency: 'USD',
