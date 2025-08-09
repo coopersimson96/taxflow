@@ -9,7 +9,7 @@ postgresql://postgres.zpxltmcmtfqrgystdvxu:Supabasetaxflow45123@db.zpxltmcmtfqrg
 
 ## Correct DIRECT CONNECTION URL to use:
 ```
-postgresql://postgres.zpxltmcmtfqrgystdvxu:Supabasetaxflow45123@aws-0-ca-central-1.compute.amazonaws.com:5432/postgres
+postgresql://postgres:Supabasetaxflow45123@db.zpxltmcmtfqrgystdvxu.supabase.co:5432/postgres
 ```
 
 ## Steps:
