@@ -25,6 +25,14 @@ export default function AuthGuard({
 }: AuthGuardProps) {
   const { session, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
+  
+  // Debug logging
+  console.log('🔍 AuthGuard state:', { 
+    isLoading, 
+    isAuthenticated, 
+    hasSession: !!session,
+    sessionUser: session?.user?.email || 'none'
+  })
 
   useEffect(() => {
     if (!isLoading && requireAuth && !isAuthenticated) {

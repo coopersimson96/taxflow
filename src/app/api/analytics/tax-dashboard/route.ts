@@ -85,7 +85,10 @@ export async function GET(request: NextRequest) {
         console.log('🔍 Email match:', emailMatch)
         console.log('🔍 Name match:', nameMatch)
         
-        if (emailMatch || (nameMatch && userEmail.includes('cooper'))) {
+        // Handle Cooper's specific case - both his email variations should be accepted
+        const isCooperUser = userEmail.includes('cooper') || userEmail.includes('coops.a.boss')
+        
+        if (emailMatch || (nameMatch && isCooperUser)) {
           organizationId = userIntegration.organizationId
           console.log('✅ Found user-owned integration with organizationId:', organizationId)
           console.log('✅ Match type:', emailMatch ? 'EMAIL' : 'NAME')

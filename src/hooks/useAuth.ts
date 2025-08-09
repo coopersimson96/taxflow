@@ -18,6 +18,13 @@ import {
 export function useAuth() {
   const { data: session, status } = useSession()
 
+  // Debug logging
+  console.log('🔍 useAuth hook:', { 
+    status, 
+    hasSession: !!session,
+    sessionEmail: session?.user?.email || 'none'
+  })
+
   return {
     session: session as ExtendedSession | null,
     user: session?.user || null,
