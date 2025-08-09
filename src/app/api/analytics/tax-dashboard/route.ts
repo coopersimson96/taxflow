@@ -21,8 +21,33 @@ export async function GET(request: NextRequest) {
   try {
     // Skip session check temporarily for testing
     console.log('Tax dashboard API called with organizationId:', request.nextUrl.searchParams.get('organizationId'))
+    console.log('Environment:', process.env.NODE_ENV)
 
-    const organizationId = request.nextUrl.searchParams.get('organizationId') || 'demo-org-1'
+    let organizationId = request.nextUrl.searchParams.get('organizationId')
+    
+    // If no organizationId provided or empty, try to find the connected Shopify integration
+    if (!organizationId || organizationId === '') {
+      console.log('No organizationId provided, looking for connected Shopify integration...')
+      const connectedIntegration = await withWebhookDb(async (db) => {
+        return await db.integration.findFirst({
+          where: {
+            type: 'SHOPIFY',
+            status: 'CONNECTED'
+          },
+          select: {
+            organizationId: true
+          }
+        })
+      })
+      
+      if (connectedIntegration) {
+        organizationId = connectedIntegration.organizationId
+        console.log('Found connected integration with organizationId:', organizationId)
+      } else {
+        organizationId = 'demo-org-1' // Ultimate fallback
+        console.log('No connected integration found, using demo organizationId')
+      }
+    }
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
     const includeTrends = request.nextUrl.searchParams.get('includeTrends') === 'true'
 

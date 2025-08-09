@@ -61,15 +61,15 @@ export default function DashboardPage() {
       try {
         setIsLoadingOrgs(true)
         
-        // Use the real organization ID from your actual data
-        const realOrganization: UserOrganization = {
-          id: 'cmdvy8aro0000jx04kr7xkp5j',
-          name: 'Your Shopify Store',
-          slug: 'shopify-store'
+        // Use empty organizationId - the API will auto-detect the connected store
+        const autoDetectOrganization: UserOrganization = {
+          id: '', // Empty ID will trigger auto-detection in the API
+          name: 'Connected Shopify Store',
+          slug: 'connected-store'
         }
         
-        setUserOrganizations([realOrganization])
-        setSelectedOrganizationId(realOrganization.id)
+        setUserOrganizations([autoDetectOrganization])
+        setSelectedOrganizationId(autoDetectOrganization.id)
         
         // Check for Shopify connection
         setIsCheckingConnection(true)
