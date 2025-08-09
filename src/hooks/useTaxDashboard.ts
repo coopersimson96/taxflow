@@ -48,7 +48,8 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
   const fetchData = async (showLoading = true) => {
-    if (!organizationId) return
+    // Allow empty organizationId - the API will auto-detect the connected store
+    // if (!organizationId) return
 
     if (showLoading) {
       setState(prev => ({ ...prev, isLoading: true, error: undefined }))
@@ -61,10 +62,14 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
       const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000))
 
       const params = new URLSearchParams({
-        organizationId,
         days: Math.max(1, days).toString(),
         includeTrends: 'true'
       })
+      
+      // Only add organizationId if it's not empty (let API auto-detect if empty)
+      if (organizationId && organizationId.trim() !== '') {
+        params.set('organizationId', organizationId)
+      }
 
       let response = await fetch(`/api/analytics/tax-dashboard?${params}`)
       
@@ -159,7 +164,7 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
 
   // Auto refresh
   useEffect(() => {
-    if (!autoRefresh || !organizationId) return
+    if (!autoRefresh) return
 
     const interval = setInterval(() => {
       // Only refresh in background if data is getting stale
@@ -174,7 +179,7 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
     }, refreshInterval)
 
     return () => clearInterval(interval)
-  }, [autoRefresh, organizationId, refreshInterval, state.lastRefresh]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoRefresh, refreshInterval, state.lastRefresh]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update data freshness indicator
   useEffect(() => {
