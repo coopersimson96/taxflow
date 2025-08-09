@@ -76,13 +76,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+    // Get user - handle case sensitivity
+    let user = await prisma.user.findFirst({
+      where: { 
+        email: {
+          equals: session.user.email,
+          mode: 'insensitive'
+        }
+      }
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      // Try to create the user if they don't exist
+      try {
+        user = await prisma.user.create({
+          data: {
+            email: session.user.email,
+            name: session.user.name || session.user.email.split('@')[0],
+          }
+        })
+        
+        // Also create their primary email entry
+        await prisma.userEmail.create({
+          data: {
+            userId: user.id,
+            email: session.user.email,
+            isPrimary: true,
+            isVerified: true,
+            verifiedAt: new Date()
+          }
+        })
+      } catch (createError) {
+        console.error('Failed to create user:', createError)
+        return NextResponse.json({ error: 'Failed to create user account' }, { status: 500 })
+      }
     }
 
     // Generate verification token
@@ -144,12 +171,24 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 })
     }
 
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
+    // Get user - handle case sensitivity
+    const user = await prisma.user.findFirst({
+      where: { 
+        email: {
+          equals: session.user.email,
+          mode: 'insensitive'
+        }
+      }
     })
 
     if (!user) {
+      // Debug: Check what's in the database
+      console.error('User not found for email:', session.user.email)
+      const allUsers = await prisma.user.findMany({
+        select: { email: true }
+      })
+      console.error('Available users:', allUsers.map(u => u.email))
+      
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
