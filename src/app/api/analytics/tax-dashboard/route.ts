@@ -24,6 +24,8 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
+    
+    console.log('🔍 Tax Dashboard API - User:', session.user.email)
 
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
@@ -49,8 +51,10 @@ export async function GET(request: NextRequest) {
         userEmails.push(...user.linkedEmails.map(e => e.email.toLowerCase()))
       }
       
+      console.log('🔍 User emails for matching:', userEmails)
+      console.log('🔍 Looking for Shopify integrations...')
       const userIntegration = await withWebhookDb(async (db) => {
-        return await db.integration.findFirst({
+        const integration = await db.integration.findFirst({
           where: {
             type: 'SHOPIFY',
             status: 'CONNECTED'
@@ -61,6 +65,11 @@ export async function GET(request: NextRequest) {
             name: true
           }
         })
+        console.log('🔍 Found integration:', integration ? 'Yes' : 'No')
+        if (integration) {
+          console.log('🔍 Integration org ID:', integration.organizationId)
+        }
+        return integration
       })
       
       
