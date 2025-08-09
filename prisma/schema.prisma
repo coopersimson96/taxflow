@@ -19,8 +19,26 @@ model User {
   notifications Notification[]
   organizations OrganizationMember[]
   sessions      Session[]
+  linkedEmails  UserEmail[]
 
   @@map("users")
+}
+
+model UserEmail {
+  id                String    @id @default(cuid())
+  userId            String
+  email             String    @unique
+  isPrimary         Boolean   @default(false)
+  isVerified        Boolean   @default(false)
+  verificationToken String?
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, isPrimary])
+  @@index([userId])
+  @@map("user_emails")
 }
 
 model Organization {

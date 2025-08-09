@@ -20,15 +20,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'orders' | 'jurisdictions' | 'payouts'>('overview')
   
-  console.log('🔍 TaxAnalyticsDashboard mounted with organizationId:', organizationId)
-  
   const { data, state, filters, updateFilters, refresh, isInitialLoading } = useTaxDashboard({
     organizationId,
     autoRefresh: true,
     refreshInterval: 5 * 60 * 1000 // 5 minutes
   })
-  
-  console.log('🔍 Dashboard state:', { data: !!data, isInitialLoading, error: state.error })
 
   const chartConfig: ChartConfig = {
     colors: {

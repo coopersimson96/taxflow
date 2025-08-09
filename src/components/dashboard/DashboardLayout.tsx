@@ -27,6 +27,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <h1 className="text-xl font-bold text-gray-900">Tax Analytics</h1>
               </div>
               <OrganizationSwitcher />
+              
+              {/* Navigation Links */}
+              <nav className="hidden md:flex space-x-4">
+                <a href="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                  Dashboard
+                </a>
+                <a href="/settings" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                  Settings
+                </a>
+              </nav>
             </div>
 
             {/* Right side - User Profile */}

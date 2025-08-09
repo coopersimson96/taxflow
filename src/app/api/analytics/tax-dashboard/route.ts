@@ -36,10 +36,25 @@ export async function GET(request: NextRequest) {
     if (!organizationId || organizationId === '') {
       console.log('🔍 No organizationId provided, looking for user-owned connected Shopify integration...')
       
-      // SECURITY: Match user by email in integration credentials to ensure data isolation
-      // This assumes the user's email matches the Shopify store owner email
-      const userEmail = session.user.email.toLowerCase()
-      console.log('🔍 User email for matching:', userEmail)
+      // SECURITY: Get all user's linked emails for matching
+      const user = await withWebhookDb(async (db) => {
+        return await db.user.findUnique({
+          where: { email: session.user.email },
+          include: { linkedEmails: true }
+        })
+      })
+      
+      if (!user) {
+        console.log('❌ User not found')
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
+      
+      // Get all user emails (primary + linked)
+      const userEmails = [user.email.toLowerCase()]
+      if (user.linkedEmails) {
+        userEmails.push(...user.linkedEmails.map(e => e.email.toLowerCase()))
+      }
+      console.log('🔍 User emails for matching:', userEmails)
       
       const userIntegration = await withWebhookDb(async (db) => {
         console.log('🔍 Querying for connected Shopify integrations...')
@@ -72,12 +87,14 @@ export async function GET(request: NextRequest) {
         console.log('🔍 Shop customer email:', shopifyEmail)
         console.log('🔍 Shop owner email:', shopOwnerEmail)
         
-        // Match user email with shop owner or customer email
+        // Check if any of the user's emails match the shop emails
+        const emailMatch = userEmails.some(email => 
+          email === shopifyEmail || email === shopOwnerEmail
+        )
+        
         // Also try matching the shop owner name if emails don't match
         const shopOwnerName = credentials.shopInfo?.shop_owner?.toLowerCase()
         const userName = session.user.name?.toLowerCase()
-        
-        const emailMatch = shopifyEmail === userEmail || shopOwnerEmail === userEmail
         const nameMatch = shopOwnerName && userName && shopOwnerName.includes(userName.split(' ')[0])
         
         console.log('🔍 Shop owner name:', shopOwnerName)
@@ -85,16 +102,13 @@ export async function GET(request: NextRequest) {
         console.log('🔍 Email match:', emailMatch)
         console.log('🔍 Name match:', nameMatch)
         
-        // Handle Cooper's specific case - both his email variations should be accepted
-        const isCooperUser = userEmail.includes('cooper') || userEmail.includes('coops.a.boss')
-        
-        if (emailMatch || (nameMatch && isCooperUser)) {
+        if (emailMatch || nameMatch) {
           organizationId = userIntegration.organizationId
           console.log('✅ Found user-owned integration with organizationId:', organizationId)
           console.log('✅ Match type:', emailMatch ? 'EMAIL' : 'NAME')
           isUserOwned = true
         } else {
-          console.log(`❌ No match found: User ${userEmail}/${userName} vs Shop ${shopifyEmail}/${shopOwnerName}`)
+          console.log(`❌ No match found: User emails [${userEmails.join(', ')}] / name ${userName} vs Shop ${shopifyEmail}/${shopOwnerEmail} / name ${shopOwnerName}`)
         }
       } else {
         console.log('🔍 No credentials found in integration')

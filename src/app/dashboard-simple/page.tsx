@@ -3,15 +3,10 @@
 import { useState } from 'react'
 
 export default function SimpleDashboard() {
-  console.log('🔍 SimpleDashboard component executing')
-  
   const [count, setCount] = useState(0)
   
   return (
     <div style={{ padding: '20px', color: 'black', backgroundColor: 'white' }}>
-      <script dangerouslySetInnerHTML={{
-        __html: `console.log('🔍 SIMPLE DASHBOARD: Inline script executing');`
-      }} />
       
       <h1 style={{ fontSize: '24px', marginBottom: '20px' }}>Simple Dashboard Test</h1>
       
@@ -21,7 +16,6 @@ export default function SimpleDashboard() {
         
         <button 
           onClick={() => {
-            console.log('🔍 SIMPLE DASHBOARD: Button clicked, count:', count)
             setCount(count + 1)
           }}
           style={{ 
@@ -39,7 +33,6 @@ export default function SimpleDashboard() {
         
         <button 
           onClick={() => {
-            console.log('🔍 SIMPLE DASHBOARD: Alert button clicked')
             alert('React onClick handler working!')
           }}
           style={{ 

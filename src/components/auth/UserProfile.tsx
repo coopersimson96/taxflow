@@ -85,7 +85,7 @@ export default function UserProfile() {
                   Organizations
                 </h4>
                 <div className="space-y-2">
-                  {user.organizations.map((org) => (
+                  {user.organizations.map((org: any) => (
                     <div
                       key={org.id}
                       className={`flex items-center justify-between p-2 rounded ${

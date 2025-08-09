@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Component, ReactNode } from 'react'
-import { useSession } from '@/components/providers/SessionProvider'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
@@ -45,8 +45,6 @@ interface UserOrganization {
 }
 
 export default function DashboardPage() {
-  console.log('🔍 DashboardPage component starting to execute')
-  
   const { data: session } = useSession()
   const router = useRouter()
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('')
@@ -55,21 +53,10 @@ export default function DashboardPage() {
   const [hasShopifyConnection, setHasShopifyConnection] = useState(false)
   const [isCheckingConnection, setIsCheckingConnection] = useState(true)
   
-  // Debug logging for dashboard page
-  console.log('🔍 DashboardPage render:', {
-    hasSession: !!session,
-    sessionEmail: session?.user?.email,
-    isLoadingOrgs,
-    organizationCount: userOrganizations.length,
-    selectedOrganizationId
-  })
-  
   // Fetch user's organizations on mount
   useEffect(() => {
     const fetchUserOrganizations = async () => {
-      console.log('🔍 fetchUserOrganizations called, session:', !!session?.user?.email)
       if (!session?.user?.email) {
-        console.log('🔍 No session, setting loading to false')
         setIsLoadingOrgs(false)
         return
       }
@@ -84,7 +71,6 @@ export default function DashboardPage() {
           slug: 'connected-store'
         }
         
-        console.log('🔍 Setting up organization for dashboard:', autoDetectOrganization)
         setUserOrganizations([autoDetectOrganization])
         setSelectedOrganizationId(autoDetectOrganization.id)
         
@@ -123,6 +109,7 @@ export default function DashboardPage() {
   // Show loading state while checking organizations
   if (isLoadingOrgs) {
     return (
+      <AuthGuard>
         <DashboardLayout>
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
@@ -131,12 +118,14 @@ export default function DashboardPage() {
             </div>
           </div>
         </DashboardLayout>
+      </AuthGuard>
     )
   }
 
   // Show organization selection if multiple organizations
   if (userOrganizations.length === 0) {
     return (
+      <AuthGuard>
         <DashboardLayout>
           <div className="text-center py-16">
             <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -156,11 +145,13 @@ export default function DashboardPage() {
             </div>
           </div>
         </DashboardLayout>
+      </AuthGuard>
     )
   }
 
   return (
-    <DashboardLayout>
+    <AuthGuard>
+      <DashboardLayout>
         <div className="space-y-6">
           {/* Organization selector if multiple organizations */}
           {userOrganizations.length > 1 && (
@@ -203,5 +194,6 @@ export default function DashboardPage() {
           )}
         </div>
       </DashboardLayout>
+    </AuthGuard>
   )
 }

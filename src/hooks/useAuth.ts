@@ -1,6 +1,6 @@
 'use client'
 
-import { useSession } from '@/components/providers/SessionProvider'
+import { useSession } from 'next-auth/react'
 import { Role } from '@prisma/client'
 import {
   ExtendedSession,
@@ -17,27 +17,6 @@ import {
 
 export function useAuth() {
   const { data: session, status } = useSession()
-
-  // Debug logging
-  console.log('🔍 useAuth hook:', { 
-    status, 
-    hasSession: !!session,
-    sessionEmail: session?.user?.email || 'none',
-    isLoading: status === 'loading',
-    isAuthenticated: status === 'authenticated',
-    isUnauthenticated: status === 'unauthenticated'
-  })
-  
-  // Additional debugging for production issues
-  if (typeof window !== 'undefined' && status !== 'loading') {
-    console.log('🔍 useAuth final state:', {
-      status,
-      session: session ? 'present' : 'null',
-      email: session?.user?.email,
-      isLoading: false, // We know it's not loading since we checked status !== 'loading'
-      isAuthenticated: status === 'authenticated'
-    })
-  }
 
   return {
     session: session as ExtendedSession | null,
