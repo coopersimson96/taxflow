@@ -34,7 +34,7 @@ export function useAuth() {
       status,
       session: session ? 'present' : 'null',
       email: session?.user?.email,
-      isLoading: status === 'loading',
+      isLoading: false, // We know it's not loading since we checked status !== 'loading'
       isAuthenticated: status === 'authenticated'
     })
   }
