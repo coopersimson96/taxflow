@@ -50,6 +50,8 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
   const fetchData = async (showLoading = true) => {
     // Allow empty organizationId - the API will auto-detect the connected store
     // if (!organizationId) return
+    
+    console.log('🔍 useTaxDashboard fetchData called', { organizationId, showLoading })
 
     if (showLoading) {
       setState(prev => ({ ...prev, isLoading: true, error: undefined }))
@@ -71,7 +73,11 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
         params.set('organizationId', organizationId)
       }
 
-      let response = await fetch(`/api/analytics/tax-dashboard?${params}`)
+      const apiUrl = `/api/analytics/tax-dashboard?${params}`
+      console.log('🔍 Making API call to:', apiUrl)
+      
+      let response = await fetch(apiUrl)
+      console.log('🔍 API response status:', response.status)
       
       // If real API fails, try sample data
       if (!response.ok) {

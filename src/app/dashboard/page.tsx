@@ -68,6 +68,7 @@ export default function DashboardPage() {
           slug: 'connected-store'
         }
         
+        console.log('🔍 Setting up organization for dashboard:', autoDetectOrganization)
         setUserOrganizations([autoDetectOrganization])
         setSelectedOrganizationId(autoDetectOrganization.id)
         
