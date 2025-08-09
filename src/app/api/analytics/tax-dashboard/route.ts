@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       // SECURITY: Get all user's linked emails for matching
       const user = await withWebhookDb(async (db) => {
         return await db.user.findUnique({
-          where: { email: session.user.email },
+          where: { email: session.user.email! }, // We already checked it's not null above
           include: { linkedEmails: true }
         })
       })
