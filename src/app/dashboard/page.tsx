@@ -150,6 +150,11 @@ export default function DashboardPage() {
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
+          {/* DEPLOYMENT TEST - REMOVE THIS */}
+          <div className="p-6 bg-purple-500 text-white text-2xl font-bold rounded-lg">
+            🚀 NEW DEPLOYMENT - DEBUG MODE ACTIVE - {new Date().toISOString()}
+          </div>
+          
           {/* Organization selector if multiple organizations */}
           {userOrganizations.length > 1 && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">

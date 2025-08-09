@@ -40,9 +40,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <main className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {user?.currentOrganization ? (
-            children
-          ) : (
+          {/* Always show children - dashboard will handle org selection */}
+          {children}
+          
+          {/* Hide welcome message for now */}
+          {false && !user?.currentOrganization && (
             <div className="text-center py-12">
               <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
                 <svg
