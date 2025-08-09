@@ -23,7 +23,7 @@
     "db:check": "npx tsx scripts/db-setup.ts check",
     "db:validate": "npx tsx scripts/db-setup.ts validate",
     "db:info": "npx tsx scripts/db-setup.ts info",
-    "postinstall": "prisma generate --force-regenerate"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

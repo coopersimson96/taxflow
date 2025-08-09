@@ -5,8 +5,9 @@ declare global {
   var prisma: PrismaClient | undefined
 }
 
-// Force fresh Prisma Client creation to avoid cached connections
-export const prisma = new PrismaClient({
+// Create fresh Prisma Client for production to avoid cached connections
+// In production (serverless), always create fresh client
+const createPrismaClient = () => new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   datasources: {
     db: {
@@ -23,9 +24,9 @@ export const prisma = new PrismaClient({
   })
 })
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prisma = prisma
-}
+export const prisma = process.env.NODE_ENV === 'production' 
+  ? createPrismaClient()
+  : globalThis.prisma ?? (globalThis.prisma = createPrismaClient())
 
 // Database connection utility functions
 export async function connectToDatabase() {
