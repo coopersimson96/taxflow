@@ -7,6 +7,36 @@ export interface TaxDashboardData {
   recentOrders: ShopifyOrderDetail[]
   jurisdictionData: TaxJurisdictionData[]
   periodComparison: PeriodComparison
+  upcomingPayouts?: DailyPayoutData[]
+}
+
+// Daily Payout Data
+export interface DailyPayoutData {
+  payoutDate: string
+  payoutAmount: number
+  ordersCount: number
+  grossSales: number
+  fees: number
+  refunds: number
+  taxCollected: number
+  taxToSetAside: number
+  taxBreakdown: {
+    gst: number
+    pst: number
+    hst: number
+    qst: number
+    stateTax: number
+    localTax: number
+    other: number
+  }
+  orders: {
+    orderNumber: string
+    amount: number
+    tax: number
+    customer: string
+  }[]
+  status: 'pending' | 'in_transit' | 'paid'
+  estimatedArrival?: string
 }
 
 // Main focal point - Tax Money to Set Aside

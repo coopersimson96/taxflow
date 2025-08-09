@@ -5,6 +5,7 @@ import TaxSummaryCards from './TaxSummaryCards'
 import TaxBreakdown from './TaxBreakdown'
 import TaxTrendsChart from './TaxTrendsChart'
 import OrderBreakdown from './OrderBreakdown'
+import DailyPayoutBreakdown from './DailyPayoutBreakdown'
 import { ChartConfig } from '@/types/tax-dashboard'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +18,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   organizationId,
   className
 }) => {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'orders' | 'jurisdictions'>('overview')
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'orders' | 'jurisdictions' | 'payouts'>('overview')
   
   const { data, state, filters, updateFilters, refresh, isInitialLoading } = useTaxDashboard({
     organizationId,
@@ -78,6 +79,15 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      )
+    },
+    {
+      id: 'payouts',
+      name: 'Payouts',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       )
     }
@@ -327,6 +337,13 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {selectedTab === 'payouts' && (
+          <DailyPayoutBreakdown 
+            payouts={data.upcomingPayouts || []}
+            isLoading={state.isLoading}
+          />
         )}
       </div>
     </div>

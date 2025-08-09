@@ -107,6 +107,7 @@ export async function GET(request: NextRequest) {
       trendData: generateTrendData(days),
       recentOrders: generateRecentOrders(),
       jurisdictionData: generateJurisdictionData(),
+      upcomingPayouts: generatePayoutData(),
 
       periodComparison: {
         current: {
@@ -343,4 +344,76 @@ function generateJurisdictionData() {
       }
     }
   ]
+}
+
+function generatePayoutData() {
+  const today = new Date()
+  const payouts = []
+  
+  // Generate 5 payouts (2 paid, 2 in transit, 1 pending)
+  for (let i = 0; i < 5; i++) {
+    const payoutDate = new Date(today.getTime() - i * 24 * 60 * 60 * 1000)
+    const ordersCount = Math.floor(Math.random() * 15) + 5
+    const grossSales = Math.round((Math.random() * 3000 + 1000) * 100) / 100
+    const fees = Math.round(grossSales * 0.029 * 100) / 100 // 2.9% processing fee
+    const refunds = i === 2 ? Math.round((Math.random() * 200 + 50) * 100) / 100 : 0
+    const taxRate = 0.08 + Math.random() * 0.05 // 8-13% tax rate
+    const taxCollected = Math.round(grossSales * taxRate * 100) / 100
+    const payoutAmount = grossSales - fees - refunds
+    
+    // Generate tax breakdown
+    const isCanadian = Math.random() > 0.5
+    const taxBreakdown = {
+      gst: isCanadian ? Math.round(grossSales * 0.05 * 100) / 100 : 0,
+      pst: isCanadian ? Math.round(grossSales * 0.07 * 100) / 100 : 0,
+      hst: 0,
+      qst: 0,
+      stateTax: !isCanadian ? Math.round(grossSales * 0.065 * 100) / 100 : 0,
+      localTax: !isCanadian ? Math.round(grossSales * 0.02 * 100) / 100 : 0,
+      other: 0
+    }
+    
+    // Generate sample orders for this payout
+    const orders = []
+    for (let j = 0; j < Math.min(ordersCount, 5); j++) {
+      const orderAmount = Math.round((grossSales / ordersCount) * 100) / 100
+      const orderTax = Math.round(orderAmount * taxRate * 100) / 100
+      orders.push({
+        orderNumber: `#${1000 + i * 20 + j}`,
+        amount: orderAmount,
+        tax: orderTax,
+        customer: ['Sarah J.', 'Mike Chen', 'Emily R.', 'David T.', 'Lisa K.'][j] || 'Customer'
+      })
+    }
+    
+    let status: 'pending' | 'in_transit' | 'paid'
+    let estimatedArrival
+    
+    if (i < 2) {
+      status = 'paid'
+    } else if (i < 4) {
+      status = 'in_transit'
+      estimatedArrival = new Date(today.getTime() + (i - 2) * 24 * 60 * 60 * 1000).toISOString()
+    } else {
+      status = 'pending'
+      estimatedArrival = new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString()
+    }
+    
+    payouts.push({
+      payoutDate: payoutDate.toISOString(),
+      payoutAmount,
+      ordersCount,
+      grossSales,
+      fees,
+      refunds,
+      taxCollected,
+      taxToSetAside: taxCollected,
+      taxBreakdown,
+      orders,
+      status,
+      estimatedArrival
+    })
+  }
+  
+  return payouts.sort((a, b) => new Date(b.payoutDate).getTime() - new Date(a.payoutDate).getTime())
 }
