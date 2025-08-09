@@ -126,45 +126,14 @@ export async function GET(request: NextRequest) {
       }
       
       if (!isUserOwned) {
-        // SECURITY: If no user-owned integration found, return empty data instead of demo data
-        return NextResponse.json({
-          success: true,
-          data: {
-            taxToSetAside: {
-              totalAmount: 0,
-              currency: 'USD',
-              periodDays: parseInt(request.nextUrl.searchParams.get('days') || '30'),
-              recommendedSavingsRate: 0,
-              lastCalculated: new Date().toISOString(),
-              breakdown: { federal: 0, state: 0, local: 0, gst: 0, pst: 0, hst: 0, qst: 0, other: 0 },
-              todayPayoutAmount: 0,
-              todayTaxAmount: 0,
-              todayBreakdown: { gst: 0, pst: 0, hst: 0, qst: 0, stateTax: 0, localTax: 0, other: 0 },
-              monthlyRollingTotal: 0
-            },
-            summaryMetrics: {
-              totalSales: 0, totalTaxCollected: 0, averageTaxRate: 0, orderCount: 0,
-              taxableOrderCount: 0, exemptOrderCount: 0, averageOrderValue: 0,
-              topSellingRegion: 'Unknown', currency: 'USD'
-            },
-            taxBreakdown: [],
-            trendData: [],
-            recentOrders: [],
-            jurisdictionData: [],
-            upcomingPayouts: [],
-            periodComparison: {
-              current: { totalSales: 0, totalTax: 0, orderCount: 0, averageOrderValue: 0, taxRate: 0, startDate: new Date().toISOString(), endDate: new Date().toISOString() },
-              previous: { totalSales: 0, totalTax: 0, orderCount: 0, averageOrderValue: 0, taxRate: 0, startDate: new Date().toISOString(), endDate: new Date().toISOString() }
-            },
-            storeInfo: {
-              storeName: 'No Store Connected',
-              shopDomain: null,
-              currency: 'USD',
-              country: null
-            }
-          },
-          lastUpdated: new Date().toISOString()
-        })
+        // SECURITY: If no user-owned integration found, return 404 to indicate no store connected
+        return NextResponse.json(
+          { 
+            error: 'No Shopify store connected',
+            message: 'Please connect your Shopify store to start tracking tax analytics.'
+          }, 
+          { status: 404 }
+        )
       }
     }
 

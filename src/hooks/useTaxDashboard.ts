@@ -76,17 +76,25 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
       const apiUrl = `/api/analytics/tax-dashboard?${params}`
       console.log('🔍 Making API call to:', apiUrl)
       
-      let response = await fetch(apiUrl)
+      const response = await fetch(apiUrl)
       console.log('🔍 API response status:', response.status)
       
-      // If real API fails, try sample data
       if (!response.ok) {
-        console.warn('Real API failed, falling back to sample data')
-        response = await fetch(`/api/analytics/sample-data?days=${Math.max(1, days)}`)
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch dashboard data: ${response.statusText}`)
+        // Don't fallback to sample data - show real state
+        if (response.status === 404) {
+          // No store connected - this is expected
+          console.log('No Shopify store connected')
+          setData(null)
+          setState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: undefined,
+            lastRefresh: new Date().toISOString(),
+            dataFreshness: 'fresh'
+          }))
+          return
         }
+        throw new Error(`Failed to fetch dashboard data: ${response.statusText}`)
       }
 
       const result = await response.json()
