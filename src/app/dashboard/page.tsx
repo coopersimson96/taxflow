@@ -45,7 +45,7 @@ interface UserOrganization {
 }
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('')
   const [userOrganizations, setUserOrganizations] = useState<UserOrganization[]>([])
@@ -53,9 +53,25 @@ export default function DashboardPage() {
   const [hasShopifyConnection, setHasShopifyConnection] = useState(false)
   const [isCheckingConnection, setIsCheckingConnection] = useState(true)
   
+  // Debug logging
+  useEffect(() => {
+    console.log('🎯 Dashboard state:', {
+      sessionStatus: status,
+      sessionEmail: session?.user?.email,
+      isLoadingOrgs,
+      selectedOrganizationId,
+      userOrganizationsCount: userOrganizations.length
+    })
+  }, [status, session, isLoadingOrgs, selectedOrganizationId, userOrganizations])
+  
   // Fetch user's organizations on mount
   useEffect(() => {
     const fetchUserOrganizations = async () => {
+      // Wait for session to be determined
+      if (status === 'loading') {
+        return
+      }
+
       if (!session?.user?.email) {
         setIsLoadingOrgs(false)
         return
@@ -88,7 +104,7 @@ export default function DashboardPage() {
     }
 
     fetchUserOrganizations()
-  }, [session])
+  }, [session, status])
 
   const handleConnect = () => {
     console.log('Connect button clicked - navigating to /connect')
@@ -106,8 +122,8 @@ export default function DashboardPage() {
     setHasShopifyConnection(isConnected)
   }
 
-  // Show loading state while checking organizations
-  if (isLoadingOrgs) {
+  // Show loading state while checking organizations (but only if session is determined)
+  if (isLoadingOrgs && status !== 'loading') {
     return (
       <AuthGuard>
         <DashboardLayout>
