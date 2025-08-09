@@ -84,6 +84,44 @@ export async function GET(request: NextRequest) {
         if (emailMatch || nameMatch) {
           organizationId = userIntegration.organizationId
           isUserOwned = true
+        } else {
+          // Auto-link Shopify emails if they don't match existing user emails
+          const shopifyEmails = [shopifyEmail, shopOwnerEmail].filter(Boolean)
+          
+          for (const shopEmail of shopifyEmails) {
+            if (shopEmail && !userEmails.includes(shopEmail)) {
+              try {
+                // Automatically add and verify the Shopify email
+                await withWebhookDb(async (db) => {
+                  await db.userEmail.create({
+                    data: {
+                      userId: user.id,
+                      email: shopEmail,
+                      isVerified: true, // Auto-verify Shopify emails
+                      verifiedAt: new Date(),
+                    }
+                  })
+                })
+                
+                // Add to our current userEmails array for immediate matching
+                userEmails.push(shopEmail)
+                console.log(`✅ Auto-linked Shopify email: ${shopEmail}`)
+              } catch (error) {
+                // Ignore errors (email might already exist)
+                console.log(`Already linked: ${shopEmail}`)
+              }
+            }
+          }
+          
+          // Re-check email match after auto-linking
+          const emailMatchAfterLinking = userEmails.some(email => 
+            email === shopifyEmail || email === shopOwnerEmail
+          )
+          
+          if (emailMatchAfterLinking || nameMatch) {
+            organizationId = userIntegration.organizationId
+            isUserOwned = true
+          }
         }
       }
       
