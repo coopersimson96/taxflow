@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Component, ReactNode } from 'react'
-import { useSession } from 'next-auth/react'
+import { useSession } from '@/components/providers/SessionProvider'
 import { useRouter } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
