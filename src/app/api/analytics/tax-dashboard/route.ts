@@ -19,6 +19,11 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    // Debug database connection
+    console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL)
+    console.log('🔍 NODE_ENV:', process.env.NODE_ENV)
+    console.log('🔍 VERCEL:', process.env.VERCEL)
+    
     // SECURITY: Get authenticated user session
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
@@ -27,6 +32,20 @@ export async function GET(request: NextRequest) {
     
     console.log('🔍 Tax Dashboard API - User:', session.user.email)
 
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1 as test`
+      console.log('✅ Database connection test successful')
+    } catch (dbError) {
+      console.error('❌ Database connection test failed:', dbError)
+      return NextResponse.json(
+        { 
+          error: 'Database connection failed',
+          details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+        },
+        { status: 500 }
+      )
+    }
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
     
