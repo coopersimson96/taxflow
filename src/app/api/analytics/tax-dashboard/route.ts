@@ -475,7 +475,10 @@ async function getRecentOrderDetails(transactions: any[]): Promise<ShopifyOrderD
     // Parse items if they exist
     let items = []
     try {
-      items = tx.items ? JSON.parse(tx.items) : []
+      // Check if items is already an object (Prisma returns JSON fields as objects)
+      if (tx.items) {
+        items = typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items
+      }
     } catch (error) {
       console.warn('Failed to parse transaction items:', error)
       items = []
