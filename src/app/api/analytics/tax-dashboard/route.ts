@@ -25,16 +25,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    console.log('🔍 Tax dashboard API called by user:', session.user.email)
-    console.log('🔍 Requested organizationId:', request.nextUrl.searchParams.get('organizationId'))
-    console.log('🔍 Environment:', process.env.NODE_ENV)
-    console.log('🔍 Is Vercel:', !!process.env.VERCEL)
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
     
     // SECURITY: Only find integrations that belong to the current user
     if (!organizationId || organizationId === '') {
-      console.log('🔍 No organizationId provided, looking for user-owned connected Shopify integration...')
       
       // SECURITY: Get all user's linked emails for matching
       const user = await withWebhookDb(async (db) => {
@@ -45,7 +40,6 @@ export async function GET(request: NextRequest) {
       })
       
       if (!user) {
-        console.log('❌ User not found')
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
       
@@ -54,10 +48,8 @@ export async function GET(request: NextRequest) {
       if (user.linkedEmails) {
         userEmails.push(...user.linkedEmails.map(e => e.email.toLowerCase()))
       }
-      console.log('🔍 User emails for matching:', userEmails)
       
       const userIntegration = await withWebhookDb(async (db) => {
-        console.log('🔍 Querying for connected Shopify integrations...')
         return await db.integration.findFirst({
           where: {
             type: 'SHOPIFY',
@@ -71,11 +63,6 @@ export async function GET(request: NextRequest) {
         })
       })
       
-      console.log('🔍 Found integration:', userIntegration ? 'YES' : 'NO')
-      if (userIntegration) {
-        console.log('🔍 Integration name:', userIntegration.name)
-        console.log('🔍 Integration orgId:', userIntegration.organizationId)
-      }
       
       // SECURITY: Verify the integration belongs to this user
       let isUserOwned = false
@@ -83,9 +70,6 @@ export async function GET(request: NextRequest) {
         const credentials = userIntegration.credentials as any
         const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
         const shopOwnerEmail = credentials.shopInfo?.email?.toLowerCase()
-        
-        console.log('🔍 Shop customer email:', shopifyEmail)
-        console.log('🔍 Shop owner email:', shopOwnerEmail)
         
         // Check if any of the user's emails match the shop emails
         const emailMatch = userEmails.some(email => 
@@ -97,26 +81,14 @@ export async function GET(request: NextRequest) {
         const userName = session.user.name?.toLowerCase()
         const nameMatch = shopOwnerName && userName && shopOwnerName.includes(userName.split(' ')[0])
         
-        console.log('🔍 Shop owner name:', shopOwnerName)
-        console.log('🔍 User name:', userName)
-        console.log('🔍 Email match:', emailMatch)
-        console.log('🔍 Name match:', nameMatch)
-        
         if (emailMatch || nameMatch) {
           organizationId = userIntegration.organizationId
-          console.log('✅ Found user-owned integration with organizationId:', organizationId)
-          console.log('✅ Match type:', emailMatch ? 'EMAIL' : 'NAME')
           isUserOwned = true
-        } else {
-          console.log(`❌ No match found: User emails [${userEmails.join(', ')}] / name ${userName} vs Shop ${shopifyEmail}/${shopOwnerEmail} / name ${shopOwnerName}`)
         }
-      } else {
-        console.log('🔍 No credentials found in integration')
       }
       
       if (!isUserOwned) {
         // SECURITY: If no user-owned integration found, return empty data instead of demo data
-        console.log('No user-owned integration found, returning empty dashboard')
         return NextResponse.json({
           success: true,
           data: {

@@ -100,16 +100,16 @@ export default function LinkedEmails() {
       <div className="space-y-2">
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
           <div>
-            <p className="font-medium">{session?.user?.email}</p>
+            <p className="font-medium text-gray-900">{session?.user?.email}</p>
             <p className="text-xs text-gray-500">Primary email</p>
           </div>
           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Primary</span>
         </div>
 
         {emails.map((email) => (
-          <div key={email.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+          <div key={email.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
             <div>
-              <p className="font-medium">{email.email}</p>
+              <p className="font-medium text-gray-900">{email.email}</p>
               <p className="text-xs text-gray-500">
                 Added {new Date(email.createdAt).toLocaleDateString()}
                 {!email.isVerified && ' • Pending verification'}

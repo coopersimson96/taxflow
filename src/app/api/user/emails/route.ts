@@ -57,7 +57,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = addEmailSchema.parse(body)
 
-    // Check if email is already in use
+    // Check if email is already in use (also check if it's the user's primary email)
+    if (email.toLowerCase() === session.user.email.toLowerCase()) {
+      return NextResponse.json(
+        { error: 'This is already your primary email' },
+        { status: 400 }
+      )
+    }
+
     const existingEmail = await prisma.userEmail.findUnique({
       where: { email }
     })
