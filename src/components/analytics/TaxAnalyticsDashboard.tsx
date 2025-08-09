@@ -199,7 +199,41 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Refresh button only */}
+        <button
+          onClick={refresh}
+          disabled={state.isLoading}
+          className={cn(
+            "flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors",
+            state.isLoading && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <svg 
+            className={cn("w-4 h-4", state.isLoading && "animate-spin")} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>{state.isLoading ? 'Updating...' : 'Refresh'}</span>
+        </button>
+      </div>
+
+      {/* Tax Money to Set Aside - Hero Section */}
+      <TaxHeroSection 
+        data={data.taxToSetAside} 
+        isLoading={state.isLoading}
+      />
+
+      {/* Timeframe Selector - Controls data below */}
+      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-700">Analytics Timeframe</h3>
+            <p className="text-xs text-gray-500 mt-1">Select time period for the data below</p>
+          </div>
+          
           {/* Date range presets */}
           <div className="flex bg-gray-100 rounded-lg p-1">
             {presetButtons.map(preset => (
@@ -217,34 +251,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
               </button>
             ))}
           </div>
-          
-          {/* Refresh button */}
-          <button
-            onClick={refresh}
-            disabled={state.isLoading}
-            className={cn(
-              "flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors",
-              state.isLoading && "opacity-50 cursor-not-allowed"
-            )}
-          >
-            <svg 
-              className={cn("w-4 h-4", state.isLoading && "animate-spin")} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>{state.isLoading ? 'Updating...' : 'Refresh'}</span>
-          </button>
         </div>
       </div>
-
-      {/* Tax Money to Set Aside - Hero Section */}
-      <TaxHeroSection 
-        data={data.taxToSetAside} 
-        isLoading={state.isLoading}
-      />
 
       {/* Summary Cards */}
       <TaxSummaryCards 
