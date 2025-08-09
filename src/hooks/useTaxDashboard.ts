@@ -98,6 +98,12 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
       }
 
       const result = await response.json()
+      console.log('🔍 API response data preview:', {
+        success: result.success,
+        hasData: !!result.data,
+        storeInfo: result.data?.storeInfo,
+        taxToSetAside: result.data?.taxToSetAside?.totalAmount
+      })
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to fetch dashboard data')
