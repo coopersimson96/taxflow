@@ -9,10 +9,11 @@ export async function GET(request: NextRequest) {
   try {
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
 
-    // Generate today's payout info
-    const todayPayout = generatePayoutData()[0] // Get most recent payout
+    // Generate payout data first
+    const payouts = generatePayoutData()
+    const todayPayout = payouts[0] // Get most recent payout
     const currentMonth = new Date().getMonth()
-    const monthlyPayouts = generatePayoutData().filter(p => {
+    const monthlyPayouts = payouts.filter(p => {
       const payoutMonth = new Date(p.payoutDate).getMonth()
       return payoutMonth === currentMonth
     })
@@ -129,7 +130,7 @@ export async function GET(request: NextRequest) {
       trendData: generateTrendData(days),
       recentOrders: generateRecentOrders(),
       jurisdictionData: generateJurisdictionData(),
-      upcomingPayouts: generatePayoutData(),
+      upcomingPayouts: payouts,
 
       periodComparison: {
         current: {
