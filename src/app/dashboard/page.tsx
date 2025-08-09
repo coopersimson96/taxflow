@@ -61,15 +61,15 @@ export default function DashboardPage() {
       try {
         setIsLoadingOrgs(true)
         
-        // For now, create a mock organization - in production you'd fetch from your API
-        const mockOrganization: UserOrganization = {
-          id: 'demo-org-1',
-          name: 'Demo Store',
-          slug: 'demo-store'
+        // Use the real organization ID from your actual data
+        const realOrganization: UserOrganization = {
+          id: 'cmdvy8aro0000jx04kr7xkp5j',
+          name: 'Your Shopify Store',
+          slug: 'shopify-store'
         }
         
-        setUserOrganizations([mockOrganization])
-        setSelectedOrganizationId(mockOrganization.id)
+        setUserOrganizations([realOrganization])
+        setSelectedOrganizationId(realOrganization.id)
         
         // Check for Shopify connection
         setIsCheckingConnection(true)

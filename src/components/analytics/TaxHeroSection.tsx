@@ -98,15 +98,15 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
           {/* Today's Tax Breakdown */}
           {data.todayBreakdown && (() => {
-            // Build array of tax items that have values
+            // Build array of tax items that have values with full descriptive names
             const taxItems = []
-            if (data.todayBreakdown.gst > 0) taxItems.push({ name: 'GST', amount: data.todayBreakdown.gst, color: 'from-green-400 to-green-600' })
-            if (data.todayBreakdown.pst > 0) taxItems.push({ name: 'PST', amount: data.todayBreakdown.pst, color: 'from-blue-400 to-blue-600' })
-            if (data.todayBreakdown.hst > 0) taxItems.push({ name: 'HST', amount: data.todayBreakdown.hst, color: 'from-purple-400 to-purple-600' })
-            if (data.todayBreakdown.qst > 0) taxItems.push({ name: 'QST', amount: data.todayBreakdown.qst, color: 'from-orange-400 to-orange-600' })
-            if (data.todayBreakdown.stateTax > 0) taxItems.push({ name: 'State Tax', amount: data.todayBreakdown.stateTax, color: 'from-red-400 to-red-600' })
-            if (data.todayBreakdown.localTax > 0) taxItems.push({ name: 'Local Tax', amount: data.todayBreakdown.localTax, color: 'from-cyan-400 to-cyan-600' })
-            if (data.todayBreakdown.other > 0) taxItems.push({ name: 'Other', amount: data.todayBreakdown.other, color: 'from-gray-400 to-gray-600' })
+            if (data.todayBreakdown.gst > 0) taxItems.push({ name: 'Goods & Services Tax (GST)', amount: data.todayBreakdown.gst, color: 'from-green-400 to-green-600' })
+            if (data.todayBreakdown.pst > 0) taxItems.push({ name: 'Provincial Sales Tax (PST)', amount: data.todayBreakdown.pst, color: 'from-blue-400 to-blue-600' })
+            if (data.todayBreakdown.hst > 0) taxItems.push({ name: 'Harmonized Sales Tax (HST)', amount: data.todayBreakdown.hst, color: 'from-purple-400 to-purple-600' })
+            if (data.todayBreakdown.qst > 0) taxItems.push({ name: 'Quebec Sales Tax (QST)', amount: data.todayBreakdown.qst, color: 'from-orange-400 to-orange-600' })
+            if (data.todayBreakdown.stateTax > 0) taxItems.push({ name: 'State Sales Tax', amount: data.todayBreakdown.stateTax, color: 'from-red-400 to-red-600' })
+            if (data.todayBreakdown.localTax > 0) taxItems.push({ name: 'Local/City Tax', amount: data.todayBreakdown.localTax, color: 'from-cyan-400 to-cyan-600' })
+            if (data.todayBreakdown.other > 0) taxItems.push({ name: 'Other Taxes', amount: data.todayBreakdown.other, color: 'from-gray-400 to-gray-600' })
 
             // Dynamic grid columns based on number of items
             const gridCols = taxItems.length <= 2 ? 'grid-cols-2' : 
@@ -132,7 +132,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                         <div className="text-2xl md:text-3xl font-bold text-white">
                           {formatCurrency(item.amount, data.currency)}
                         </div>
-                        <div className="text-white/80 text-sm font-medium uppercase tracking-wider">
+                        <div className="text-white/80 text-xs font-medium tracking-wide">
                           {item.name}
                         </div>
                       </div>

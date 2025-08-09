@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+// import { getServerSession } from 'next-auth/next'
+// import { authOptions } from '@/lib/auth'
+import { prisma, withWebhookDb } from '@/lib/prisma'
 import { 
   TaxDashboardData, 
   TaxToSetAsideData, 
@@ -19,11 +19,8 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Skip session check for now to avoid headers issue during build
-    // const session = await getServerSession(authOptions)
-    // if (!session?.user?.email) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    // Skip session check temporarily for testing
+    console.log('Tax dashboard API called with organizationId:', request.nextUrl.searchParams.get('organizationId'))
 
     const organizationId = request.nextUrl.searchParams.get('organizationId') || 'demo-org-1'
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
@@ -38,37 +35,43 @@ export async function GET(request: NextRequest) {
     const startDate = new Date(endDate.getTime() - (days * 24 * 60 * 60 * 1000))
     const previousStartDate = new Date(startDate.getTime() - (days * 24 * 60 * 60 * 1000))
 
-    // Fetch current period transactions
-    const currentTransactions = await prisma.transaction.findMany({
-      where: {
-        organizationId,
-        transactionDate: {
-          gte: startDate,
-          lte: endDate
+    // Fetch current period transactions using withWebhookDb for connection retry
+    console.log(`Fetching transactions for orgId: ${organizationId}, from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+    const currentTransactions = await withWebhookDb(async (db) => {
+      return await db.transaction.findMany({
+        where: {
+          organizationId,
+          transactionDate: {
+            gte: startDate,
+            lte: endDate
+          },
+          status: 'COMPLETED'
         },
-        status: 'COMPLETED'
-      },
-      include: {
-        integration: true
-      },
-      orderBy: {
-        transactionDate: 'desc'
-      }
+        include: {
+          integration: true
+        },
+        orderBy: {
+          transactionDate: 'desc'
+        }
+      })
     })
+    console.log(`Found ${currentTransactions.length} current transactions`)
 
     // Fetch previous period transactions for comparison
-    const previousTransactions = await prisma.transaction.findMany({
-      where: {
-        organizationId,
-        transactionDate: {
-          gte: previousStartDate,
-          lt: startDate
+    const previousTransactions = await withWebhookDb(async (db) => {
+      return await db.transaction.findMany({
+        where: {
+          organizationId,
+          transactionDate: {
+            gte: previousStartDate,
+            lt: startDate
+          },
+          status: 'COMPLETED'
         },
-        status: 'COMPLETED'
-      },
-      include: {
-        integration: true
-      }
+        include: {
+          integration: true
+        }
+      })
     })
 
     // Calculate tax to set aside data
@@ -113,6 +116,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Generate daily payout data
+    const upcomingPayouts = await generateDailyPayoutData(organizationId)
+
+    // Get store information from integration
+    const storeInfo = await getStoreInformation(organizationId)
+
     const dashboardData: TaxDashboardData = {
       taxToSetAside,
       summaryMetrics,
@@ -120,7 +129,9 @@ export async function GET(request: NextRequest) {
       trendData,
       recentOrders,
       jurisdictionData,
-      periodComparison
+      periodComparison,
+      upcomingPayouts,
+      storeInfo
     }
 
     return NextResponse.json({
@@ -131,8 +142,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Tax dashboard API error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }
@@ -154,6 +169,37 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
     other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
   }
 
+  // Calculate today's data
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+  
+  const todayTransactions = transactions.filter(tx => {
+    const txDate = new Date(tx.transactionDate)
+    return txDate >= todayStart && txDate < todayEnd
+  })
+
+  const todayTaxAmount = todayTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
+  const todayPayoutAmount = todayTransactions.reduce((sum, tx) => sum + (tx.totalAmount - tx.taxAmount), 0) / 100
+
+  const todayBreakdown = {
+    gst: todayTransactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
+    pst: todayTransactions.reduce((sum, tx) => sum + tx.pstAmount, 0) / 100,
+    hst: todayTransactions.reduce((sum, tx) => sum + tx.hstAmount, 0) / 100,
+    qst: todayTransactions.reduce((sum, tx) => sum + tx.qstAmount, 0) / 100,
+    stateTax: todayTransactions.reduce((sum, tx) => sum + tx.stateTaxAmount, 0) / 100,
+    localTax: todayTransactions.reduce((sum, tx) => sum + tx.localTaxAmount, 0) / 100,
+    other: todayTransactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
+  }
+
+  // Calculate monthly rolling total
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const monthlyTransactions = transactions.filter(tx => {
+    const txDate = new Date(tx.transactionDate)
+    return txDate >= monthStart && txDate <= today
+  })
+  const monthlyRollingTotal = monthlyTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
+
   const recommendedSavingsRate = totalSales > 0 ? (totalTaxCollected / totalSales) * 100 : 0
 
   return {
@@ -162,7 +208,12 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
     periodDays: days,
     recommendedSavingsRate,
     lastCalculated: new Date().toISOString(),
-    breakdown
+    breakdown,
+    // Today's payout information
+    todayPayoutAmount,
+    todayTaxAmount,
+    todayBreakdown,
+    monthlyRollingTotal
   }
 }
 
@@ -406,18 +457,20 @@ async function calculateTrendData(organizationId: string, days: number): Promise
   const startDate = new Date(endDate.getTime() - (days * 24 * 60 * 60 * 1000))
 
   // Get transactions grouped by date
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      organizationId,
-      transactionDate: {
-        gte: startDate,
-        lte: endDate
+  const transactions = await withWebhookDb(async (db) => {
+    return await db.transaction.findMany({
+      where: {
+        organizationId,
+        transactionDate: {
+          gte: startDate,
+          lte: endDate
+        },
+        status: 'COMPLETED'
       },
-      status: 'COMPLETED'
-    },
-    orderBy: {
-      transactionDate: 'asc'
-    }
+      orderBy: {
+        transactionDate: 'asc'
+      }
+    })
   })
 
   // Group by date
@@ -459,4 +512,145 @@ async function calculateTrendData(organizationId: string, days: number): Promise
     ...dayData,
     taxRate: dayData.totalSales > 0 ? (dayData.taxCollected / dayData.totalSales) * 100 : 0
   }))
+}
+
+async function generateDailyPayoutData(organizationId: string) {
+  try {
+    // Get transactions from the last 5 days to generate payout data
+    const endDate = new Date()
+    const startDate = new Date(endDate.getTime() - 5 * 24 * 60 * 60 * 1000)
+
+    const transactions = await withWebhookDb(async (db) => {
+      return await db.transaction.findMany({
+        where: {
+          organizationId,
+          transactionDate: {
+            gte: startDate,
+            lte: endDate
+          },
+          status: 'COMPLETED'
+        },
+        orderBy: {
+          transactionDate: 'desc'
+        }
+      })
+    })
+
+    // Group transactions by date
+    const dateGroups: { [key: string]: any[] } = {}
+    transactions.forEach(tx => {
+      const dateKey = tx.transactionDate.toISOString().split('T')[0]
+      if (!dateGroups[dateKey]) {
+        dateGroups[dateKey] = []
+      }
+      dateGroups[dateKey].push(tx)
+    })
+
+    // Generate payout data for each date
+    const payouts = []
+    let statusIndex = 0
+
+    for (const [dateKey, dayTransactions] of Object.entries(dateGroups)) {
+      const grossSales = dayTransactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
+      const taxCollected = dayTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
+      const fees = Math.round(grossSales * 0.029 * 100) / 100 // 2.9% processing fee
+      const payoutAmount = grossSales - fees
+
+      // Status progression: paid -> in_transit -> pending
+      let status: 'pending' | 'in_transit' | 'paid'
+      let estimatedArrival
+      
+      if (statusIndex < 2) {
+        status = 'paid'
+      } else if (statusIndex < 4) {
+        status = 'in_transit'
+        const futureDate = new Date(endDate.getTime() + (statusIndex - 2) * 24 * 60 * 60 * 1000)
+        estimatedArrival = futureDate.toISOString()
+      } else {
+        status = 'pending'
+        const futureDate = new Date(endDate.getTime() + 2 * 24 * 60 * 60 * 1000)
+        estimatedArrival = futureDate.toISOString()
+      }
+
+      // Sample orders for this payout (limit to 5 for display)
+      const orders = dayTransactions.slice(0, 5).map(tx => ({
+        orderNumber: tx.orderNumber || tx.externalId || `#${tx.id}`,
+        amount: tx.totalAmount / 100,
+        tax: tx.taxAmount / 100,
+        customer: tx.customerName || 'Customer'
+      }))
+
+      payouts.push({
+        payoutDate: dateKey + 'T00:00:00.000Z',
+        payoutAmount,
+        ordersCount: dayTransactions.length,
+        grossSales,
+        fees,
+        refunds: 0, // Could calculate from transaction data if refund info is available
+        taxCollected,
+        taxToSetAside: taxCollected,
+        taxBreakdown: {
+          gst: dayTransactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
+          pst: dayTransactions.reduce((sum, tx) => sum + tx.pstAmount, 0) / 100,
+          hst: dayTransactions.reduce((sum, tx) => sum + tx.hstAmount, 0) / 100,
+          qst: dayTransactions.reduce((sum, tx) => sum + tx.qstAmount, 0) / 100,
+          stateTax: dayTransactions.reduce((sum, tx) => sum + tx.stateTaxAmount, 0) / 100,
+          localTax: dayTransactions.reduce((sum, tx) => sum + tx.localTaxAmount, 0) / 100,
+          other: dayTransactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
+        },
+        orders,
+        status,
+        estimatedArrival
+      })
+
+      statusIndex++
+    }
+
+    return payouts.sort((a, b) => new Date(b.payoutDate).getTime() - new Date(a.payoutDate).getTime())
+  } catch (error) {
+    console.error('Error generating daily payout data:', error)
+    return []
+  }
+}
+
+async function getStoreInformation(organizationId: string) {
+  try {
+    const integration = await withWebhookDb(async (db) => {
+      return await db.integration.findFirst({
+        where: {
+          organizationId,
+          type: 'SHOPIFY',
+          status: 'CONNECTED'
+        }
+      })
+    })
+
+    if (integration && integration.credentials && typeof integration.credentials === 'object') {
+      const credentials = integration.credentials as any
+      if (credentials.shopInfo && credentials.shopInfo.name) {
+        return {
+          storeName: credentials.shopInfo.name,
+          shopDomain: credentials.shopInfo.domain || credentials.shopInfo.myshopify_domain,
+          currency: credentials.shopInfo.currency || 'USD',
+          country: credentials.shopInfo.country_name || credentials.shopInfo.country
+        }
+      }
+    }
+
+    // Fallback if no integration found
+    return {
+      storeName: 'Your Store',
+      shopDomain: null,
+      currency: 'USD',
+      country: null
+    }
+  } catch (error) {
+    console.error('Error getting store information:', error)
+    return {
+      storeName: 'Your Store',
+      shopDomain: null,
+      currency: 'USD',  
+      country: null
+    }
+  }
 }

@@ -184,7 +184,9 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       {/* Header with controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-gray-900">Tax Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {data?.storeInfo?.storeName || 'Your Store'} Tax Dashboard
+          </h1>
           <div className="flex items-center space-x-4 text-sm text-gray-600">
             <span>Last updated: {new Date(state.lastRefresh).toLocaleTimeString()}</span>
             <div className="flex items-center space-x-1">

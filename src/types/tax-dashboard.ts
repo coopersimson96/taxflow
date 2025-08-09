@@ -1,3 +1,11 @@
+// Store information interface
+export interface StoreInfo {
+  storeName: string
+  shopDomain?: string | null
+  currency: string
+  country?: string | null
+}
+
 // Enhanced Tax Dashboard Types
 export interface TaxDashboardData {
   taxToSetAside: TaxToSetAsideData
@@ -8,6 +16,7 @@ export interface TaxDashboardData {
   jurisdictionData: TaxJurisdictionData[]
   periodComparison: PeriodComparison
   upcomingPayouts?: DailyPayoutData[]
+  storeInfo?: StoreInfo
 }
 
 // Daily Payout Data
