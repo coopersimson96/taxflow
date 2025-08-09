@@ -43,8 +43,11 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile }) {
-      // Sync user to database via API route (avoids URL parsing issues)
-      if (user.email) {
+      // TEMPORARILY DISABLED: Sync user to database via API route (avoids URL parsing issues)
+      // This might be causing the session to hang in production
+      console.log('🔍 NextAuth signIn callback called for:', user.email)
+      
+      if (false && user.email) { // DISABLED
         try {
           const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/sync-user`, {
             method: 'POST',

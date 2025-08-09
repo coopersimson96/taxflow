@@ -57,12 +57,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserOrganizations = async () => {
       console.log('🔍 fetchUserOrganizations called, session:', !!session?.user?.email)
-      // TEMPORARY: Skip session check to bypass NextAuth loading issue
-      // if (!session?.user?.email) {
-      //   console.log('🔍 No session, setting loading to false')
-      //   setIsLoadingOrgs(false)
-      //   return
-      // }
+      if (!session?.user?.email) {
+        console.log('🔍 No session, setting loading to false')
+        setIsLoadingOrgs(false)
+        return
+      }
 
       try {
         setIsLoadingOrgs(true)
@@ -92,7 +91,7 @@ export default function DashboardPage() {
     }
 
     fetchUserOrganizations()
-  }, []) // TEMPORARY: Remove session dependency
+  }, [session])
 
   const handleConnect = () => {
     console.log('Connect button clicked - navigating to /connect')
@@ -153,9 +152,8 @@ export default function DashboardPage() {
     )
   }
 
-  // TEMPORARY: Skip AuthGuard to bypass NextAuth loading issue
   return (
-    // <AuthGuard>
+    <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
           {/* Organization selector if multiple organizations */}
@@ -199,6 +197,6 @@ export default function DashboardPage() {
           )}
         </div>
       </DashboardLayout>
-    // </AuthGuard>
+    </AuthGuard>
   )
 }
