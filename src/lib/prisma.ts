@@ -5,8 +5,8 @@ declare global {
   var prisma: PrismaClient | undefined
 }
 
-// Prevent multiple instances of Prisma Client in development
-export const prisma = globalThis.prisma ?? new PrismaClient({
+// Force fresh Prisma Client creation to avoid cached connections
+export const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   datasources: {
     db: {
