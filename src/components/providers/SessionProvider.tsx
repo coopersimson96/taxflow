@@ -8,7 +8,7 @@ interface SessionProviderProps {
 
 // Mock session context for testing
 const SessionContext = createContext({
-  data: null,
+  data: null as any,
   status: 'unauthenticated' as 'loading' | 'authenticated' | 'unauthenticated'
 })
 
@@ -20,8 +20,13 @@ export default function SessionProvider({ children }: SessionProviderProps) {
   console.log('🔍 SessionProvider mounting (NEXTAUTH TEMPORARILY DISABLED)')
   
   // TEMPORARILY PROVIDE MOCK SESSION TO PREVENT BUILD ERRORS
+  const mockSessionValue = {
+    data: null as any,
+    status: 'unauthenticated' as const
+  }
+  
   return (
-    <SessionContext.Provider value={{ data: null, status: 'unauthenticated' }}>
+    <SessionContext.Provider value={mockSessionValue}>
       {children}
     </SessionContext.Provider>
   )
