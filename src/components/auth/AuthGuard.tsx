@@ -31,8 +31,22 @@ export default function AuthGuard({
     isLoading, 
     isAuthenticated, 
     hasSession: !!session,
-    sessionUser: session?.user?.email || 'none'
+    sessionUser: session?.user?.email || 'none',
+    requireAuth,
+    willRenderChildren: !isLoading && (!requireAuth || isAuthenticated)
   })
+  
+  // Additional debugging for production issues
+  if (typeof window !== 'undefined') {
+    console.log('🔍 Client-side AuthGuard render decision:', {
+      isLoading,
+      requireAuth,
+      isAuthenticated,
+      willShowSpinner: isLoading,
+      willShowAuthError: requireAuth && !isAuthenticated,
+      willRenderChildren: !isLoading && (!requireAuth || isAuthenticated)
+    })
+  }
 
   useEffect(() => {
     if (!isLoading && requireAuth && !isAuthenticated) {

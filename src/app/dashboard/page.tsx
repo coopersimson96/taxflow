@@ -53,6 +53,15 @@ export default function DashboardPage() {
   const [hasShopifyConnection, setHasShopifyConnection] = useState(false)
   const [isCheckingConnection, setIsCheckingConnection] = useState(true)
   
+  // Debug logging for dashboard page
+  console.log('🔍 DashboardPage render:', {
+    hasSession: !!session,
+    sessionEmail: session?.user?.email,
+    isLoadingOrgs,
+    organizationCount: userOrganizations.length,
+    selectedOrganizationId
+  })
+  
   // Fetch user's organizations on mount
   useEffect(() => {
     const fetchUserOrganizations = async () => {

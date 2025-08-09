@@ -22,8 +22,22 @@ export function useAuth() {
   console.log('🔍 useAuth hook:', { 
     status, 
     hasSession: !!session,
-    sessionEmail: session?.user?.email || 'none'
+    sessionEmail: session?.user?.email || 'none',
+    isLoading: status === 'loading',
+    isAuthenticated: status === 'authenticated',
+    isUnauthenticated: status === 'unauthenticated'
   })
+  
+  // Additional debugging for production issues
+  if (typeof window !== 'undefined' && status !== 'loading') {
+    console.log('🔍 useAuth final state:', {
+      status,
+      session: session ? 'present' : 'null',
+      email: session?.user?.email,
+      isLoading: status === 'loading',
+      isAuthenticated: status === 'authenticated'
+    })
+  }
 
   return {
     session: session as ExtendedSession | null,
