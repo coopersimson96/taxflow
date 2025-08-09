@@ -8,6 +8,8 @@ interface SessionProviderProps {
 }
 
 export default function SessionProvider({ children }: SessionProviderProps) {
+  console.log('🔍 SessionProvider mounting')
+  
   return (
     <NextAuthSessionProvider>
       {children}

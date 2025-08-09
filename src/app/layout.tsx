@@ -19,6 +19,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <script dangerouslySetInnerHTML={{
+          __html: `console.log('🔍 Basic JavaScript is executing - Layout loaded');`
+        }} />
         <SessionProvider>
           <div className="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
             {children}

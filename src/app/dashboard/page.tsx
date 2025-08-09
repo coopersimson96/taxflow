@@ -45,6 +45,8 @@ interface UserOrganization {
 }
 
 export default function DashboardPage() {
+  console.log('🔍 DashboardPage component starting to execute')
+  
   const { data: session } = useSession()
   const router = useRouter()
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('')
