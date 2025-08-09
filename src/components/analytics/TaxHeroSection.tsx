@@ -82,49 +82,80 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
               <h1 className="text-lg md:text-xl font-medium text-white/90">
-                Tax Money to Set Aside
+                Today's Tax to Set Aside
               </h1>
             </div>
             
             <div className="space-y-2">
               <div className="text-5xl md:text-7xl font-bold text-white tracking-tight">
-                {formatCurrency(data.totalAmount, data.currency)}
+                {formatCurrency(data.todayTaxAmount || 0, data.currency)}
               </div>
               <div className="text-white/80 text-lg md:text-xl">
-                From your last {data.periodDays} days of Shopify sales
+                From today's payout of {formatCurrency(data.todayPayoutAmount || 0, data.currency)}
               </div>
             </div>
           </div>
 
-          {/* Key Info */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-white/70 text-sm font-medium mb-1">Recommended Rate</div>
-              <div className="text-2xl font-bold text-white">
-                {formatPercentage(data.recommendedSavingsRate)}
+          {/* Today's Tax Breakdown */}
+          {data.todayBreakdown && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-white mb-4">Today's Tax Breakdown</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {data.todayBreakdown.gst > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.gst, data.currency)}</div>
+                    <div className="text-white/70 text-sm">GST</div>
+                  </div>
+                )}
+                {data.todayBreakdown.pst > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.pst, data.currency)}</div>
+                    <div className="text-white/70 text-sm">PST</div>
+                  </div>
+                )}
+                {data.todayBreakdown.hst > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.hst, data.currency)}</div>
+                    <div className="text-white/70 text-sm">HST</div>
+                  </div>
+                )}
+                {data.todayBreakdown.qst > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.qst, data.currency)}</div>
+                    <div className="text-white/70 text-sm">QST</div>
+                  </div>
+                )}
+                {data.todayBreakdown.stateTax > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.stateTax, data.currency)}</div>
+                    <div className="text-white/70 text-sm">State Tax</div>
+                  </div>
+                )}
+                {data.todayBreakdown.localTax > 0 && (
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.localTax, data.currency)}</div>
+                    <div className="text-white/70 text-sm">Local Tax</div>
+                  </div>
+                )}
               </div>
-              <div className="text-white/60 text-xs mt-1">of gross sales</div>
             </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-white/70 text-sm font-medium mb-1">Last Updated</div>
-              <div className="text-lg font-semibold text-white">
-                {new Date(data.lastCalculated).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
+          )}
+
+          {/* Monthly Rolling Total */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 max-w-2xl mx-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white/70 text-sm font-medium">Current Month Total</div>
+                <div className="text-white/60 text-xs mt-1">Tax set aside {new Date().toLocaleDateString('en-US', { month: 'long' })}</div>
               </div>
-              <div className="text-white/60 text-xs mt-1">Real-time sync</div>
-            </div>
-            
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-              <div className="text-white/70 text-sm font-medium mb-1">Tax Categories</div>
-              <div className="text-2xl font-bold text-white">
-                {breakdownItems.length}
+              <div className="text-right">
+                <div className="text-2xl font-bold text-white">
+                  {formatCurrency(data.monthlyRollingTotal || 0, data.currency)}
+                </div>
+                <div className="text-white/60 text-xs mt-1">
+                  {data.periodDays} day total: {formatCurrency(data.totalAmount, data.currency)}
+                </div>
               </div>
-              <div className="text-white/60 text-xs mt-1">active jurisdictions</div>
             </div>
           </div>
 
@@ -145,7 +176,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
               className="bg-white/20 backdrop-blur-sm text-white px-6 py-4 rounded-xl font-medium hover:bg-white/30 transition-all duration-200 border border-white/30"
             >
               <div className="flex items-center space-x-2">
-                <span>View Breakdown</span>
+                <span>View {data.periodDays} Day Breakdown</span>
                 <svg 
                   className={cn("w-4 h-4 transition-transform duration-200", showBreakdown && "rotate-180")}
                   fill="none" 
@@ -161,7 +192,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
           {/* Expandable Breakdown */}
           {showBreakdown && (
             <div className="mt-8 bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-4">Tax Breakdown by Category</h3>
+              <h3 className="text-lg font-semibold text-white mb-4">{data.periodDays} Day Tax Breakdown</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {breakdownItems.map((item, index) => {
                   const percentage = data.totalAmount > 0 ? (item.amount / data.totalAmount) * 100 : 0

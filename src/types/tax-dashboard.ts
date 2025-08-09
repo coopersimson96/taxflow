@@ -56,6 +56,19 @@ export interface TaxToSetAsideData {
     qst: number
     other: number
   }
+  // Daily payout information
+  todayPayoutAmount?: number
+  todayTaxAmount?: number
+  todayBreakdown?: {
+    gst: number
+    pst: number
+    hst: number
+    qst: number
+    stateTax: number
+    localTax: number
+    other: number
+  }
+  monthlyRollingTotal?: number
 }
 
 // Summary cards data

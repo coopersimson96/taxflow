@@ -9,6 +9,15 @@ export async function GET(request: NextRequest) {
   try {
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
 
+    // Generate today's payout info
+    const todayPayout = generatePayoutData()[0] // Get most recent payout
+    const currentMonth = new Date().getMonth()
+    const monthlyPayouts = generatePayoutData().filter(p => {
+      const payoutMonth = new Date(p.payoutDate).getMonth()
+      return payoutMonth === currentMonth
+    })
+    const monthlyTotal = monthlyPayouts.reduce((sum, p) => sum + p.taxToSetAside, 0)
+
     // Generate sample data
     const sampleData: TaxDashboardData = {
       taxToSetAside: {
@@ -26,7 +35,20 @@ export async function GET(request: NextRequest) {
           hst: 758.94,
           qst: 151.52,
           other: 0
-        }
+        },
+        // Today's payout information
+        todayPayoutAmount: todayPayout.payoutAmount,
+        todayTaxAmount: todayPayout.taxToSetAside,
+        todayBreakdown: {
+          gst: todayPayout.taxBreakdown.gst,
+          pst: todayPayout.taxBreakdown.pst,
+          hst: todayPayout.taxBreakdown.hst,
+          qst: todayPayout.taxBreakdown.qst,
+          stateTax: todayPayout.taxBreakdown.stateTax,
+          localTax: todayPayout.taxBreakdown.localTax,
+          other: todayPayout.taxBreakdown.other
+        },
+        monthlyRollingTotal: monthlyTotal
       },
 
       summaryMetrics: {
