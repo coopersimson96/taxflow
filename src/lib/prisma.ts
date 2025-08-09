@@ -12,7 +12,15 @@ export const prisma = globalThis.prisma ?? new PrismaClient({
     db: {
       url: process.env.DATABASE_URL
     }
-  }
+  },
+  // Configure for serverless environments (Vercel)
+  ...(process.env.VERCEL && {
+    errorFormat: 'minimal',
+    transactionOptions: {
+      maxWait: 5000,
+      timeout: 10000,
+    }
+  })
 })
 
 if (process.env.NODE_ENV !== 'production') {
@@ -64,29 +72,48 @@ export async function withTransaction<T>(
 // Webhook-specific database operations with connection retry
 export async function withWebhookDb<T>(
   operation: (client: PrismaClient) => Promise<T>,
-  retries: number = 2
+  retries: number = 3
 ): Promise<T> {
   let lastError: Error | null = null
   
   for (let i = 0; i <= retries; i++) {
     try {
+      // Force fresh connection for each retry in serverless environments
+      if (i > 0 && process.env.VERCEL) {
+        await prisma.$disconnect()
+        await new Promise(resolve => setTimeout(resolve, 200 + i * 100)) // Increasing delay
+      }
+      
       return await operation(prisma)
     } catch (error) {
       lastError = error as Error
-      console.error(`Database operation failed (attempt ${i + 1}/${retries + 1}):`, error)
+      console.error(`Database operation failed (attempt ${i + 1}/${retries + 1}):`, {
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        errorName: error instanceof Error ? error.constructor.name : 'Unknown',
+        isServerless: !!process.env.VERCEL
+      })
       
-      // If it's a prepared statement error, try to disconnect and reconnect
-      if (error instanceof Error && error.message.includes('prepared statement')) {
-        console.log('Attempting to reset connection...')
-        try {
-          await prisma.$disconnect()
-          await new Promise(resolve => setTimeout(resolve, 100)) // Brief delay
-        } catch (disconnectError) {
-          console.error('Error during disconnect:', disconnectError)
+      // Handle specific Prisma/connection errors in serverless
+      if (error instanceof Error) {
+        const isConnectionError = error.message.includes('prepared statement') || 
+                                 error.message.includes('connection') ||
+                                 error.message.includes('timeout') ||
+                                 error.message.includes('ECONNRESET')
+        
+        if (isConnectionError && i < retries) {
+          console.log('Connection error detected, retrying with fresh connection...')
+          try {
+            await prisma.$disconnect()
+          } catch (disconnectError) {
+            console.error('Error during disconnect:', disconnectError)
+          }
+          continue // Retry
         }
-      } else {
-        // For other errors, don't retry
-        throw error
+      }
+      
+      // If not a connection error or out of retries, throw immediately
+      if (i === retries) {
+        break
       }
     }
   }

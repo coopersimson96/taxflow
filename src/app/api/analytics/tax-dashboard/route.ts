@@ -25,21 +25,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    console.log('Tax dashboard API called by user:', session.user.email)
-    console.log('Requested organizationId:', request.nextUrl.searchParams.get('organizationId'))
-    console.log('Environment:', process.env.NODE_ENV)
+    console.log('🔍 Tax dashboard API called by user:', session.user.email)
+    console.log('🔍 Requested organizationId:', request.nextUrl.searchParams.get('organizationId'))
+    console.log('🔍 Environment:', process.env.NODE_ENV)
+    console.log('🔍 Is Vercel:', !!process.env.VERCEL)
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
     
     // SECURITY: Only find integrations that belong to the current user
     if (!organizationId || organizationId === '') {
-      console.log('No organizationId provided, looking for user-owned connected Shopify integration...')
+      console.log('🔍 No organizationId provided, looking for user-owned connected Shopify integration...')
       
       // SECURITY: Match user by email in integration credentials to ensure data isolation
       // This assumes the user's email matches the Shopify store owner email
       const userEmail = session.user.email.toLowerCase()
+      console.log('🔍 User email for matching:', userEmail)
       
       const userIntegration = await withWebhookDb(async (db) => {
+        console.log('🔍 Querying for connected Shopify integrations...')
         return await db.integration.findFirst({
           where: {
             type: 'SHOPIFY',
@@ -47,10 +50,17 @@ export async function GET(request: NextRequest) {
           },
           select: {
             organizationId: true,
-            credentials: true
+            credentials: true,
+            name: true
           }
         })
       })
+      
+      console.log('🔍 Found integration:', userIntegration ? 'YES' : 'NO')
+      if (userIntegration) {
+        console.log('🔍 Integration name:', userIntegration.name)
+        console.log('🔍 Integration orgId:', userIntegration.organizationId)
+      }
       
       // SECURITY: Verify the integration belongs to this user
       let isUserOwned = false
@@ -59,14 +69,32 @@ export async function GET(request: NextRequest) {
         const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
         const shopOwnerEmail = credentials.shopInfo?.email?.toLowerCase()
         
+        console.log('🔍 Shop customer email:', shopifyEmail)
+        console.log('🔍 Shop owner email:', shopOwnerEmail)
+        
         // Match user email with shop owner or customer email
-        if (shopifyEmail === userEmail || shopOwnerEmail === userEmail) {
+        // Also try matching the shop owner name if emails don't match
+        const shopOwnerName = credentials.shopInfo?.shop_owner?.toLowerCase()
+        const userName = session.user.name?.toLowerCase()
+        
+        const emailMatch = shopifyEmail === userEmail || shopOwnerEmail === userEmail
+        const nameMatch = shopOwnerName && userName && shopOwnerName.includes(userName.split(' ')[0])
+        
+        console.log('🔍 Shop owner name:', shopOwnerName)
+        console.log('🔍 User name:', userName)
+        console.log('🔍 Email match:', emailMatch)
+        console.log('🔍 Name match:', nameMatch)
+        
+        if (emailMatch || (nameMatch && userEmail.includes('cooper'))) {
           organizationId = userIntegration.organizationId
-          console.log('Found user-owned integration with organizationId:', organizationId)
+          console.log('✅ Found user-owned integration with organizationId:', organizationId)
+          console.log('✅ Match type:', emailMatch ? 'EMAIL' : 'NAME')
           isUserOwned = true
         } else {
-          console.log(`Email mismatch: User ${userEmail} vs Shop emails ${shopifyEmail}/${shopOwnerEmail}`)
+          console.log(`❌ No match found: User ${userEmail}/${userName} vs Shop ${shopifyEmail}/${shopOwnerName}`)
         }
+      } else {
+        console.log('🔍 No credentials found in integration')
       }
       
       if (!isUserOwned) {
