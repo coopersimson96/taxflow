@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-// import { getServerSession } from 'next-auth/next'
-// import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { prisma, withWebhookDb } from '@/lib/prisma'
 import { 
   TaxDashboardData, 
@@ -19,35 +19,102 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Skip session check temporarily for testing
-    console.log('Tax dashboard API called with organizationId:', request.nextUrl.searchParams.get('organizationId'))
+    // SECURITY: Get authenticated user session
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    console.log('Tax dashboard API called by user:', session.user.email)
+    console.log('Requested organizationId:', request.nextUrl.searchParams.get('organizationId'))
     console.log('Environment:', process.env.NODE_ENV)
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
     
-    // If no organizationId provided or empty, try to find the connected Shopify integration
+    // SECURITY: Only find integrations that belong to the current user
     if (!organizationId || organizationId === '') {
-      console.log('No organizationId provided, looking for connected Shopify integration...')
-      const connectedIntegration = await withWebhookDb(async (db) => {
+      console.log('No organizationId provided, looking for user-owned connected Shopify integration...')
+      
+      // SECURITY: Match user by email in integration credentials to ensure data isolation
+      // This assumes the user's email matches the Shopify store owner email
+      const userEmail = session.user.email.toLowerCase()
+      
+      const userIntegration = await withWebhookDb(async (db) => {
         return await db.integration.findFirst({
           where: {
             type: 'SHOPIFY',
             status: 'CONNECTED'
           },
           select: {
-            organizationId: true
+            organizationId: true,
+            credentials: true
           }
         })
       })
       
-      if (connectedIntegration) {
-        organizationId = connectedIntegration.organizationId
-        console.log('Found connected integration with organizationId:', organizationId)
-      } else {
-        organizationId = 'demo-org-1' // Ultimate fallback
-        console.log('No connected integration found, using demo organizationId')
+      // SECURITY: Verify the integration belongs to this user
+      let isUserOwned = false
+      if (userIntegration && userIntegration.credentials) {
+        const credentials = userIntegration.credentials as any
+        const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
+        const shopOwnerEmail = credentials.shopInfo?.email?.toLowerCase()
+        
+        // Match user email with shop owner or customer email
+        if (shopifyEmail === userEmail || shopOwnerEmail === userEmail) {
+          organizationId = userIntegration.organizationId
+          console.log('Found user-owned integration with organizationId:', organizationId)
+          isUserOwned = true
+        } else {
+          console.log(`Email mismatch: User ${userEmail} vs Shop emails ${shopifyEmail}/${shopOwnerEmail}`)
+        }
+      }
+      
+      if (!isUserOwned) {
+        // SECURITY: If no user-owned integration found, return empty data instead of demo data
+        console.log('No user-owned integration found, returning empty dashboard')
+        return NextResponse.json({
+          success: true,
+          data: {
+            taxToSetAside: {
+              totalAmount: 0,
+              currency: 'USD',
+              periodDays: parseInt(request.nextUrl.searchParams.get('days') || '30'),
+              recommendedSavingsRate: 0,
+              lastCalculated: new Date().toISOString(),
+              breakdown: { federal: 0, state: 0, local: 0, gst: 0, pst: 0, hst: 0, qst: 0, other: 0 },
+              todayPayoutAmount: 0,
+              todayTaxAmount: 0,
+              todayBreakdown: { gst: 0, pst: 0, hst: 0, qst: 0, stateTax: 0, localTax: 0, other: 0 },
+              monthlyRollingTotal: 0
+            },
+            summaryMetrics: {
+              totalSales: 0, totalTaxCollected: 0, averageTaxRate: 0, orderCount: 0,
+              taxableOrderCount: 0, exemptOrderCount: 0, averageOrderValue: 0,
+              topSellingRegion: 'Unknown', currency: 'USD'
+            },
+            taxBreakdown: [],
+            trendData: [],
+            recentOrders: [],
+            jurisdictionData: [],
+            upcomingPayouts: [],
+            periodComparison: {
+              current: { totalSales: 0, totalTax: 0, orderCount: 0, averageOrderValue: 0, taxRate: 0, startDate: new Date().toISOString(), endDate: new Date().toISOString() },
+              previous: { totalSales: 0, totalTax: 0, orderCount: 0, averageOrderValue: 0, taxRate: 0, startDate: new Date().toISOString(), endDate: new Date().toISOString() }
+            },
+            storeInfo: {
+              storeName: 'No Store Connected',
+              shopDomain: null,
+              currency: 'USD',
+              country: null
+            }
+          },
+          lastUpdated: new Date().toISOString()
+        })
       }
     }
+
+    // SECURITY: Add additional validation that the user has access to this organizationId
+    // (This would need proper user-organization relationship implementation)
     const days = parseInt(request.nextUrl.searchParams.get('days') || '30')
     const includeTrends = request.nextUrl.searchParams.get('includeTrends') === 'true'
 

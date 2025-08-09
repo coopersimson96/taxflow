@@ -22,7 +22,6 @@ export default withAuth(
       pathname.startsWith('/api/webhooks/') ||
       pathname.startsWith('/api/shopify/') ||
       pathname.startsWith('/api/debug/') ||
-      pathname.startsWith('/api/analytics/') ||
       pathname.startsWith('/terms') ||
       pathname.startsWith('/privacy') ||
       pathname.startsWith('/_next/') ||
@@ -71,7 +70,6 @@ export default withAuth(
           pathname.startsWith('/api/webhooks/') ||
           pathname.startsWith('/api/shopify/') ||
           pathname.startsWith('/api/debug/') ||
-          pathname.startsWith('/api/analytics/') ||
           pathname.startsWith('/terms') ||
           pathname.startsWith('/privacy') ||
           pathname.startsWith('/_next/') ||
