@@ -150,11 +150,6 @@ export default function DashboardPage() {
     <AuthGuard>
       <DashboardLayout>
         <div className="space-y-6">
-          {/* DEPLOYMENT TEST - REMOVE THIS */}
-          <div className="p-6 bg-purple-500 text-white text-2xl font-bold rounded-lg">
-            🚀 NEW DEPLOYMENT - DEBUG MODE ACTIVE - {new Date().toISOString()}
-          </div>
-          
           {/* Organization selector if multiple organizations */}
           {userOrganizations.length > 1 && (
             <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -176,31 +171,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Debug info */}
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-            <h4 className="font-semibold">Debug Info:</h4>
-            <p>selectedOrganizationId: {selectedOrganizationId || 'null'}</p>
-            <p>userOrganizations.length: {userOrganizations.length}</p>
-            <p>isLoadingOrgs: {isLoadingOrgs.toString()}</p>
-            <p>hasShopifyConnection: {hasShopifyConnection.toString()}</p>
-          </div>
-
-          {/* Main Dashboard Content - Show dashboard directly */}
-          {selectedOrganizationId ? (
-            <div>
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
-                <p>✅ Loading TaxAnalyticsDashboard with organizationId: {selectedOrganizationId}</p>
-              </div>
-              <ErrorBoundary>
-                <TaxAnalyticsDashboard 
-                  organizationId={selectedOrganizationId}
-                />
-              </ErrorBoundary>
-            </div>
-          ) : (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
-              <p>❌ TaxAnalyticsDashboard not loading - no selectedOrganizationId</p>
-            </div>
+          {/* Main Dashboard Content */}
+          {selectedOrganizationId && (
+            <ErrorBoundary>
+              <TaxAnalyticsDashboard 
+                organizationId={selectedOrganizationId}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Connection Status - Hidden for now to show dashboard */}
