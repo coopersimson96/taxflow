@@ -120,11 +120,6 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
 
     } catch (error) {
       console.error('Dashboard data fetch error:', error)
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        organizationId,
-        days: Math.max(1, days)
-      })
       setState(prev => ({
         ...prev,
         isLoading: false,
