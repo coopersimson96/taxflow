@@ -123,7 +123,6 @@ export default function DashboardPage() {
   // Show loading state while checking organizations
   if (isLoadingOrgs) {
     return (
-      <AuthGuard>
         <DashboardLayout>
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
@@ -132,14 +131,12 @@ export default function DashboardPage() {
             </div>
           </div>
         </DashboardLayout>
-      </AuthGuard>
     )
   }
 
   // Show organization selection if multiple organizations
   if (userOrganizations.length === 0) {
     return (
-      <AuthGuard>
         <DashboardLayout>
           <div className="text-center py-16">
             <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,13 +156,11 @@ export default function DashboardPage() {
             </div>
           </div>
         </DashboardLayout>
-      </AuthGuard>
     )
   }
 
   return (
-    <AuthGuard>
-      <DashboardLayout>
+    <DashboardLayout>
         <div className="space-y-6">
           {/* Organization selector if multiple organizations */}
           {userOrganizations.length > 1 && (
@@ -208,6 +203,5 @@ export default function DashboardPage() {
           )}
         </div>
       </DashboardLayout>
-    </AuthGuard>
   )
 }
