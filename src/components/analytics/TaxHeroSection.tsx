@@ -97,49 +97,51 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
           </div>
 
           {/* Today's Tax Breakdown */}
-          {data.todayBreakdown && (
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-              <h3 className="text-lg font-semibold text-white mb-4">Today's Tax Breakdown</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {data.todayBreakdown.gst > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.gst, data.currency)}</div>
-                    <div className="text-white/70 text-sm">GST</div>
-                  </div>
-                )}
-                {data.todayBreakdown.pst > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.pst, data.currency)}</div>
-                    <div className="text-white/70 text-sm">PST</div>
-                  </div>
-                )}
-                {data.todayBreakdown.hst > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.hst, data.currency)}</div>
-                    <div className="text-white/70 text-sm">HST</div>
-                  </div>
-                )}
-                {data.todayBreakdown.qst > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.qst, data.currency)}</div>
-                    <div className="text-white/70 text-sm">QST</div>
-                  </div>
-                )}
-                {data.todayBreakdown.stateTax > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.stateTax, data.currency)}</div>
-                    <div className="text-white/70 text-sm">State Tax</div>
-                  </div>
-                )}
-                {data.todayBreakdown.localTax > 0 && (
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-white">{formatCurrency(data.todayBreakdown.localTax, data.currency)}</div>
-                    <div className="text-white/70 text-sm">Local Tax</div>
-                  </div>
-                )}
+          {data.todayBreakdown && (() => {
+            // Build array of tax items that have values
+            const taxItems = []
+            if (data.todayBreakdown.gst > 0) taxItems.push({ name: 'GST', amount: data.todayBreakdown.gst, color: 'from-green-400 to-green-600' })
+            if (data.todayBreakdown.pst > 0) taxItems.push({ name: 'PST', amount: data.todayBreakdown.pst, color: 'from-blue-400 to-blue-600' })
+            if (data.todayBreakdown.hst > 0) taxItems.push({ name: 'HST', amount: data.todayBreakdown.hst, color: 'from-purple-400 to-purple-600' })
+            if (data.todayBreakdown.qst > 0) taxItems.push({ name: 'QST', amount: data.todayBreakdown.qst, color: 'from-orange-400 to-orange-600' })
+            if (data.todayBreakdown.stateTax > 0) taxItems.push({ name: 'State Tax', amount: data.todayBreakdown.stateTax, color: 'from-red-400 to-red-600' })
+            if (data.todayBreakdown.localTax > 0) taxItems.push({ name: 'Local Tax', amount: data.todayBreakdown.localTax, color: 'from-cyan-400 to-cyan-600' })
+            if (data.todayBreakdown.other > 0) taxItems.push({ name: 'Other', amount: data.todayBreakdown.other, color: 'from-gray-400 to-gray-600' })
+
+            // Dynamic grid columns based on number of items
+            const gridCols = taxItems.length <= 2 ? 'grid-cols-2' : 
+                           taxItems.length <= 3 ? 'grid-cols-3' : 
+                           taxItems.length <= 4 ? 'grid-cols-2 md:grid-cols-4' :
+                           taxItems.length <= 6 ? 'grid-cols-3 md:grid-cols-6' :
+                           'grid-cols-3 md:grid-cols-4'
+
+            return taxItems.length > 0 ? (
+              <div className="max-w-4xl mx-auto">
+                <h3 className="text-lg font-semibold text-white/90 mb-4 text-center">Today's Tax Breakdown</h3>
+                <div className={`grid ${gridCols} gap-4 justify-center`}>
+                  {taxItems.map((item, index) => (
+                    <div 
+                      key={index} 
+                      className="group relative overflow-hidden bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/15 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    >
+                      {/* Background gradient effect */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
+                      
+                      {/* Content */}
+                      <div className="relative text-center space-y-2">
+                        <div className="text-2xl md:text-3xl font-bold text-white">
+                          {formatCurrency(item.amount, data.currency)}
+                        </div>
+                        <div className="text-white/80 text-sm font-medium uppercase tracking-wider">
+                          {item.name}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            ) : null
+          })()}
 
           {/* Monthly Rolling Total */}
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 max-w-2xl mx-auto">
