@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
   try {
     // Debug database connection
     console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL)
+    console.log('🔍 DATABASE_URL length:', process.env.DATABASE_URL?.length)
     console.log('🔍 NODE_ENV:', process.env.NODE_ENV)
     console.log('🔍 VERCEL:', process.env.VERCEL)
+    console.log('🔍 All env vars starting with DB:', Object.keys(process.env).filter(key => key.startsWith('DB')))
     
     // SECURITY: Get authenticated user session
     const session = await getServerSession(authOptions)
@@ -38,10 +40,16 @@ export async function GET(request: NextRequest) {
       console.log('✅ Database connection test successful')
     } catch (dbError) {
       console.error('❌ Database connection test failed:', dbError)
+      // Try to get more details about the connection URL being used
+      if (dbError instanceof Error && dbError.message.includes('Can\'t reach database server')) {
+        console.error('🔍 Connection error details:', dbError.message)
+        console.error('🔍 This suggests either network issue or wrong URL format')
+      }
       return NextResponse.json(
         { 
           error: 'Database connection failed',
-          details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+          details: dbError instanceof Error ? dbError.message : 'Unknown database error',
+          envUrl: process.env.DATABASE_URL ? 'SET' : 'NOT_SET'
         },
         { status: 500 }
       )
