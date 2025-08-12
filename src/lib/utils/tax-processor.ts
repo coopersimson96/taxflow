@@ -275,3 +275,31 @@ export function formatTaxBreakdownSummary(breakdown: ProcessedTaxBreakdown): str
   
   return `Tax Breakdown: ${lines.join(', ')} (${location})`;
 }
+
+/**
+ * Process tax data from a Shopify order (for historical import)
+ */
+export function processTaxData(order: any) {
+  const taxLines = order.tax_lines || []
+  const billingAddress = order.billing_address
+  const shippingAddress = order.shipping_address
+  
+  const breakdown = processTaxBreakdown(taxLines, billingAddress, shippingAddress)
+  
+  return {
+    gst: breakdown.gstAmount / 100, // Convert back to dollars
+    pst: breakdown.pstAmount / 100,
+    hst: breakdown.hstAmount / 100,
+    qst: breakdown.qstAmount / 100,
+    stateTax: breakdown.stateTaxAmount / 100,
+    localTax: breakdown.localTaxAmount / 100,
+    other: breakdown.otherTaxAmount / 100,
+    breakdown: breakdown.taxBreakdown,
+    jurisdiction: {
+      country: breakdown.taxCountry,
+      province: breakdown.taxProvince,
+      city: breakdown.taxCity,
+      postalCode: breakdown.taxPostalCode
+    }
+  }
+}

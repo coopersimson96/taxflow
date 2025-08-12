@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
             status: 'CONNECTED'
           },
           select: {
+            id: true,
             organizationId: true,
             credentials: true,
             name: true
