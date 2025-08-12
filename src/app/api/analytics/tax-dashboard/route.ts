@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     }
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
+    let integrationId: string | null = null
     
     // SECURITY: Only find integrations that belong to the current user
     if (!organizationId || organizationId === '') {
@@ -103,7 +104,6 @@ export async function GET(request: NextRequest) {
       
       // SECURITY: Verify the integration belongs to this user
       let isUserOwned = false
-      let integrationId: string | null = null
       if (userIntegration && userIntegration.credentials) {
         const credentials = userIntegration.credentials as any
         const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
