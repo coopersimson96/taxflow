@@ -15,6 +15,7 @@ interface UseTaxDashboardReturn {
   updateFilters: (newFilters: Partial<DashboardFilters>) => void
   refresh: () => Promise<void>
   isInitialLoading: boolean
+  integrationId: string | null
 }
 
 const defaultFilters: DashboardFilters = {
@@ -46,6 +47,7 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
     ...initialFilters
   })
   const [isInitialLoading, setIsInitialLoading] = useState(true)
+  const [integrationId, setIntegrationId] = useState<string | null>(null)
 
   const fetchData = async (showLoading = true) => {
     // Allow empty organizationId - the API will auto-detect the connected store
@@ -110,6 +112,7 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
       }
 
       setData(result.data)
+      setIntegrationId(result.integrationId || null)
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -235,7 +238,8 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
     filters,
     updateFilters,
     refresh,
-    isInitialLoading
+    isInitialLoading,
+    integrationId
   }
 }
 

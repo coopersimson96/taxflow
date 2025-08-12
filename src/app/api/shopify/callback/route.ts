@@ -3,6 +3,7 @@ import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
 import { WebhookManager } from '@/lib/services/webhook-manager'
+import { HistoricalImportService } from '@/lib/services/historical-import'
 
 export const dynamic = 'force-dynamic'
 
@@ -193,6 +194,31 @@ export async function GET(request: NextRequest) {
             syncError: `Webhook initialization failed: ${webhookError instanceof Error ? webhookError.message : 'Unknown error'}`
           }
         })
+      }
+
+      // Import historical data (last 12 months) for new connections
+      try {
+        console.log('📚 Starting historical data import (last 12 months)...')
+        
+        // Check if historical import has already been done
+        const integrationConfig = integration.config as any
+        if (!integrationConfig?.historicalImportCompleted) {
+          // Trigger import asynchronously (don't block the callback)
+          HistoricalImportService.importHistoricalOrders(integration.id, 12)
+            .then(progress => {
+              console.log(`✅ Historical import completed: ${progress.processedOrders} orders imported`)
+            })
+            .catch(error => {
+              console.error('❌ Historical import failed:', error)
+            })
+          
+          console.log('📥 Historical import started in background')
+        } else {
+          console.log('⏭️ Historical import already completed, skipping')
+        }
+      } catch (importError) {
+        console.error('❌ Failed to start historical import:', importError)
+        // Don't fail the connection for import issues
       }
 
       // Redirect to success page

@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
       
       // SECURITY: Verify the integration belongs to this user
       let isUserOwned = false
+      let integrationId: string | null = null
       if (userIntegration && userIntegration.credentials) {
         const credentials = userIntegration.credentials as any
         const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
@@ -119,6 +120,7 @@ export async function GET(request: NextRequest) {
         
         if (emailMatch || nameMatch) {
           organizationId = userIntegration.organizationId
+          integrationId = userIntegration.id
           isUserOwned = true
         } else {
           // Auto-link Shopify emails if they don't match existing user emails
@@ -156,6 +158,7 @@ export async function GET(request: NextRequest) {
           
           if (emailMatchAfterLinking || nameMatch) {
             organizationId = userIntegration.organizationId
+            integrationId = userIntegration.id
             isUserOwned = true
           }
         }
@@ -289,6 +292,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: dashboardData,
+      integrationId: integrationId,
       lastUpdated: new Date().toISOString()
     })
 
