@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ShopifyService } from '@/lib/services/shopify-service'
-import { processTaxData } from '@/lib/services/tax-processor'
+import { processTaxData } from '@/lib/utils/tax-processor'
 
 export const dynamic = 'force-dynamic'
 
