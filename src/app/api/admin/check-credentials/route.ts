@@ -58,6 +58,15 @@ export async function POST(request: NextRequest) {
       // Check for access token fields
       accessToken: credentials?.accessToken ? `${credentials.accessToken.substring(0, 8)}...` : null,
       access_token: credentials?.access_token ? `${credentials.access_token.substring(0, 8)}...` : null,
+      accessTokenLength: credentials?.accessToken?.length || 0,
+      access_tokenLength: credentials?.access_token?.length || 0,
+      
+      // Check token format (Shopify tokens usually start with 'shpat_' for private apps or 'shpca_' for custom apps)
+      accessTokenFormat: credentials?.accessToken ? 
+        (credentials.accessToken.startsWith('shpat_') ? 'Private App Token' :
+         credentials.accessToken.startsWith('shpca_') ? 'Custom App Token' :
+         credentials.accessToken.startsWith('shpss_') ? 'Storefront Token (wrong type)' :
+         'Unknown token format') : null,
       
       // Check shopInfo nested object
       shopInfo: credentials?.shopInfo,

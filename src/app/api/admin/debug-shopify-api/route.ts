@@ -46,13 +46,16 @@ export async function POST(request: NextRequest) {
     const shopDomain = credentials?.shopInfo?.myshopify_domain || 
                       credentials?.shopInfo?.domain || 
                       credentials?.shop
+                      
+    // Try to get the access token from different possible fields
+    const accessToken = credentials?.accessToken || credentials?.access_token
     
-    if (!credentials?.accessToken || !shopDomain) {
+    if (!accessToken || !shopDomain) {
       return NextResponse.json({ 
         error: 'Invalid integration credentials',
-        details: `Missing ${!credentials?.accessToken ? 'access token' : 'shop domain'}`,
+        details: `Missing ${!accessToken ? 'access token' : 'shop domain'}`,
         credentials: {
-          hasAccessToken: !!credentials?.accessToken,
+          hasAccessToken: !!accessToken,
           shop: credentials?.shop,
           shopInfoDomain: credentials?.shopInfo?.domain,
           shopInfoMyshopifyDomain: credentials?.shopInfo?.myshopify_domain,
@@ -67,8 +70,8 @@ export async function POST(request: NextRequest) {
       name: integration.name,
       status: integration.status,
       shop: shopDomain,
-      hasAccessToken: !!credentials.accessToken,
-      accessTokenLength: credentials.accessToken?.length || 0
+      hasAccessToken: !!accessToken,
+      accessTokenLength: accessToken?.length || 0
     })
 
     // Test 1: Shop info
@@ -77,7 +80,7 @@ export async function POST(request: NextRequest) {
     try {
       const shopResponse = await fetch(`https://${shopDomain}/admin/api/2024-01/shop.json`, {
         headers: {
-          'X-Shopify-Access-Token': credentials.accessToken,
+          'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
         }
       })
@@ -105,7 +108,7 @@ export async function POST(request: NextRequest) {
     try {
       const ordersCountResponse = await fetch(`https://${shopDomain}/admin/api/2024-01/orders/count.json`, {
         headers: {
-          'X-Shopify-Access-Token': credentials.accessToken,
+          'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
         }
       })
@@ -138,7 +141,7 @@ export async function POST(request: NextRequest) {
         `https://${shopDomain}/admin/api/2024-01/orders.json?status=any&created_at_min=${oneWeekAgo.toISOString()}&limit=5`,
         {
           headers: {
-            'X-Shopify-Access-Token': credentials.accessToken,
+            'X-Shopify-Access-Token': accessToken,
             'Content-Type': 'application/json'
           }
         }
@@ -167,7 +170,7 @@ export async function POST(request: NextRequest) {
     try {
       const allOrdersCountResponse = await fetch(`https://${shopDomain}/admin/api/2024-01/orders/count.json?status=any`, {
         headers: {
-          'X-Shopify-Access-Token': credentials.accessToken,
+          'X-Shopify-Access-Token': accessToken,
           'Content-Type': 'application/json'
         }
       })
@@ -195,8 +198,8 @@ export async function POST(request: NextRequest) {
         id: integration.id,
         name: integration.name,
         shop: shopDomain,
-        hasAccessToken: !!credentials.accessToken,
-        accessTokenPrefix: credentials.accessToken ? credentials.accessToken.substring(0, 6) + '...' : null
+        hasAccessToken: !!accessToken,
+        accessTokenPrefix: accessToken ? accessToken.substring(0, 6) + '...' : null
       },
       tests: {
         shopInfo: {

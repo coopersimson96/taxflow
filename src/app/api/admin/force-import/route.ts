@@ -50,11 +50,14 @@ export async function POST(request: NextRequest) {
     const shopDomain = credentials?.shopInfo?.myshopify_domain || 
                       credentials?.shopInfo?.domain || 
                       credentials?.shop
+                      
+    // Try to get the access token from different possible fields
+    const accessToken = credentials?.accessToken || credentials?.access_token
     
-    if (!credentials?.accessToken || !shopDomain) {
+    if (!accessToken || !shopDomain) {
       return NextResponse.json({ 
         error: 'Invalid integration credentials',
-        details: `Missing ${!credentials?.accessToken ? 'access token' : 'shop domain'}`,
+        details: `Missing ${!accessToken ? 'access token' : 'shop domain'}`,
         availableDomains: {
           shop: credentials?.shop,
           shopInfoDomain: credentials?.shopInfo?.domain,
@@ -67,7 +70,11 @@ export async function POST(request: NextRequest) {
     console.log('🏪 Shop domain:', shopDomain)
     console.log('🏪 Using domain from:', credentials?.shopInfo?.myshopify_domain ? 'shopInfo.myshopify_domain' : 
                                        credentials?.shopInfo?.domain ? 'shopInfo.domain' : 'shop field')
-    console.log('🔑 Access token present:', !!credentials.accessToken)
+    console.log('🔑 Access token present:', !!accessToken)
+    console.log('🔑 Token format:', accessToken ? 
+      (accessToken.startsWith('shpat_') ? 'Private App' :
+       accessToken.startsWith('shpca_') ? 'Custom App' : 
+       'Unknown format') : 'No token')
 
     // Calculate date range
     const endDate = new Date()
@@ -126,7 +133,7 @@ export async function POST(request: NextRequest) {
         
         const fetchResponse: Response = await fetch(requestUrl, {
           headers: {
-            'X-Shopify-Access-Token': credentials.accessToken,
+            'X-Shopify-Access-Token': accessToken,
             'Content-Type': 'application/json'
           }
         })
