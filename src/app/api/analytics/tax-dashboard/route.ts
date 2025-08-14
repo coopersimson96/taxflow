@@ -116,11 +116,16 @@ export async function GET(request: NextRequest) {
     } else {
       // Verify user has access to the requested organization
       const membership = await withWebhookDb(async (db) => {
+        const user = await db.user.findUnique({ where: { email: session.user.email! } })
+        if (!user || !organizationId) {
+          return null
+        }
+        
         return await db.organizationMember.findUnique({
           where: {
             userId_organizationId: {
-              userId: (await db.user.findUnique({ where: { email: session.user.email! } }))!.id,
-              organizationId
+              userId: user.id,
+              organizationId: organizationId
             }
           },
           include: {

@@ -10,10 +10,25 @@ export async function GET() {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
     }
 
-    // Get user with linked emails
+    // Get user with organizations
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { linkedEmails: true }
+      include: {
+        organizations: {
+          include: {
+            organization: {
+              include: {
+                integrations: {
+                  where: {
+                    type: 'SHOPIFY',
+                    status: 'CONNECTED'
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     })
 
     // Get all integrations
@@ -50,7 +65,9 @@ export async function GET() {
     return NextResponse.json({
       currentUser: {
         email: session.user.email,
-        linkedEmails: user?.linkedEmails?.map(e => e.email) || []
+        organizationMemberships: user?.organizations?.length || 0,
+        accessibleStores: user?.organizations?.reduce((total, membership) => 
+          total + membership.organization.integrations.length, 0) || 0
       },
       connectedIntegrations: integrationDetails,
       totalIntegrations: integrations.length
