@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { prisma } from './prisma'
+import { UserService } from './services/user-service'
 
 // Validate environment variables
 const googleClientId = process.env.GOOGLE_CLIENT_ID
@@ -43,7 +44,24 @@ export const authOptions: NextAuthOptions = {
       return session
     },
     async signIn({ user, account, profile }) {
-      return true
+      try {
+        // Automatically sync user to database when they sign in
+        if (user.email) {
+          console.log('🔄 Auto-syncing user to database:', user.email)
+          await UserService.upsertUserFromOAuth({
+            email: user.email,
+            name: user.name || undefined,
+            avatar: user.image || undefined,
+            googleId: account?.providerAccountId || undefined,
+          })
+          console.log('✅ User sync completed for:', user.email)
+        }
+        return true
+      } catch (error) {
+        console.error('❌ User sync failed during sign in:', error)
+        // Don't block sign in even if sync fails
+        return true
+      }
     },
   },
 }
