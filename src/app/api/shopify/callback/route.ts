@@ -84,18 +84,55 @@ export async function GET(request: NextRequest) {
       // TODO: In production, verify state parameter matches stored value
       // For now, we'll proceed with storing the integration
 
-      // Store integration in database with proper organization context
-      // For production, we would decode and verify the state parameter to get user info
-      // For now, we'll use a session-based approach or find the most recent user
+      // Decode state to get the user who initiated the connection
+      // In production, this should be encrypted/signed
+      let connectingUserEmail: string | null = null
+      try {
+        // For now, we'll get from the state parameter if available
+        // TODO: Implement proper state management
+        const stateData = state ? JSON.parse(Buffer.from(state, 'base64').toString()) : null
+        connectingUserEmail = stateData?.userEmail || null
+      } catch (e) {
+        console.log('Could not parse state, will try to determine user from session')
+      }
+
+      // Find the user who is connecting this store
+      let connectingUser = null
+      if (connectingUserEmail) {
+        connectingUser = await prisma.user.findUnique({
+          where: { email: connectingUserEmail }
+        })
+      }
       
-      // Find or create organization for this integration
-      // In a real app, you'd get this from the authenticated state
+      if (!connectingUser) {
+        // Try to find user by shop email as fallback
+        connectingUser = await prisma.user.findFirst({
+          where: { 
+            OR: [
+              { email: shopInfo.shop.email },
+              { email: shopInfo.shop.customer_email }
+            ]
+          }
+        })
+      }
+
+      if (!connectingUser) {
+        console.error('Could not determine which user is connecting this store')
+        return NextResponse.redirect(
+          new URL('/connect?error=user_not_found', request.url)
+        )
+      }
+
+      console.log('Connecting user:', connectingUser.email)
+
+      // Find or create organization for this shop
       let organizationId: string
+      let isNewOrganization = false
       
       try {
         console.log('Setting up organization...')
-        // Try to find an existing organization or create a default one
-        // This is a simplified approach - in production, get from authenticated user context
+        
+        // Check if this shop already has an organization
         const existingIntegration = await prisma.integration.findFirst({
           where: {
             type: 'SHOPIFY',
@@ -103,27 +140,61 @@ export async function GET(request: NextRequest) {
               path: ['shop'],
               equals: normalizedShop
             }
+          },
+          include: {
+            organization: {
+              include: {
+                members: true
+              }
+            }
           }
         })
 
         if (existingIntegration) {
           console.log('Found existing integration, using org:', existingIntegration.organizationId)
           organizationId = existingIntegration.organizationId
+          
+          // Check if the connecting user is already a member
+          const isMember = existingIntegration.organization.members.some(
+            member => member.userId === connectingUser.id
+          )
+          
+          if (!isMember) {
+            // Add the user as a member
+            await prisma.organizationMember.create({
+              data: {
+                userId: connectingUser.id,
+                organizationId: existingIntegration.organizationId,
+                role: 'ADMIN' // New connections get ADMIN role
+              }
+            })
+            console.log('Added user as organization member')
+          }
         } else {
           console.log('Creating new organization...')
+          isNewOrganization = true
+          
           // Create a new organization for this shop
           const organization = await prisma.organization.create({
             data: {
-              name: `${shopInfo.shop.name || normalizedShop} Tax Tracker`,
-              slug: `${normalizedShop}-tax-tracker`,
-              description: `Tax tracking organization for ${shopInfo.shop.name || normalizedShop}`,
+              name: shopInfo.shop.name || normalizedShop,
+              slug: normalizedShop.replace('.', '-'),
+              description: `Tax tracking for ${shopInfo.shop.name || normalizedShop}`,
               settings: {
                 shopifyShop: normalizedShop,
-                timezone: shopInfo.shop.timezone || 'America/New_York'
+                timezone: shopInfo.shop.timezone || 'America/New_York',
+                currency: shopInfo.shop.currency || 'USD',
+                country: shopInfo.shop.country_name || shopInfo.shop.country
+              },
+              members: {
+                create: {
+                  userId: connectingUser.id,
+                  role: 'OWNER' // First user gets OWNER role
+                }
               }
             }
           })
-          console.log('Organization created:', organization.id)
+          console.log('Organization created with owner:', organization.id)
           organizationId = organization.id
         }
       } catch (orgError) {
@@ -132,8 +203,9 @@ export async function GET(request: NextRequest) {
           message: orgError instanceof Error ? orgError.message : 'Unknown error',
           stack: orgError instanceof Error ? orgError.stack : 'No stack trace'
         })
-        // Fallback to a default organization ID
-        organizationId = 'default-org'
+        return NextResponse.redirect(
+          new URL('/connect?error=organization_setup_failed', request.url)
+        )
       }
 
       console.log('Creating/updating integration...')

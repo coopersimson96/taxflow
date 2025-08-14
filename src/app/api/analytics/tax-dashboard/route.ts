@@ -58,14 +58,30 @@ export async function GET(request: NextRequest) {
     let organizationId = request.nextUrl.searchParams.get('organizationId')
     let integrationId: string | null = null
     
-    // SECURITY: Only find integrations that belong to the current user
+    // If no specific organization requested, find user's organizations
     if (!organizationId || organizationId === '') {
+      console.log('🔍 Finding user organizations...')
       
-      // SECURITY: Get all user's linked emails for matching
+      // Get user with their organization memberships
       const user = await withWebhookDb(async (db) => {
         return await db.user.findUnique({
-          where: { email: session.user.email! }, // We already checked it's not null above
-          include: { linkedEmails: true }
+          where: { email: session.user.email! },
+          include: {
+            organizations: {
+              include: {
+                organization: {
+                  include: {
+                    integrations: {
+                      where: {
+                        type: 'SHOPIFY',
+                        status: 'CONNECTED'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         })
       })
       
@@ -73,100 +89,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 })
       }
       
-      // Get all user emails (primary + linked)
-      const userEmails = [user.email.toLowerCase()]
-      if (user.linkedEmails) {
-        userEmails.push(...user.linkedEmails.map(e => e.email.toLowerCase()))
-      }
+      console.log(`🔍 User has ${user.organizations.length} organization memberships`)
       
-      console.log('🔍 User emails for matching:', userEmails)
-      console.log('🔍 Looking for Shopify integrations...')
-      const userIntegration = await withWebhookDb(async (db) => {
-        const integration = await db.integration.findFirst({
-          where: {
-            type: 'SHOPIFY',
-            status: 'CONNECTED'
-          },
-          select: {
-            id: true,
-            organizationId: true,
-            credentials: true,
-            name: true
-          }
-        })
-        console.log('🔍 Found integration:', integration ? 'Yes' : 'No')
-        if (integration) {
-          console.log('🔍 Integration org ID:', integration.organizationId)
-        }
-        return integration
-      })
+      // Find organizations with Shopify integrations
+      const organizationsWithIntegrations = user.organizations.filter(
+        membership => membership.organization.integrations.length > 0
+      )
       
-      
-      // SECURITY: Verify the integration belongs to this user
-      let isUserOwned = false
-      if (userIntegration && userIntegration.credentials) {
-        const credentials = userIntegration.credentials as any
-        const shopifyEmail = credentials.shopInfo?.customer_email?.toLowerCase()
-        const shopOwnerEmail = credentials.shopInfo?.email?.toLowerCase()
-        
-        // Check if any of the user's emails match the shop emails
-        const emailMatch = userEmails.some(email => 
-          email === shopifyEmail || email === shopOwnerEmail
-        )
-        
-        // Also try matching the shop owner name if emails don't match
-        const shopOwnerName = credentials.shopInfo?.shop_owner?.toLowerCase()
-        const userName = session.user.name?.toLowerCase()
-        const nameMatch = shopOwnerName && userName && shopOwnerName.includes(userName.split(' ')[0])
-        
-        if (emailMatch || nameMatch) {
-          organizationId = userIntegration.organizationId
-          integrationId = userIntegration.id
-          isUserOwned = true
-        } else {
-          // Auto-link Shopify emails if they don't match existing user emails
-          const shopifyEmails = [shopifyEmail, shopOwnerEmail].filter(Boolean)
-          
-          for (const shopEmail of shopifyEmails) {
-            if (shopEmail && !userEmails.includes(shopEmail)) {
-              try {
-                // Automatically add and verify the Shopify email
-                await withWebhookDb(async (db) => {
-                  await db.userEmail.create({
-                    data: {
-                      userId: user.id,
-                      email: shopEmail,
-                      isVerified: true, // Auto-verify Shopify emails
-                      verifiedAt: new Date(),
-                    }
-                  })
-                })
-                
-                // Add to our current userEmails array for immediate matching
-                userEmails.push(shopEmail)
-                console.log(`✅ Auto-linked Shopify email: ${shopEmail}`)
-              } catch (error) {
-                // Ignore errors (email might already exist)
-                console.log(`Already linked: ${shopEmail}`)
-              }
-            }
-          }
-          
-          // Re-check email match after auto-linking
-          const emailMatchAfterLinking = userEmails.some(email => 
-            email === shopifyEmail || email === shopOwnerEmail
-          )
-          
-          if (emailMatchAfterLinking || nameMatch) {
-            organizationId = userIntegration.organizationId
-            integrationId = userIntegration.id
-            isUserOwned = true
-          }
-        }
-      }
-      
-      if (!isUserOwned) {
-        // SECURITY: If no user-owned integration found, return 404 to indicate no store connected
+      if (organizationsWithIntegrations.length === 0) {
         return NextResponse.json(
           { 
             error: 'No Shopify store connected',
@@ -174,6 +104,49 @@ export async function GET(request: NextRequest) {
           }, 
           { status: 404 }
         )
+      }
+      
+      // Use the first organization with an integration
+      // TODO: In the future, allow user to select which store to view
+      const selectedOrg = organizationsWithIntegrations[0]
+      organizationId = selectedOrg.organizationId
+      integrationId = selectedOrg.organization.integrations[0].id
+      
+      console.log(`✅ Selected organization: ${selectedOrg.organization.name}`)
+    } else {
+      // Verify user has access to the requested organization
+      const membership = await withWebhookDb(async (db) => {
+        return await db.organizationMember.findUnique({
+          where: {
+            userId_organizationId: {
+              userId: (await db.user.findUnique({ where: { email: session.user.email! } }))!.id,
+              organizationId
+            }
+          },
+          include: {
+            organization: {
+              include: {
+                integrations: {
+                  where: {
+                    type: 'SHOPIFY',
+                    status: 'CONNECTED'
+                  }
+                }
+              }
+            }
+          }
+        })
+      })
+      
+      if (!membership) {
+        return NextResponse.json(
+          { error: 'Access denied to this organization' },
+          { status: 403 }
+        )
+      }
+      
+      if (membership.organization.integrations.length > 0) {
+        integrationId = membership.organization.integrations[0].id
       }
     }
 

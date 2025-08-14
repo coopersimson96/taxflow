@@ -34,17 +34,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate secure state parameter
-    const state = crypto.randomBytes(32).toString('hex')
-    
-    // Store state and user info in session/database for verification
-    // For now, we'll include user email in state (in production, use proper session storage)
+    // Generate secure state parameter with user info
     const stateData = {
-      state,
       userEmail: session.user.email,
       shop: normalizedShop,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      nonce: crypto.randomBytes(16).toString('hex')
     }
+    
+    // Encode state data (in production, encrypt this)
+    const state = Buffer.from(JSON.stringify(stateData)).toString('base64')
 
     // Generate authorization URL
     console.log('Generating auth URL for shop:', normalizedShop)
@@ -60,8 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      authUrl,
-      state: stateData // In production, store this server-side
+      authUrl
     })
 
   } catch (error) {
