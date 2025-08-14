@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Credentials analysis:', analysis)
 
     // Try to construct the correct shop URL
-    let possibleShopUrls = []
+    const possibleShopUrls = []
     
     if (credentials?.shop) {
       possibleShopUrls.push(`Shop field: ${credentials.shop}`)
