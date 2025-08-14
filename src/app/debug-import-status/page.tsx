@@ -89,8 +89,9 @@ export default function DebugImportStatusPage() {
         alert(message)
       } else {
         const errorMsg = data.error || data.details || 'Unknown error'
+        const debugInfo = data.debugInfo ? `\n\nDebug Info:\n${JSON.stringify(data.debugInfo, null, 2)}` : ''
         console.error('Shopify API debug failed:', data)
-        alert(`Shopify API debug failed: ${errorMsg}`)
+        alert(`Shopify API debug failed: ${errorMsg}${debugInfo}`)
       }
     } catch (error) {
       console.error('Shopify API debug error:', error)
