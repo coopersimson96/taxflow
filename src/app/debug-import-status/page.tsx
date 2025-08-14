@@ -52,6 +52,39 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const forceImport = async (integrationId: string) => {
+    try {
+      console.log('Force importing for integration:', integrationId)
+      
+      if (!confirm('Force import will directly fetch and process orders from Shopify. This may take a few minutes. Continue?')) {
+        return
+      }
+      
+      const response = await fetch('/api/admin/force-import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId, months: 12 })
+      })
+      
+      const data = await response.json()
+      console.log('Force import response:', data)
+      
+      if (response.ok && data.success) {
+        alert(`Force import completed! ${data.message}\n\nDetails:\n- Orders fetched: ${data.details.totalOrdersFetched}\n- Orders processed: ${data.details.ordersProcessed}\n- Errors: ${data.details.errors}`)
+        fetchStoresAndStatus() // Refresh
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Force import failed:', data)
+        alert(`Force import failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Force import error:', error)
+      alert(`Force import failed: ${error}`)
+    }
+  }
+
   const triggerImport = async (integrationId: string) => {
     try {
       console.log('Triggering import for integration:', integrationId)
@@ -116,6 +149,12 @@ export default function DebugImportStatusPage() {
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                       >
                         Trigger Import
+                      </button>
+                      <button
+                        onClick={() => forceImport(store.id)}
+                        className="ml-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                      >
+                        Force Import
                       </button>
                     </div>
                     
