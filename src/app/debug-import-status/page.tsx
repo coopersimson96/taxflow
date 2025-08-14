@@ -54,19 +54,28 @@ export default function DebugImportStatusPage() {
 
   const triggerImport = async (integrationId: string) => {
     try {
+      console.log('Triggering import for integration:', integrationId)
       const response = await fetch(`/api/integrations/${integrationId}/import-status`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       const data = await response.json()
       
-      if (response.ok) {
-        alert('Historical import triggered!')
+      console.log('Import response:', data)
+      
+      if (response.ok && data.success) {
+        alert(`Historical import started! ${data.note}`)
         fetchStoresAndStatus() // Refresh
       } else {
-        alert(`Failed to trigger import: ${data.error}`)
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Import failed:', data)
+        alert(`Failed to trigger import: ${errorMsg}`)
       }
     } catch (error) {
-      alert('Failed to trigger import')
+      console.error('Import trigger error:', error)
+      alert(`Failed to trigger import: ${error}`)
     }
   }
 
