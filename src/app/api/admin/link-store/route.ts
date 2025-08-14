@@ -6,14 +6,19 @@ import { withWebhookDb } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  let organizationId: string | undefined
+  let userEmail: string | undefined
+  
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
+    userEmail = session.user.email
+
     const body = await request.json()
-    const { organizationId } = body
+    organizationId = body.organizationId
 
     if (!organizationId) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 })
@@ -123,7 +128,7 @@ export async function POST(request: NextRequest) {
       code: errorCode,
       stack: error instanceof Error ? error.stack : 'No stack',
       organizationId,
-      userEmail: session.user.email
+      userEmail
     })
     
     return NextResponse.json(
@@ -133,7 +138,7 @@ export async function POST(request: NextRequest) {
         code: errorCode,
         debugInfo: {
           organizationId,
-          userEmail: session.user.email,
+          userEmail,
           timestamp: new Date().toISOString()
         }
       },
