@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, Component, ReactNode } from 'react'
+import { useEffect, useState, useCallback, Component, ReactNode, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -49,7 +49,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 }
 
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const [stores, setStores] = useState<Store[]>([])
@@ -69,14 +69,7 @@ export default function DashboardPage() {
     })
   }, [status, session])
   
-  // Fetch available stores when authenticated
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchStores()
-    }
-  }, [status])
-  
-  const fetchStores = async () => {
+  const fetchStores = useCallback(async () => {
     try {
       setIsLoadingStores(true)
       const response = await fetch('/api/debug/list-stores')
@@ -99,7 +92,14 @@ export default function DashboardPage() {
     } finally {
       setIsLoadingStores(false)
     }
-  }
+  }, [urlOrganizationId, selectedOrganizationId])
+  
+  // Fetch available stores when authenticated
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchStores()
+    }
+  }, [status, fetchStores])
   
   // Loading state
   if (status === 'loading' || isLoadingStores) {
@@ -159,5 +159,24 @@ export default function DashboardPage() {
         </ErrorBoundary>
       </DashboardLayout>
     </AuthGuard>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }

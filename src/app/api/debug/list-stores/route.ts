@@ -45,7 +45,7 @@ export async function GET() {
         return {
           integrationId: integration.id,
           organizationId: integration.organizationId,
-          organizationName: integration.organization.name,
+          organizationName: membership.organization.name,
           storeName: credentials?.shopInfo?.name || integration.name,
           shopDomain: credentials?.shopInfo?.domain || credentials?.shopInfo?.myshopify_domain,
           role: membership.role,
