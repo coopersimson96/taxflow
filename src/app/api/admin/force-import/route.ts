@@ -45,12 +45,28 @@ export async function POST(request: NextRequest) {
     }
 
     const credentials = integration.credentials as any
-    if (!credentials?.accessToken || !credentials?.shop) {
-      return NextResponse.json({ error: 'Invalid integration credentials' }, { status: 400 })
+    
+    // Try to get the correct shop domain - prefer the full myshopify.com domain
+    const shopDomain = credentials?.shopInfo?.myshopify_domain || 
+                      credentials?.shopInfo?.domain || 
+                      credentials?.shop
+    
+    if (!credentials?.accessToken || !shopDomain) {
+      return NextResponse.json({ 
+        error: 'Invalid integration credentials',
+        details: `Missing ${!credentials?.accessToken ? 'access token' : 'shop domain'}`,
+        availableDomains: {
+          shop: credentials?.shop,
+          shopInfoDomain: credentials?.shopInfo?.domain,
+          shopInfoMyshopifyDomain: credentials?.shopInfo?.myshopify_domain
+        }
+      }, { status: 400 })
     }
 
     console.log('📊 Starting order fetch from Shopify...')
-    console.log('🏪 Shop:', credentials.shop)
+    console.log('🏪 Shop domain:', shopDomain)
+    console.log('🏪 Using domain from:', credentials?.shopInfo?.myshopify_domain ? 'shopInfo.myshopify_domain' : 
+                                       credentials?.shopInfo?.domain ? 'shopInfo.domain' : 'shop field')
     console.log('🔑 Access token present:', !!credentials.accessToken)
 
     // Calculate date range
@@ -105,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     while (hasNextPage && totalFetched < 1000) { // Limit to 1000 orders for safety
       try {
-        const requestUrl = `https://${credentials.shop}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`
+        const requestUrl = `https://${shopDomain}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`
         console.log('🌐 Fetching from URL:', requestUrl)
         
         const fetchResponse: Response = await fetch(requestUrl, {
