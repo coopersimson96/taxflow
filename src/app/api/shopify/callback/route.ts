@@ -149,7 +149,6 @@ export async function GET(request: NextRequest) {
         })
         
         console.log('📝 Created pending organization:', tempOrganization.id)
-        organizationId = tempOrganization.id
         
         // Continue with integration creation but skip webhook/import setup
         const integration = await prisma.integration.create({
