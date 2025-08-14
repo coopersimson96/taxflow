@@ -52,6 +52,51 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const checkCredentials = async (integrationId: string) => {
+    try {
+      console.log('Checking credentials for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/check-credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Credentials check response:', data)
+      
+      if (response.ok && data.success) {
+        let message = `Credentials Analysis for ${data.integration.name}:\n\n`
+        
+        message += `Integration Status: ${data.integration.status}\n`
+        message += `Has Credentials: ${data.analysis.hasCredentials}\n\n`
+        
+        message += `Possible Shop URLs:\n`
+        if (data.possibleShopUrls.length > 0) {
+          data.possibleShopUrls.forEach((url: string) => {
+            message += `- ${url}\n`
+          })
+        } else {
+          message += '- None found!\n'
+        }
+        
+        message += `\nAccess Token: ${data.analysis.accessToken || data.analysis.access_token || 'Not found'}\n`
+        message += `\nRecommendation: ${data.recommendation}`
+        
+        alert(message)
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Credentials check failed:', data)
+        alert(`Credentials check failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Credentials check error:', error)
+      alert(`Credentials check failed: ${error}`)
+    }
+  }
+
   const debugShopifyApi = async (integrationId: string) => {
     try {
       console.log('Testing Shopify API for integration:', integrationId)
@@ -192,6 +237,12 @@ export default function DebugImportStatusPage() {
                         <p className="text-sm text-gray-500">Integration ID: {store.id}</p>
                       </div>
                       <div className="flex space-x-2">
+                        <button
+                          onClick={() => checkCredentials(store.id)}
+                          className="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
+                        >
+                          Check Creds
+                        </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
                           className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
