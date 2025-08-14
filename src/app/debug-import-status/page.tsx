@@ -52,6 +52,52 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugShopifyApi = async (integrationId: string) => {
+    try {
+      console.log('Testing Shopify API for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/debug-shopify-api', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Shopify API debug response:', data)
+      
+      if (response.ok && data.success) {
+        const tests = data.tests
+        let message = `Shopify API Debug Results for ${data.integration.shop}:\n\n`
+        
+        message += `Shop Info: ${tests.shopInfo.test.ok ? '✅ Success' : '❌ Failed'} (${tests.shopInfo.test.status})\n`
+        message += `Orders Count: ${tests.ordersCount.test.ok ? '✅ Success' : '❌ Failed'} (${tests.ordersCount.test.status})\n`
+        message += `Recent Orders: ${tests.recentOrders.test.ok ? '✅ Success' : '❌ Failed'} (${tests.recentOrders.test.status})\n`
+        message += `All Orders Count: ${tests.allOrdersCount.test.ok ? '✅ Success' : '❌ Failed'} (${tests.allOrdersCount.test.status})\n\n`
+        
+        if (tests.ordersCount.test.ok) {
+          message += `Total Orders: ${tests.ordersCount.data?.count || 'N/A'}\n`
+        }
+        if (tests.allOrdersCount.test.ok) {
+          message += `All Orders (any status): ${tests.allOrdersCount.data?.count || 'N/A'}\n`
+        }
+        if (tests.recentOrders.test.ok) {
+          message += `Recent Orders (7 days): ${tests.recentOrders.data?.orders?.length || 0}\n`
+        }
+        
+        alert(message)
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Shopify API debug failed:', data)
+        alert(`Shopify API debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Shopify API debug error:', error)
+      alert(`Shopify API debug failed: ${error}`)
+    }
+  }
+
   const forceImport = async (integrationId: string) => {
     try {
       console.log('Force importing for integration:', integrationId)
@@ -144,18 +190,26 @@ export default function DebugImportStatusPage() {
                         <p className="text-gray-600">{store.shopDomain}</p>
                         <p className="text-sm text-gray-500">Integration ID: {store.id}</p>
                       </div>
-                      <button
-                        onClick={() => triggerImport(store.id)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        Trigger Import
-                      </button>
-                      <button
-                        onClick={() => forceImport(store.id)}
-                        className="ml-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                      >
-                        Force Import
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => debugShopifyApi(store.id)}
+                          className="px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700"
+                        >
+                          Debug API
+                        </button>
+                        <button
+                          onClick={() => triggerImport(store.id)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          Trigger Import
+                        </button>
+                        <button
+                          onClick={() => forceImport(store.id)}
+                          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                        >
+                          Force Import
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="bg-gray-50 rounded-lg p-4">

@@ -50,11 +50,19 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('📊 Starting order fetch from Shopify...')
+    console.log('🏪 Shop:', credentials.shop)
+    console.log('🔑 Access token present:', !!credentials.accessToken)
 
     // Calculate date range
     const endDate = new Date()
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - months)
+    
+    console.log('📅 Date range:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      months
+    })
 
     // Fetch orders directly from Shopify
     interface ShopifyOrder {
@@ -97,33 +105,45 @@ export async function POST(request: NextRequest) {
 
     while (hasNextPage && totalFetched < 1000) { // Limit to 1000 orders for safety
       try {
-        const fetchResponse: Response = await fetch(
-          `https://${credentials.shop}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`,
-          {
-            headers: {
-              'X-Shopify-Access-Token': credentials.accessToken,
-              'Content-Type': 'application/json'
-            }
+        const requestUrl = `https://${credentials.shop}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`
+        console.log('🌐 Fetching from URL:', requestUrl)
+        
+        const fetchResponse: Response = await fetch(requestUrl, {
+          headers: {
+            'X-Shopify-Access-Token': credentials.accessToken,
+            'Content-Type': 'application/json'
           }
-        )
+        })
 
         if (!fetchResponse.ok) {
-          console.error('Shopify API error:', fetchResponse.status, fetchResponse.statusText)
+          console.error('❌ Shopify API error:', fetchResponse.status, fetchResponse.statusText)
+          const errorText = await fetchResponse.text()
+          console.error('❌ Error response body:', errorText)
           break
         }
 
         const data: ShopifyResponse = await fetchResponse.json()
+        console.log('📊 API Response:', {
+          ordersCount: data.orders.length,
+          firstOrderDate: data.orders[0]?.created_at,
+          lastOrderDate: data.orders[data.orders.length - 1]?.created_at
+        })
+        
         allOrders = [...allOrders, ...data.orders]
         totalFetched += data.orders.length
 
         // Check for pagination
         const linkHeader = fetchResponse.headers.get('Link')
+        console.log('🔗 Link header:', linkHeader)
+        
         if (linkHeader && linkHeader.includes('rel="next"')) {
           const matches = linkHeader.match(/page_info=([^>]+)>; rel="next"/)
           pageInfo = matches ? matches[1] : null
           hasNextPage = !!pageInfo
+          console.log('📄 Next page info:', pageInfo)
         } else {
           hasNextPage = false
+          console.log('📄 No more pages')
         }
 
         console.log(`📦 Fetched ${data.orders.length} orders (total: ${totalFetched})`)
