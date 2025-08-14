@@ -87,25 +87,29 @@ export async function POST(request: NextRequest) {
     console.log('📊 Response data:', responseData)
 
     // Analyze the response
-    let analysis = {
-      tokenValid: response.ok,
-      httpStatus: response.status,
-      shopifyError: null,
-      permissions: null,
-      recommendation: null
-    }
+    let shopifyError = null
+    let permissions = null
+    let recommendation = null
 
     if (response.status === 401) {
-      analysis.shopifyError = isJson ? responseData.errors || responseData.error : responseData
-      analysis.recommendation = "Token is invalid, expired, or app was uninstalled. May need to re-authenticate."
+      shopifyError = isJson ? responseData.errors || responseData.error : responseData
+      recommendation = "Token is invalid, expired, or app was uninstalled. May need to re-authenticate."
     } else if (response.status === 403) {
-      analysis.shopifyError = isJson ? responseData.errors || responseData.error : responseData
-      analysis.recommendation = "Token lacks required permissions. Check app scopes include 'read_orders'."
+      shopifyError = isJson ? responseData.errors || responseData.error : responseData
+      recommendation = "Token lacks required permissions. Check app scopes include 'read_orders'."
     } else if (response.status === 404) {
-      analysis.recommendation = "Shop domain may be incorrect or shop may not exist."
+      recommendation = "Shop domain may be incorrect or shop may not exist."
     } else if (response.ok && responseData.shop) {
-      analysis.permissions = "Token has basic shop access"
-      analysis.recommendation = "Token appears valid. Try testing orders API specifically."
+      permissions = "Token has basic shop access"
+      recommendation = "Token appears valid. Try testing orders API specifically."
+    }
+
+    const analysis = {
+      tokenValid: response.ok,
+      httpStatus: response.status,
+      shopifyError,
+      permissions,
+      recommendation
     }
 
     return NextResponse.json({
