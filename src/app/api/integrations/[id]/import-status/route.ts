@@ -126,7 +126,7 @@ export async function POST(
 
     // Check if import is already running
     const existingProgress = HistoricalImportService.getImportProgress(integrationId)
-    if (existingProgress && existingProgress.status === 'running') {
+    if (existingProgress && existingProgress.status === 'in_progress') {
       return NextResponse.json({
         success: false,
         error: 'Import is already running for this integration'

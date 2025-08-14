@@ -57,14 +57,47 @@ export async function POST(request: NextRequest) {
     startDate.setMonth(startDate.getMonth() - months)
 
     // Fetch orders directly from Shopify
-    let allOrders = []
+    interface ShopifyOrder {
+      id: number
+      order_number: number
+      name: string
+      created_at: string
+      total_price: string
+      total_tax?: string
+      subtotal_price?: string
+      total_discounts?: string
+      total_shipping_price_set?: {
+        shop_money?: {
+          amount?: string
+        }
+      }
+      currency: string
+      email?: string
+      customer?: {
+        email?: string
+        first_name?: string
+        last_name?: string
+      }
+      billing_address?: any
+      shipping_address?: any
+      line_items?: any[]
+      financial_status?: string
+      fulfillment_status?: string
+      cancelled_at?: string | null
+    }
+    
+    interface ShopifyResponse {
+      orders: ShopifyOrder[]
+    }
+    
+    let allOrders: ShopifyOrder[] = []
     let hasNextPage = true
-    let pageInfo = null
+    let pageInfo: string | null = null
     let totalFetched = 0
 
     while (hasNextPage && totalFetched < 1000) { // Limit to 1000 orders for safety
       try {
-        const response = await fetch(
+        const fetchResponse: Response = await fetch(
           `https://${credentials.shop}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`,
           {
             headers: {
@@ -74,17 +107,17 @@ export async function POST(request: NextRequest) {
           }
         )
 
-        if (!response.ok) {
-          console.error('Shopify API error:', response.status, response.statusText)
+        if (!fetchResponse.ok) {
+          console.error('Shopify API error:', fetchResponse.status, fetchResponse.statusText)
           break
         }
 
-        const data = await response.json()
+        const data: ShopifyResponse = await fetchResponse.json()
         allOrders = [...allOrders, ...data.orders]
         totalFetched += data.orders.length
 
         // Check for pagination
-        const linkHeader = response.headers.get('Link')
+        const linkHeader = fetchResponse.headers.get('Link')
         if (linkHeader && linkHeader.includes('rel="next"')) {
           const matches = linkHeader.match(/page_info=([^>]+)>; rel="next"/)
           pageInfo = matches ? matches[1] : null
