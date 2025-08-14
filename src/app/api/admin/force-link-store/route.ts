@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 })
     }
 
-    console.log('🔗 Linking store to user:', session.user.email)
+    console.log('🔗 Force linking store to user:', session.user.email)
     console.log('Organization ID:', organizationId)
 
     // Get the current user
@@ -30,21 +30,24 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 })
     }
 
-    // Get the pending organization and integration
+    // Get the organization and integration (regardless of status)
     const organization = await withWebhookDb(async (db) => {
       return await db.organization.findUnique({
         where: { id: organizationId },
         include: {
           integrations: {
             where: {
-              type: 'SHOPIFY',
-              status: 'PENDING_USER_LINK'
+              type: 'SHOPIFY'
             }
           },
-          members: true
+          members: {
+            include: {
+              user: true
+            }
+          }
         }
       })
     })
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (organization.integrations.length === 0) {
-      return NextResponse.json({ error: 'No pending integration found' }, { status: 404 })
+      return NextResponse.json({ error: 'No Shopify integration found for this organization' }, { status: 404 })
     }
 
     const integration = organization.integrations[0]
@@ -62,80 +65,86 @@ export async function POST(request: NextRequest) {
     // Check if user is already a member
     const isAlreadyMember = organization.members.some(member => member.userId === user.id)
 
+    let userRole = 'ADMIN'
+    
     if (!isAlreadyMember) {
+      // Determine role - if no members exist, make this user OWNER, otherwise ADMIN
+      userRole = organization.members.length === 0 ? 'OWNER' : 'ADMIN'
+      
       // Add user as organization member
       await withWebhookDb(async (db) => {
         await db.organizationMember.create({
           data: {
             userId: user.id,
             organizationId: organization.id,
-            role: organization.members.length === 0 ? 'OWNER' : 'ADMIN'
+            role: userRole as 'OWNER' | 'ADMIN' | 'MEMBER'
           }
         })
       })
+      
+      console.log(`✅ Added user as ${userRole} to organization`)
+    } else {
+      const existingMember = organization.members.find(member => member.userId === user.id)
+      userRole = existingMember?.role || 'MEMBER'
+      console.log('✅ User already a member with role:', userRole)
     }
 
-    // Update integration status and organization
-    await withWebhookDb(async (db) => {
-      // Update integration status
-      await db.integration.update({
-        where: { id: integration.id },
-        data: {
-          status: 'CONNECTED'
-        }
+    // Update integration status to CONNECTED if it's not already
+    if (integration.status !== 'CONNECTED') {
+      await withWebhookDb(async (db) => {
+        await db.integration.update({
+          where: { id: integration.id },
+          data: {
+            status: 'CONNECTED'
+          }
+        })
       })
+      console.log('✅ Updated integration status to CONNECTED')
+    }
 
-      // Update organization to remove pending status
-      const currentSettings = organization.settings as any
-      const newSettings = { ...currentSettings }
-      delete newSettings.pendingLink
-      
-      await db.organization.update({
-        where: { id: organization.id },
-        data: {
-          name: organization.name.replace(' (Pending Link)', ''),
-          slug: organization.slug.replace('-pending', ''),
-          description: organization.description?.replace('Pending link: ', ''),
-          settings: newSettings
-        }
+    // Clean up organization name if it has pending indicators
+    if (organization.name.includes('(Pending Link)')) {
+      await withWebhookDb(async (db) => {
+        await db.organization.update({
+          where: { id: organization.id },
+          data: {
+            name: organization.name.replace(' (Pending Link)', ''),
+            slug: organization.slug.replace('-pending', ''),
+            description: organization.description?.replace('Pending link: ', '')
+          }
+        })
       })
-    })
+      console.log('✅ Cleaned up organization name')
+    }
 
-    console.log('✅ Successfully linked store to user')
+    console.log('✅ Successfully force-linked store to user')
 
     return NextResponse.json({
       success: true,
       message: 'Store successfully linked to your account',
       organizationId: organization.id,
       storeName: integration.name,
-      userRole: organization.members.length === 0 ? 'OWNER' : 'ADMIN'
+      userRole: userRole,
+      wasAlreadyMember: isAlreadyMember
     })
 
   } catch (error) {
-    console.error('❌ Store linking error:', error)
+    console.error('❌ Force store linking error:', error)
     
-    // More detailed error information
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     const errorCode = (error as any)?.code || 'UNKNOWN'
     
     console.error('Error details:', {
       message: errorMessage,
       code: errorCode,
-      stack: error instanceof Error ? error.stack : 'No stack',
-      organizationId,
-      userEmail: session.user.email
+      stack: error instanceof Error ? error.stack : 'No stack'
     })
     
     return NextResponse.json(
       { 
-        error: 'Failed to link store',
+        error: 'Failed to force-link store',
         details: errorMessage,
-        code: errorCode,
-        debugInfo: {
-          organizationId,
-          userEmail: session.user.email,
-          timestamp: new Date().toISOString()
-        }
+        code: errorCode
       },
       { status: 500 }
     )

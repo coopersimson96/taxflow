@@ -56,11 +56,12 @@ export default function AdminLinkStoresPage() {
     }
   }
 
-  const linkStore = async (organizationId: string) => {
+  const linkStore = async (organizationId: string, useForceLinking = false) => {
     setLinkingStore(organizationId)
     
     try {
-      const response = await fetch('/api/admin/link-store', {
+      const endpoint = useForceLinking ? '/api/admin/force-link-store' : '/api/admin/link-store'
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +75,10 @@ export default function AdminLinkStoresPage() {
         alert(`Successfully linked ${data.storeName} to your account!`)
         fetchIntegrations() // Refresh the list
       } else {
-        alert(`Failed to link store: ${data.error}`)
+        console.error('Store linking error:', data)
+        const errorDetails = data.details ? `\nDetails: ${data.details}` : ''
+        const debugInfo = data.debugInfo ? `\nDebug: ${JSON.stringify(data.debugInfo, null, 2)}` : ''
+        alert(`Failed to link store: ${data.error}${errorDetails}${debugInfo}`)
       }
     } catch (err) {
       alert('Failed to link store')
@@ -173,17 +177,30 @@ export default function AdminLinkStoresPage() {
 
                     <div className="ml-4 space-y-2">
                       {!integration.isUserMember && (
-                        <button
-                          onClick={() => linkStore(integration.organizationId)}
-                          disabled={linkingStore === integration.organizationId}
-                          className={`px-4 py-2 rounded-lg font-medium ${
-                            linkingStore === integration.organizationId
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-700'
-                          } text-white transition-colors`}
-                        >
-                          {linkingStore === integration.organizationId ? 'Linking...' : 'Link to My Account'}
-                        </button>
+                        <div className="space-y-2">
+                          <button
+                            onClick={() => linkStore(integration.organizationId, false)}
+                            disabled={linkingStore === integration.organizationId}
+                            className={`w-full px-4 py-2 rounded-lg font-medium ${
+                              linkingStore === integration.organizationId
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            } text-white transition-colors`}
+                          >
+                            {linkingStore === integration.organizationId ? 'Linking...' : 'Link to My Account'}
+                          </button>
+                          <button
+                            onClick={() => linkStore(integration.organizationId, true)}
+                            disabled={linkingStore === integration.organizationId}
+                            className={`w-full px-3 py-1 text-sm rounded-lg font-medium ${
+                              linkingStore === integration.organizationId
+                                ? 'bg-gray-300 cursor-not-allowed'
+                                : 'bg-orange-600 hover:bg-orange-700'
+                            } text-white transition-colors`}
+                          >
+                            Force Link
+                          </button>
+                        </div>
                       )}
                       
                       {integration.isUserMember && (
