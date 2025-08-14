@@ -52,6 +52,51 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const validateToken = async (integrationId: string) => {
+    try {
+      console.log('Validating token for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/validate-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Token validation response:', data)
+      
+      if (response.ok && data.success) {
+        let message = `Token Validation for ${data.integration.name}:\n\n`
+        
+        message += `Shop: ${data.integration.shop}\n`
+        message += `Token Format: ${data.token.format}\n`
+        message += `Token Length: ${data.token.length}\n\n`
+        
+        message += `API Test Result:\n`
+        message += `Status: ${data.apiTest.status} (${data.apiTest.ok ? 'Success' : 'Failed'})\n`
+        message += `URL: ${data.apiTest.url}\n\n`
+        
+        message += `Analysis:\n`
+        message += `Token Valid: ${data.analysis.tokenValid}\n`
+        if (data.analysis.shopifyError) {
+          message += `Shopify Error: ${JSON.stringify(data.analysis.shopifyError)}\n`
+        }
+        message += `Recommendation: ${data.analysis.recommendation}\n`
+        
+        alert(message)
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Token validation failed:', data)
+        alert(`Token validation failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Token validation error:', error)
+      alert(`Token validation failed: ${error}`)
+    }
+  }
+
   const checkCredentials = async (integrationId: string) => {
     try {
       console.log('Checking credentials for integration:', integrationId)
@@ -242,6 +287,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
                         >
                           Check Creds
+                        </button>
+                        <button
+                          onClick={() => validateToken(store.id)}
+                          className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
+                        >
+                          Validate Token
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}

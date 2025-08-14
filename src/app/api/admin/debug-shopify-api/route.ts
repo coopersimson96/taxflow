@@ -94,7 +94,14 @@ export async function POST(request: NextRequest) {
       if (shopResponse.ok) {
         shopData = await shopResponse.json()
       } else {
-        shopData = await shopResponse.text()
+        const errorText = await shopResponse.text()
+        console.error('Shop API error response:', errorText)
+        shopData = {
+          error: errorText,
+          status: shopResponse.status,
+          statusText: shopResponse.statusText,
+          headers: Object.fromEntries(shopResponse.headers.entries())
+        }
       }
     } catch (error) {
       console.error('Shop info test failed:', error)
