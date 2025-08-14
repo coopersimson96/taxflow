@@ -20,6 +20,14 @@ export default function ConnectClient() {
     const errorParam = searchParams.get('error')
     const successParam = searchParams.get('success')
     const shopParam = searchParams.get('shop')
+    const actionParam = searchParams.get('action')
+    const orgParam = searchParams.get('org')
+
+    // Handle store linking redirect
+    if (actionParam === 'link_store' && shopParam && orgParam) {
+      router.push(`/link-store?shop=${shopParam}&org=${orgParam}`)
+      return
+    }
 
     if (errorParam) {
       switch (errorParam) {

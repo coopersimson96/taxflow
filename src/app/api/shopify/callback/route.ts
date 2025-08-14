@@ -98,14 +98,22 @@ export async function GET(request: NextRequest) {
 
       // Find the user who is connecting this store
       let connectingUser = null
+      
+      console.log('🔍 Determining connecting user...')
+      console.log('State email:', connectingUserEmail)
+      console.log('Shop email:', shopInfo.shop.email)
+      console.log('Customer email:', shopInfo.shop.customer_email)
+      
+      // Priority 1: Use state parameter (most reliable)
       if (connectingUserEmail) {
         connectingUser = await prisma.user.findUnique({
           where: { email: connectingUserEmail }
         })
+        console.log('Found user from state:', connectingUser ? 'YES' : 'NO')
       }
       
+      // Priority 2: Try shop email fallback
       if (!connectingUser) {
-        // Try to find user by shop email as fallback
         connectingUser = await prisma.user.findFirst({
           where: { 
             OR: [
@@ -114,12 +122,56 @@ export async function GET(request: NextRequest) {
             ]
           }
         })
+        console.log('Found user from shop emails:', connectingUser ? 'YES' : 'NO')
       }
 
+      // Priority 3: FOUNDATIONAL FIX - If no user found, store connection info for manual linking
       if (!connectingUser) {
-        console.error('Could not determine which user is connecting this store')
+        console.log('❌ No user found - creating orphaned integration for manual linking')
+        
+        // Create a temporary organization for this store that can be linked later
+        const tempOrganization = await prisma.organization.create({
+          data: {
+            name: `${shopInfo.shop.name || normalizedShop} (Pending Link)`,
+            slug: `${normalizedShop.replace('.', '-')}-pending`,
+            description: `Pending link: Tax tracking for ${shopInfo.shop.name || normalizedShop}`,
+            settings: {
+              shopifyShop: normalizedShop,
+              timezone: shopInfo.shop.timezone || 'America/New_York',
+              currency: shopInfo.shop.currency || 'USD',
+              country: shopInfo.shop.country_name || shopInfo.shop.country,
+              pendingLink: true,
+              stateEmail: connectingUserEmail,
+              shopOwnerEmail: shopInfo.shop.email,
+              customerEmail: shopInfo.shop.customer_email
+            }
+          }
+        })
+        
+        console.log('📝 Created pending organization:', tempOrganization.id)
+        organizationId = tempOrganization.id
+        
+        // Continue with integration creation but skip webhook/import setup
+        const integration = await prisma.integration.create({
+          data: {
+            organizationId: tempOrganization.id,
+            type: 'SHOPIFY',
+            name: shopInfo.shop.name || normalizedShop,
+            status: 'PENDING_USER_LINK',
+            credentials: {
+              accessToken: tokens.accessToken,
+              scope: tokens.scope,
+              shop: normalizedShop,
+              shopInfo: shopInfo.shop
+            }
+          }
+        })
+        
+        console.log('📝 Created pending integration:', integration.id)
+        
+        // Redirect to a linking page instead of error
         return NextResponse.redirect(
-          new URL('/connect?error=user_not_found', request.url)
+          new URL(`/connect?action=link_store&shop=${normalizedShop}&org=${tempOrganization.id}`, request.url)
         )
       }
 
