@@ -3,12 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import AuthGuard from '@/components/auth/AuthGuard'
+import DebugModal from '@/components/DebugModal'
 
 export default function DebugImportStatusPage() {
   const { data: session, status } = useSession()
   const [stores, setStores] = useState<any[]>([])
   const [importStatuses, setImportStatuses] = useState<any>({})
   const [isLoading, setIsLoading] = useState(true)
+  const [debugModal, setDebugModal] = useState<{isOpen: boolean, title: string, content: string}>({
+    isOpen: false,
+    title: '',
+    content: ''
+  })
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -131,7 +137,11 @@ export default function DebugImportStatusPage() {
         
         message += `Compare these numbers with your Shopify dashboard!`
         
-        alert(message)
+        setDebugModal({
+          isOpen: true,
+          title: 'Reporting Windows Analysis',
+          content: message
+        })
       } else {
         const errorMsg = data.error || data.details || 'Unknown error'
         console.error('Reporting debug failed:', data)
@@ -468,6 +478,13 @@ export default function DebugImportStatusPage() {
           </div>
         </div>
       </div>
+      
+      <DebugModal
+        isOpen={debugModal.isOpen}
+        onClose={() => setDebugModal({isOpen: false, title: '', content: ''})}
+        title={debugModal.title}
+        content={debugModal.content}
+      />
     </AuthGuard>
   )
 }
