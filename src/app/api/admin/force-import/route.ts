@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { integrationId, months = 12 } = await request.json()
+    const { integrationId, months = 24, maxOrders = 5000 } = await request.json()
 
     if (!integrationId) {
       return NextResponse.json({ error: 'Integration ID required' }, { status: 400 })
@@ -81,10 +81,12 @@ export async function POST(request: NextRequest) {
     const startDate = new Date()
     startDate.setMonth(startDate.getMonth() - months)
     
-    console.log('📅 Date range:', {
+    console.log('📅 Import parameters:', {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
-      months
+      months,
+      maxOrders,
+      dateRangeDescription: `Importing ${months} months of history (up to ${maxOrders} orders)`
     })
 
     // Fetch orders directly from Shopify
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
     let pageInfo: string | null = null
     let totalFetched = 0
 
-    while (hasNextPage && totalFetched < 1000) { // Limit to 1000 orders for safety
+    while (hasNextPage && totalFetched < maxOrders) { // Configurable order limit
       try {
         const requestUrl = `https://${shopDomain}/admin/api/2024-01/orders.json?status=any&created_at_min=${startDate.toISOString()}&limit=250${pageInfo ? `&page_info=${pageInfo}` : ''}`
         console.log('🌐 Fetching from URL:', requestUrl)

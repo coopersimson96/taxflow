@@ -230,7 +230,17 @@ export default function DebugImportStatusPage() {
     try {
       console.log('Force importing for integration:', integrationId)
       
-      if (!confirm('Force import will directly fetch and process orders from Shopify. This may take a few minutes. Continue?')) {
+      const monthsStr = prompt('How many months of history to import? (default: 24)', '24')
+      const maxOrdersStr = prompt('Maximum number of orders to import? (default: 5000)', '5000')
+      
+      if (!monthsStr || !maxOrdersStr) {
+        return
+      }
+      
+      const months = parseInt(monthsStr) || 24
+      const maxOrders = parseInt(maxOrdersStr) || 5000
+      
+      if (!confirm(`Force import will fetch up to ${maxOrders} orders from the last ${months} months. This may take several minutes. Continue?`)) {
         return
       }
       
@@ -239,7 +249,7 @@ export default function DebugImportStatusPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ integrationId, months: 12 })
+        body: JSON.stringify({ integrationId, months, maxOrders })
       })
       
       const data = await response.json()
