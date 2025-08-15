@@ -47,15 +47,25 @@ export async function POST(request: NextRequest) {
 
     // Calculate date range for the target date in store timezone
     const storeTimezone = 'America/Los_Angeles'
-    const dateInStoreTime = new Date(compareDate.toLocaleString("en-US", {timeZone: storeTimezone}))
-    const dayStart = new Date(dateInStoreTime.getFullYear(), dateInStoreTime.getMonth(), dateInStoreTime.getDate())
-    const dayStartUTC = new Date(dayStart.getTime() + (dayStart.getTimezoneOffset() * 60000))
+    
+    // Create the target date at midnight PST/PDT
+    const year = compareDate.getFullYear()
+    const month = compareDate.getMonth()
+    const date = compareDate.getDate()
+    
+    // Create date at midnight in PST/PDT timezone
+    const dayStartPST = new Date()
+    dayStartPST.setFullYear(year, month, date)
+    dayStartPST.setHours(0, 0, 0, 0)
+    
+    // Convert PST midnight to UTC for database queries
+    const pstMidnightString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}T08:00:00.000Z`
+    const dayStartUTC = new Date(pstMidnightString)
     const dayEndUTC = new Date(dayStartUTC.getTime() + 24 * 60 * 60 * 1000)
 
     console.log('📅 Date range calculation:', {
       inputDate: compareDate.toISOString(),
-      storeLocalDate: dateInStoreTime.toISOString(),
-      dayStart: dayStart.toISOString(),
+      dayStartPST: dayStartPST.toISOString(),
       dayStartUTC: dayStartUTC.toISOString(),
       dayEndUTC: dayEndUTC.toISOString()
     })
