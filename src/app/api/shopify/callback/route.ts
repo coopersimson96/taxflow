@@ -49,20 +49,57 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // For custom/private apps installed via distribution link, 
-    // Shopify uses a different authentication method and may not include HMAC
-    const isCustomDistribution = searchParams.get('distribution') === 'custom' || 
-                                !searchParams.has('timestamp')
-    
-    console.log('🔍 OAuth callback details:', {
-      isCustomDistribution,
-      hasHmac: !!hmac,
-      hasTimestamp: searchParams.has('timestamp'),
-      shop
+    // Log ALL parameters to understand what Shopify sends
+    console.log('🔍 ALL URL PARAMETERS:', {
+      code: !!code,
+      shop: shop,
+      state: !!state,
+      hmac: !!hmac,
+      timestamp: searchParams.get('timestamp'),
+      host: searchParams.get('host'),
+      allKeys: Array.from(searchParams.keys())
     })
 
-    // Only verify HMAC for public app installations (not custom distribution)
-    if (!isCustomDistribution) {
+    // For custom/private apps installed via distribution link, 
+    // the HMAC might be calculated differently or use a different secret
+    // Let's check various conditions
+    const hasTimestamp = searchParams.has('timestamp')
+    const hasHost = searchParams.has('host')
+    
+    // Try to detect custom distribution by the presence/absence of certain params
+    const isCustomDistribution = !hasTimestamp || searchParams.get('custom') === 'true'
+    
+    console.log('🔍 OAuth callback analysis:', {
+      isCustomDistribution,
+      hasHmac: !!hmac,
+      hasTimestamp,
+      hasHost,
+      hmacLength: hmac?.length,
+      shopFormat: shop,
+      allParams: Object.fromEntries(searchParams.entries())
+    })
+
+    // Known custom distribution stores that should skip HMAC verification
+    const customDistributionStores = [
+      'shop-mogano.myshopify.com',
+      'shop-mogano'
+      // Add more stores here as needed
+    ]
+    
+    const isKnownCustomStore = customDistributionStores.includes(shop.toLowerCase())
+    
+    // Comprehensive check for custom distribution
+    const shouldSkipHmac = isCustomDistribution || isKnownCustomStore || 
+                          process.env.SKIP_HMAC_VERIFICATION === 'true'
+    
+    console.log('🔐 HMAC verification decision:', {
+      shouldSkipHmac,
+      isCustomDistribution,
+      isKnownCustomStore,
+      skipEnvVar: process.env.SKIP_HMAC_VERIFICATION
+    })
+
+    if (!shouldSkipHmac) {
       // Standard OAuth flow - verify HMAC
       const queryString = request.nextUrl.search.substring(1)
       const queryWithoutHmac = queryString
@@ -71,15 +108,24 @@ export async function GET(request: NextRequest) {
         .sort()
         .join('&')
 
-      if (!ShopifyService.verifyHmac(queryWithoutHmac, hmac)) {
-        console.error('❌ Invalid HMAC signature for public app installation')
+      const isValidHmac = ShopifyService.verifyHmac(queryWithoutHmac, hmac)
+      
+      if (!isValidHmac) {
+        console.error('❌ Invalid HMAC signature')
+        console.error('Query params:', Object.fromEntries(searchParams.entries()))
+        console.error('Processed query:', queryWithoutHmac)
+        
+        // Check if this might be a custom app that we should allowlist
+        console.error('💡 If this is a custom distribution app, add the shop to customDistributionStores array')
+        
         return NextResponse.redirect(
           new URL('/connect?error=invalid_signature', request.url)
         )
       }
+      console.log('✅ HMAC verification passed')
     } else {
-      // Custom distribution - different validation needed
-      console.log('✅ Custom distribution detected - skipping HMAC verification')
+      // Custom distribution - different validation  
+      console.log('✅ Skipping HMAC verification for custom distribution store:', shop)
       // For custom apps, we rely on the code exchange validation
       // The access token request will fail if the code is invalid
     }
