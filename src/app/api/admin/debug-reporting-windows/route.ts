@@ -56,14 +56,21 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    // Analyze date patterns
+    // Analyze date patterns using store timezone
+    const storeTimezone = 'America/Los_Angeles' // PST/PDT - should match user's store
     const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+    
+    // Calculate "today" in store timezone
+    const nowInStoreTime = new Date(now.toLocaleString("en-US", {timeZone: storeTimezone}))
+    const todayStartLocal = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), nowInStoreTime.getDate())
+    
+    // Convert to UTC for database queries
+    const todayStartUTC = new Date(todayStartLocal.getTime() + (todayStartLocal.getTimezoneOffset() * 60000))
+    const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000)
     
     const todayTransactions = transactions.filter(tx => {
       const txDate = new Date(tx.transactionDate)
-      return txDate >= todayStart && txDate < todayEnd
+      return txDate >= todayStartUTC && txDate < todayEndUTC
     })
 
     const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -92,8 +99,10 @@ export async function POST(request: NextRequest) {
         serverTime: now.toISOString(),
         serverTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         todayRange: {
-          start: todayStart.toISOString(),
-          end: todayEnd.toISOString()
+          start: todayStartUTC.toISOString(),
+          end: todayEndUTC.toISOString(),
+          localStart: todayStartLocal.toISOString(),
+          storeTimezone: storeTimezone
         },
         last7DaysStart: last7Days.toISOString(),
         

@@ -304,14 +304,30 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
     other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
   }
 
-  // Calculate today's data
-  const today = new Date()
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+  // Calculate today's data in the store's timezone (assuming PST/PDT for now)
+  // TODO: Get actual store timezone from Shopify store settings
+  const storeTimezone = 'America/Los_Angeles' // PST/PDT
+  const now = new Date()
+  
+  // Convert to store timezone for "today" calculation
+  const nowInStoreTime = new Date(now.toLocaleString("en-US", {timeZone: storeTimezone}))
+  const todayStart = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), nowInStoreTime.getDate())
+  
+  // Convert back to UTC for database queries (since our DB stores UTC)
+  const todayStartUTC = new Date(todayStart.getTime() + (todayStart.getTimezoneOffset() * 60000))
+  const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000)
+  
+  console.log('🕐 Timezone calculation:', {
+    serverTime: now.toISOString(),
+    storeLocalTime: nowInStoreTime.toISOString(),
+    todayStartLocal: todayStart.toISOString(),
+    todayStartUTC: todayStartUTC.toISOString(),
+    todayEndUTC: todayEndUTC.toISOString()
+  })
   
   const todayTransactions = transactions.filter(tx => {
     const txDate = new Date(tx.transactionDate)
-    return txDate >= todayStart && txDate < todayEnd
+    return txDate >= todayStartUTC && txDate < todayEndUTC
   })
 
   const todayTaxAmount = todayTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
