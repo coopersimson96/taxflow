@@ -89,6 +89,60 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugReportingWindows = async (integrationId: string) => {
+    try {
+      console.log('Debugging reporting windows for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/debug-reporting-windows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Reporting windows debug response:', data)
+      
+      if (response.ok && data.success) {
+        const analysis = data.analysis
+        let message = `Reporting Windows Analysis:\n\n`
+        
+        message += `Server Time: ${new Date(analysis.serverTime).toLocaleString()}\n`
+        message += `Server Timezone: ${analysis.serverTimezone}\n\n`
+        
+        message += `Today's Range:\n`
+        message += `Start: ${new Date(analysis.todayRange.start).toLocaleString()}\n`
+        message += `End: ${new Date(analysis.todayRange.end).toLocaleString()}\n\n`
+        
+        message += `Transactions:\n`
+        message += `Total in DB: ${analysis.totalTransactions}\n`
+        message += `Today: ${analysis.todayTransactionCount}\n`
+        message += `Last 7 days: ${analysis.last7DaysTransactionCount}\n\n`
+        
+        message += `Today's Totals (Our Calculation):\n`
+        message += `Sales: $${analysis.todayCalculations.totalSales}\n`
+        message += `Tax: $${analysis.todayCalculations.taxAmount}\n`
+        message += `Payout: $${analysis.todayCalculations.payoutAmount}\n\n`
+        
+        if (analysis.dateRange.oldest) {
+          message += `Data Range: ${new Date(analysis.dateRange.oldest).toLocaleDateString()} to ${new Date(analysis.dateRange.newest).toLocaleDateString()}\n\n`
+        }
+        
+        message += `Compare these numbers with your Shopify dashboard!`
+        
+        alert(message)
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Reporting debug failed:', data)
+        alert(`Reporting debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Reporting debug error:', error)
+      alert(`Reporting debug failed: ${error}`)
+    }
+  }
+
   const validateToken = async (integrationId: string) => {
     try {
       console.log('Validating token for integration:', integrationId)
@@ -340,6 +394,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
                         >
                           Validate Token
+                        </button>
+                        <button
+                          onClick={() => debugReportingWindows(store.id)}
+                          className="px-3 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700"
+                        >
+                          Debug Dates
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
