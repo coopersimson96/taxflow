@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
               members: {
                 where: {
                   user: {
-                    email: session.user.email
+                    email: session.user.email!
                   }
                 }
               }
