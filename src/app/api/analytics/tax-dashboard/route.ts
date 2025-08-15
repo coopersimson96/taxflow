@@ -344,10 +344,10 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
   }
 
   // Calculate monthly rolling total
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+  const monthStart = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), 1)
   const monthlyTransactions = transactions.filter(tx => {
     const txDate = new Date(tx.transactionDate)
-    return txDate >= monthStart && txDate <= today
+    return txDate >= monthStart && txDate <= nowInStoreTime
   })
   const monthlyRollingTotal = monthlyTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
 
