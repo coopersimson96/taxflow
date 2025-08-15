@@ -52,6 +52,43 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const disconnectStore = async (integrationId: string) => {
+    try {
+      const storeName = stores.find(s => s.id === integrationId)?.name || 'store'
+      
+      if (!confirm(`Are you sure you want to disconnect ${storeName}? This will mark it as disconnected and you'll need to reconnect it to import data.`)) {
+        return
+      }
+      
+      const reason = prompt('Reason for disconnect (optional):') || 'Manual disconnect via debug interface'
+      
+      console.log('Disconnecting store:', integrationId)
+      
+      const response = await fetch('/api/admin/disconnect-store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId, reason })
+      })
+      
+      const data = await response.json()
+      console.log('Disconnect response:', data)
+      
+      if (response.ok && data.success) {
+        alert(`Successfully disconnected ${data.integration.name}!\n\nYou can now reconnect it using your custom distribution link.`)
+        fetchStoresAndStatus() // Refresh the list
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Disconnect failed:', data)
+        alert(`Failed to disconnect store: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Disconnect error:', error)
+      alert(`Failed to disconnect store: ${error}`)
+    }
+  }
+
   const validateToken = async (integrationId: string) => {
     try {
       console.log('Validating token for integration:', integrationId)
@@ -311,6 +348,12 @@ export default function DebugImportStatusPage() {
                           className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
                         >
                           Force Import
+                        </button>
+                        <button
+                          onClick={() => disconnectStore(store.id)}
+                          className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700"
+                        >
+                          Disconnect
                         </button>
                       </div>
                     </div>
