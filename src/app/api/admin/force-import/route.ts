@@ -177,6 +177,19 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Fetched ${allOrders.length} total orders from Shopify`)
+    
+    // Log sample order structure
+    if (allOrders.length > 0) {
+      console.log('📋 Sample order structure:', {
+        id: allOrders[0].id,
+        orderNumber: allOrders[0].order_number,
+        name: allOrders[0].name,
+        totalPrice: allOrders[0].total_price,
+        createdAt: allOrders[0].created_at,
+        hasLineItems: !!allOrders[0].line_items,
+        lineItemsCount: allOrders[0].line_items?.length || 0
+      })
+    }
 
     // Process orders and save to database
     let processedCount = 0
@@ -190,7 +203,23 @@ export async function POST(request: NextRequest) {
         }
 
         // Process tax data
-        const taxData = processTaxData(order)
+        const rawTaxData = processTaxData(order)
+        
+        // Convert tax amounts from dollars to cents
+        const taxData = {
+          gstAmount: Math.round((rawTaxData.gst || 0) * 100),
+          pstAmount: Math.round((rawTaxData.pst || 0) * 100),
+          hstAmount: Math.round((rawTaxData.hst || 0) * 100),
+          qstAmount: Math.round((rawTaxData.qst || 0) * 100),
+          stateTaxAmount: Math.round((rawTaxData.stateTax || 0) * 100),
+          localTaxAmount: Math.round((rawTaxData.localTax || 0) * 100),
+          otherTaxAmount: Math.round((rawTaxData.other || 0) * 100),
+          taxBreakdown: rawTaxData.breakdown || [],
+          taxCountry: rawTaxData.jurisdiction?.country || null,
+          taxProvince: rawTaxData.jurisdiction?.province || null,
+          taxCity: rawTaxData.jurisdiction?.city || null,
+          taxPostalCode: rawTaxData.jurisdiction?.postalCode || null
+        }
 
         // Save transaction
         await prisma.transaction.upsert({
@@ -245,8 +274,25 @@ export async function POST(request: NextRequest) {
           console.log(`⚡ Processed ${processedCount} orders...`)
         }
       } catch (error) {
-        console.error(`Error processing order ${order.id}:`, error)
+        console.error(`❌ Error processing order ${order.id}:`, error)
+        console.error('Order details:', {
+          id: order.id,
+          orderNumber: order.order_number,
+          name: order.name,
+          createdAt: order.created_at,
+          totalPrice: order.total_price
+        })
+        if (error instanceof Error) {
+          console.error('Error name:', error.name)
+          console.error('Error message:', error.message)
+          console.error('Error stack:', error.stack)
+        }
         errorCount++
+        
+        // Log first few errors in detail
+        if (errorCount <= 3) {
+          console.error('Full order object for debugging:', JSON.stringify(order, null, 2))
+        }
       }
     }
 
