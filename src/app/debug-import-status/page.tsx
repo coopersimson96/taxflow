@@ -95,6 +95,77 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugImportStats = async (integrationId: string) => {
+    try {
+      console.log('Debugging import stats for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/debug-import-stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Import stats debug response:', data)
+      
+      if (response.ok && data.success) {
+        const analysis = data.analysis
+        let message = `Import Statistics Analysis:\n\n`
+        
+        message += `Integration: ${analysis.integration.name}\n`
+        message += `Status: ${analysis.integration.status}\n`
+        message += `Created: ${new Date(analysis.integration.createdAt).toLocaleDateString()}\n\n`
+        
+        message += `Transaction Statistics:\n`
+        message += `Total Count: ${analysis.transactionStats.totalCount}\n`
+        message += `Unique Days: ${analysis.transactionStats.uniqueDates}\n`
+        message += `Average/Day: ${analysis.transactionStats.averagePerDay.toFixed(1)}\n\n`
+        
+        if (analysis.transactionStats.dateRange.oldest) {
+          message += `Date Range:\n`
+          message += `Oldest: ${new Date(analysis.transactionStats.dateRange.oldest).toLocaleDateString()}\n`
+          message += `Newest: ${new Date(analysis.transactionStats.dateRange.newest).toLocaleDateString()}\n\n`
+        }
+        
+        message += `Import History:\n`
+        message += `Last Sync: ${analysis.importHistory.lastSyncAt ? new Date(analysis.importHistory.lastSyncAt).toLocaleString() : 'Never'}\n`
+        message += `Historical Import Completed: ${analysis.importHistory.historicalImportCompleted}\n`
+        message += `Import Range: ${analysis.importHistory.historicalImportRange || 'Not set'}\n`
+        message += `Last Import Count: ${analysis.importHistory.lastImportOrderCount || 'Unknown'}\n\n`
+        
+        if (analysis.dateBreakdown.length > 0) {
+          message += `Recent Daily Breakdown:\n`
+          analysis.dateBreakdown.slice(-7).forEach((day: any) => {
+            message += `${day.date}: ${day.count} orders, $${day.totalSales.toFixed(2)} sales\n`
+          })
+          message += `\n`
+        }
+        
+        if (analysis.recommendations.length > 0) {
+          message += `Recommendations:\n`
+          analysis.recommendations.forEach((rec: string) => {
+            message += `• ${rec}\n`
+          })
+        }
+        
+        setDebugModal({
+          isOpen: true,
+          title: 'Import Statistics Analysis',
+          content: message
+        })
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Import stats debug failed:', data)
+        alert(`Import stats debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Import stats debug error:', error)
+      alert(`Import stats debug failed: ${error}`)
+    }
+  }
+
   const debugReportingWindows = async (integrationId: string) => {
     try {
       console.log('Debugging reporting windows for integration:', integrationId)
@@ -410,6 +481,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700"
                         >
                           Debug Dates
+                        </button>
+                        <button
+                          onClick={() => debugImportStats(store.id)}
+                          className="px-3 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700"
+                        >
+                          Debug Import
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
