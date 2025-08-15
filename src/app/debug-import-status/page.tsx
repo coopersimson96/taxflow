@@ -95,6 +95,80 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugDailyComparison = async (integrationId: string) => {
+    try {
+      const targetDate = prompt('Enter date to compare (YYYY-MM-DD) or leave blank for today:', '2025-08-15')
+      if (!targetDate) return
+      
+      console.log('Debugging daily comparison for integration:', integrationId, 'date:', targetDate)
+      
+      const response = await fetch('/api/admin/debug-daily-comparison', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId, targetDate })
+      })
+      
+      const data = await response.json()
+      console.log('Daily comparison debug response:', data)
+      
+      if (response.ok && data.success) {
+        const analysis = data.analysis
+        let message = `Daily Sales Comparison for ${analysis.date}:\n\n`
+        
+        message += `Date Range (${analysis.dateRange.timezone}):\n`
+        message += `Start: ${new Date(analysis.dateRange.start).toLocaleString()}\n`
+        message += `End: ${new Date(analysis.dateRange.end).toLocaleString()}\n\n`
+        
+        message += `Order Count: ${analysis.metrics.totalOrders}\n\n`
+        
+        message += `Different Sales Calculations:\n`
+        analysis.comparison.likelyShopifyMetrics.forEach((metric: any) => {
+          message += `${metric.name}: $${metric.value.toFixed(2)}\n`
+        })
+        message += `\n`
+        
+        message += `Breakdown:\n`
+        message += `Total Tax: $${analysis.metrics.totalTax.toFixed(2)}\n`
+        message += `Total Discounts: $${analysis.metrics.totalDiscounts.toFixed(2)}\n`
+        message += `Total Shipping: $${analysis.metrics.totalShipping.toFixed(2)}\n\n`
+        
+        if (Object.keys(analysis.metrics.statusBreakdown).length > 0) {
+          message += `Order Status Breakdown:\n`
+          Object.entries(analysis.metrics.statusBreakdown).forEach(([status, count]) => {
+            message += `${status}: ${count} orders\n`
+          })
+          message += `\n`
+        }
+        
+        message += `Sample Orders:\n`
+        analysis.metrics.sampleTransactions.forEach((tx: any) => {
+          message += `#${tx.orderNumber}: $${tx.totalAmount.toFixed(2)} (Status: ${tx.status})\n`
+        })
+        message += `\n`
+        
+        message += `Compare these values with Shopify's Aug 15 total of $3,548.66:\n`
+        analysis.comparison.recommendations.forEach((rec: string) => {
+          message += `• ${rec}\n`
+        })
+        
+        setDebugModal({
+          isOpen: true,
+          title: `Daily Sales Comparison - ${analysis.date}`,
+          content: message
+        })
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Daily comparison debug failed:', data)
+        alert(`Daily comparison debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Daily comparison debug error:', error)
+      alert(`Daily comparison debug failed: ${error}`)
+    }
+  }
+
   const debugImportStats = async (integrationId: string) => {
     try {
       console.log('Debugging import stats for integration:', integrationId)
@@ -487,6 +561,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-pink-600 text-white text-sm rounded-lg hover:bg-pink-700"
                         >
                           Debug Import
+                        </button>
+                        <button
+                          onClick={() => debugDailyComparison(store.id)}
+                          className="px-3 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700"
+                        >
+                          Compare Day
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
