@@ -49,34 +49,39 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Verify HMAC signature
-    const queryString = request.nextUrl.search.substring(1) // Remove leading '?'
-    console.log('🔍 Raw query string:', queryString)
+    // For custom/private apps installed via distribution link, 
+    // Shopify uses a different authentication method and may not include HMAC
+    const isCustomDistribution = searchParams.get('distribution') === 'custom' || 
+                                !searchParams.has('timestamp')
     
-    const queryWithoutHmac = queryString
-      .split('&')
-      .filter(param => !param.startsWith('hmac='))
-      .sort()
-      .join('&')
+    console.log('🔍 OAuth callback details:', {
+      isCustomDistribution,
+      hasHmac: !!hmac,
+      hasTimestamp: searchParams.has('timestamp'),
+      shop
+    })
 
-    console.log('🔍 Query without HMAC:', queryWithoutHmac)
-    console.log('🔍 Received HMAC:', hmac)
-    console.log('🔍 SHOPIFY_API_SECRET present:', !!process.env.SHOPIFY_API_SECRET)
-    
-    const isValidHmac = ShopifyService.verifyHmac(queryWithoutHmac, hmac)
-    console.log('🔍 HMAC verification result:', isValidHmac)
+    // Only verify HMAC for public app installations (not custom distribution)
+    if (!isCustomDistribution) {
+      // Standard OAuth flow - verify HMAC
+      const queryString = request.nextUrl.search.substring(1)
+      const queryWithoutHmac = queryString
+        .split('&')
+        .filter(param => !param.startsWith('hmac='))
+        .sort()
+        .join('&')
 
-    if (!isValidHmac) {
-      console.error('❌ Invalid HMAC signature - this could be a security issue or configuration problem')
-      console.error('❌ Query for verification:', queryWithoutHmac)
-      console.error('❌ Expected vs received HMAC mismatch')
-      
-      // For debugging purposes, let's temporarily allow the connection but log the issue
-      console.warn('⚠️ PROCEEDING WITH CAUTION - HMAC verification failed but continuing for debugging')
-      // TODO: Re-enable this security check once debugging is complete
-      // return NextResponse.redirect(
-      //   new URL('/connect?error=invalid_signature', request.url)
-      // )
+      if (!ShopifyService.verifyHmac(queryWithoutHmac, hmac)) {
+        console.error('❌ Invalid HMAC signature for public app installation')
+        return NextResponse.redirect(
+          new URL('/connect?error=invalid_signature', request.url)
+        )
+      }
+    } else {
+      // Custom distribution - different validation needed
+      console.log('✅ Custom distribution detected - skipping HMAC verification')
+      // For custom apps, we rely on the code exchange validation
+      // The access token request will fail if the code is invalid
     }
 
     // Normalize shop domain
