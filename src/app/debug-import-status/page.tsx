@@ -95,6 +95,70 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugShopifyOrders = async (integrationId: string) => {
+    try {
+      const targetDate = prompt('Enter date to check raw Shopify data (YYYY-MM-DD) or leave blank for Aug 15:', '2025-08-15')
+      if (!targetDate) return
+      
+      console.log('Debugging raw Shopify orders for integration:', integrationId, 'date:', targetDate)
+      
+      const response = await fetch('/api/admin/debug-shopify-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId, targetDate })
+      })
+      
+      const data = await response.json()
+      console.log('Raw Shopify orders debug response:', data)
+      
+      if (response.ok && data.success) {
+        const analysis = data.analysis
+        let message = `Raw Shopify Orders for ${targetDate}:\n\n`
+        
+        message += `Date Range (PST):\n`
+        message += `Start: ${new Date(analysis.dateRange.start).toLocaleString()}\n`
+        message += `End: ${new Date(analysis.dateRange.end).toLocaleString()}\n\n`
+        
+        message += `Total Orders Found: ${analysis.totalOrders}\n\n`
+        
+        message += `Price Field Totals:\n`
+        message += `total_price: $${analysis.priceFieldAnalysis.total_price.toFixed(2)}\n`
+        message += `current_total_price: $${analysis.priceFieldAnalysis.current_total_price.toFixed(2)}\n`
+        message += `subtotal_price: $${analysis.priceFieldAnalysis.subtotal_price.toFixed(2)}\n`
+        message += `total_tax: $${analysis.priceFieldAnalysis.total_tax.toFixed(2)}\n`
+        message += `total_discounts: $${analysis.priceFieldAnalysis.total_discounts.toFixed(2)}\n\n`
+        
+        if (analysis.sampleOrders.length > 0) {
+          message += `Sample Orders:\n`
+          analysis.sampleOrders.forEach((order: any) => {
+            message += `${order.name}: total_price=$${order.total_price}, current_total_price=$${order.current_total_price || 'N/A'}\n`
+          })
+          message += `\n`
+        }
+        
+        message += `Compare with Shopify's reported $3,548.66:\n`
+        analysis.recommendations.forEach((rec: string) => {
+          message += `• ${rec}\n`
+        })
+        
+        setDebugModal({
+          isOpen: true,
+          title: `Raw Shopify Orders - ${targetDate}`,
+          content: message
+        })
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Raw Shopify orders debug failed:', data)
+        alert(`Raw Shopify orders debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Raw Shopify orders debug error:', error)
+      alert(`Raw Shopify orders debug failed: ${error}`)
+    }
+  }
+
   const debugDailyComparison = async (integrationId: string) => {
     try {
       const targetDate = prompt('Enter date to compare (YYYY-MM-DD) or leave blank for today:', '2025-08-15')
@@ -567,6 +631,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700"
                         >
                           Compare Day
+                        </button>
+                        <button
+                          onClick={() => debugShopifyOrders(store.id)}
+                          className="px-3 py-2 bg-cyan-600 text-white text-sm rounded-lg hover:bg-cyan-700"
+                        >
+                          Raw Shopify
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
