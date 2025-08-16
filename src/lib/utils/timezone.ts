@@ -2,21 +2,15 @@
  * Timezone utilities for handling store-specific timezones
  */
 
-export interface StoreTimezoneInfo {
-  timezone: string
-  offset: number
-  isDST: boolean
-}
-
 /**
- * Get timezone info from integration credentials
+ * Get timezone from integration credentials
  */
 export function getStoreTimezone(integration: any): string {
   // Try to get timezone from various sources
   const timezone = 
-    integration.credentials?.shopInfo?.timezone ||
-    integration.credentials?.shopInfo?.shop?.timezone ||
-    integration.organization?.settings?.timezone ||
+    integration?.credentials?.shopInfo?.timezone ||
+    integration?.credentials?.shopInfo?.shop?.timezone ||
+    integration?.organization?.settings?.timezone ||
     'America/New_York' // Default fallback
   
   return timezone
@@ -33,79 +27,148 @@ export function getStoreDayRange(targetDate: Date, storeTimezone: string): {
   endLocal: Date
   timezone: string
 } {
-  // Create date at midnight in store timezone
-  const dateStr = targetDate.toISOString().split('T')[0] // YYYY-MM-DD
-  
-  // Create date string with time at midnight in store timezone
-  const startLocalStr = `${dateStr}T00:00:00`
-  const endLocalStr = `${dateStr}T23:59:59.999`
-  
-  // Parse as local time in store timezone
-  const startLocal = new Date(startLocalStr)
-  const endLocal = new Date(endLocalStr)
-  
-  // Convert to UTC using Intl.DateTimeFormat
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: storeTimezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  })
-  
-  // Get offset for the specific date (handles DST)
-  const startParts = formatter.formatToParts(startLocal)
-  const endParts = formatter.formatToParts(endLocal)
-  
-  // Create UTC dates by calculating offset
-  // Note: This is a simplified approach. For production, consider using a library like date-fns-tz
-  const startUTC = new Date(`${dateStr}T00:00:00Z`)
-  const endUTC = new Date(`${dateStr}T23:59:59.999Z`)
-  
-  // Adjust based on timezone offset
-  const offsetMinutes = getTimezoneOffset(storeTimezone, targetDate)
-  startUTC.setMinutes(startUTC.getMinutes() + offsetMinutes)
-  endUTC.setMinutes(endUTC.getMinutes() + offsetMinutes)
-  
-  return {
-    startUTC,
-    endUTC,
-    startLocal,
-    endLocal,
-    timezone: storeTimezone
+  try {
+    // Get the date string in YYYY-MM-DD format
+    const year = targetDate.getFullYear()
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0')
+    const day = String(targetDate.getDate()).padStart(2, '0')
+    const dateStr = `${year}-${month}-${day}`
+    
+    // Simple approach: Use known timezone offsets
+    // This handles most common timezones used by Shopify stores
+    const timezoneOffsets: { [key: string]: number } = {
+      'America/New_York': -5, // EST
+      'America/Chicago': -6,  // CST
+      'America/Denver': -7,   // MST
+      'America/Los_Angeles': -8, // PST
+      'America/Phoenix': -7,  // MST (no DST)
+      'Europe/London': 0,     // GMT
+      'Europe/Paris': 1,      // CET
+      'Europe/Berlin': 1,     // CET
+      'Asia/Tokyo': 9,        // JST
+      'Australia/Sydney': 10, // AEST
+      'Pacific/Auckland': 12, // NZST
+    }
+    
+    // Get offset for timezone (default to EST if not found)
+    let offsetHours = timezoneOffsets[storeTimezone] ?? -5
+    
+    // Adjust for daylight saving time if needed (simplified)
+    const isDST = isDaylightSavingTime(targetDate, storeTimezone)
+    if (isDST && storeTimezone !== 'America/Phoenix') {
+      offsetHours += 1
+    }
+    
+    // Create start and end dates in UTC
+    const startUTC = new Date(`${dateStr}T00:00:00.000Z`)
+    startUTC.setHours(startUTC.getHours() - offsetHours)
+    
+    const endUTC = new Date(`${dateStr}T23:59:59.999Z`)
+    endUTC.setHours(endUTC.getHours() - offsetHours)
+    
+    // Local dates for display
+    const startLocal = new Date(`${dateStr}T00:00:00`)
+    const endLocal = new Date(`${dateStr}T23:59:59.999`)
+    
+    return {
+      startUTC,
+      endUTC,
+      startLocal,
+      endLocal,
+      timezone: storeTimezone
+    }
+  } catch (error) {
+    console.error('Error in getStoreDayRange:', error)
+    // Fallback to simple UTC calculation
+    const startUTC = new Date(targetDate)
+    startUTC.setUTCHours(0, 0, 0, 0)
+    
+    const endUTC = new Date(targetDate)
+    endUTC.setUTCHours(23, 59, 59, 999)
+    
+    return {
+      startUTC,
+      endUTC,
+      startLocal: startUTC,
+      endLocal: endUTC,
+      timezone: storeTimezone
+    }
   }
 }
 
 /**
- * Get timezone offset in minutes for a specific date
- * Positive offset means ahead of UTC (e.g., UTC+5 = 300)
- * Negative offset means behind UTC (e.g., UTC-5 = -300)
+ * Simple DST check for major timezones
  */
-function getTimezoneOffset(timezone: string, date: Date): number {
-  try {
-    // Create two dates: one in UTC and one in the target timezone
-    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }))
-    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }))
+function isDaylightSavingTime(date: Date, timezone: string): boolean {
+  const month = date.getMonth()
+  const day = date.getDate()
+  const dayOfWeek = date.getDay()
+  
+  // US DST: Second Sunday in March to first Sunday in November
+  if (timezone.startsWith('America/')) {
+    if (month < 2 || month > 10) return false // Jan, Feb, Dec
+    if (month > 2 && month < 10) return true  // Apr-Oct
     
-    // Calculate the difference in minutes
-    return (utcDate.getTime() - tzDate.getTime()) / (1000 * 60)
-  } catch (error) {
-    console.error('Error calculating timezone offset:', error)
-    // Default to EST offset if timezone is invalid
-    return 300 // UTC-5
+    // March: DST starts second Sunday
+    if (month === 2) {
+      const secondSunday = getNthSundayOfMonth(date.getFullYear(), 2, 2)
+      return day >= secondSunday
+    }
+    
+    // November: DST ends first Sunday
+    if (month === 10) {
+      const firstSunday = getNthSundayOfMonth(date.getFullYear(), 10, 1)
+      return day < firstSunday
+    }
   }
+  
+  // Europe DST: Last Sunday in March to last Sunday in October
+  if (timezone.startsWith('Europe/')) {
+    if (month < 2 || month > 9) return false
+    if (month > 2 && month < 9) return true
+    
+    if (month === 2) {
+      const lastSunday = getLastSundayOfMonth(date.getFullYear(), 2)
+      return day >= lastSunday
+    }
+    
+    if (month === 9) {
+      const lastSunday = getLastSundayOfMonth(date.getFullYear(), 9)
+      return day < lastSunday
+    }
+  }
+  
+  // No DST for most of Asia, Africa
+  return false
+}
+
+function getNthSundayOfMonth(year: number, month: number, n: number): number {
+  const firstDay = new Date(year, month, 1).getDay()
+  const firstSunday = firstDay === 0 ? 1 : 8 - firstDay
+  return firstSunday + (n - 1) * 7
+}
+
+function getLastSundayOfMonth(year: number, month: number): number {
+  const lastDay = new Date(year, month + 1, 0).getDate()
+  const lastDayOfWeek = new Date(year, month, lastDay).getDay()
+  return lastDay - lastDayOfWeek
 }
 
 /**
  * Format date in store timezone
  */
 export function formatInStoreTimezone(date: Date, storeTimezone: string, format?: string): string {
-  return date.toLocaleString('en-US', { 
-    timeZone: storeTimezone,
-    dateStyle: 'short',
-    timeStyle: 'short'
-  })
+  try {
+    return date.toLocaleString('en-US', { 
+      timeZone: storeTimezone,
+      dateStyle: 'short',
+      timeStyle: 'short'
+    })
+  } catch (error) {
+    // Fallback if timezone is invalid
+    return date.toLocaleString('en-US', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    })
+  }
 }
