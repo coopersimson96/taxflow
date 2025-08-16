@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma, withWebhookDb } from '@/lib/prisma'
+import { getStoreTimezone, getStoreDayRange } from '@/lib/utils/timezone'
 import { 
   TaxDashboardData, 
   TaxToSetAsideData, 
@@ -208,8 +209,15 @@ export async function GET(request: NextRequest) {
       })
     })
 
+    // Get integration for timezone info
+    const integration = integrationId ? await withWebhookDb(async (db) => {
+      return await db.integration.findUnique({
+        where: { id: integrationId }
+      })
+    }) : null
+
     // Calculate tax to set aside data
-    const taxToSetAside = calculateTaxToSetAside(currentTransactions, days)
+    const taxToSetAside = calculateTaxToSetAside(currentTransactions, days, integration)
 
     // Calculate summary metrics
     const summaryMetrics = calculateSummaryMetrics(currentTransactions)
@@ -288,7 +296,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsideData {
+function calculateTaxToSetAside(transactions: any[], days: number, integration: any): TaxToSetAsideData {
   const totalTaxCollected = transactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
   const totalSales = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
 
@@ -304,23 +312,18 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
     other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
   }
 
-  // Calculate today's data in the store's timezone (assuming PST/PDT for now)
-  // TODO: Get actual store timezone from Shopify store settings
-  const storeTimezone = 'America/Los_Angeles' // PST/PDT
+  // Get store timezone
+  const storeTimezone = integration ? getStoreTimezone(integration) : 'America/New_York'
   const now = new Date()
   
-  // Convert to store timezone for "today" calculation
-  const nowInStoreTime = new Date(now.toLocaleString("en-US", {timeZone: storeTimezone}))
-  const todayStart = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), nowInStoreTime.getDate())
-  
-  // Convert back to UTC for database queries (since our DB stores UTC)
-  const todayStartUTC = new Date(todayStart.getTime() + (todayStart.getTimezoneOffset() * 60000))
-  const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000)
+  // Calculate today's date range in store timezone
+  const todayRange = getStoreDayRange(now, storeTimezone)
+  const todayStartUTC = todayRange.startUTC
+  const todayEndUTC = todayRange.endUTC
   
   console.log('🕐 Timezone calculation:', {
     serverTime: now.toISOString(),
-    storeLocalTime: nowInStoreTime.toISOString(),
-    todayStartLocal: todayStart.toISOString(),
+    storeTimezone: storeTimezone,
     todayStartUTC: todayStartUTC.toISOString(),
     todayEndUTC: todayEndUTC.toISOString()
   })
@@ -344,10 +347,10 @@ function calculateTaxToSetAside(transactions: any[], days: number): TaxToSetAsid
   }
 
   // Calculate monthly rolling total
-  const monthStart = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), 1)
+  const monthStart = new Date(todayRange.startLocal.getFullYear(), todayRange.startLocal.getMonth(), 1)
   const monthlyTransactions = transactions.filter(tx => {
     const txDate = new Date(tx.transactionDate)
-    return txDate >= monthStart && txDate <= nowInStoreTime
+    return txDate >= monthStart && txDate <= now
   })
   const monthlyRollingTotal = monthlyTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
 

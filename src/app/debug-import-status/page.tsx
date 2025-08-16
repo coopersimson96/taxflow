@@ -117,9 +117,11 @@ export default function DebugImportStatusPage() {
         const analysis = data.analysis
         let message = `Raw Shopify Orders for ${targetDate}:\n\n`
         
-        message += `Date Range (PST):\n`
-        message += `Start: ${new Date(analysis.dateRange.start).toLocaleString()}\n`
-        message += `End: ${new Date(analysis.dateRange.end).toLocaleString()}\n\n`
+        message += `Store Timezone: ${analysis.dateRange.timezone}\n`
+        message += `Date Range (${analysis.dateRange.timezone}):\n`
+        message += `Start: ${new Date(analysis.dateRange.startLocal).toLocaleString()} (local)\n`
+        message += `End: ${new Date(analysis.dateRange.endLocal).toLocaleString()} (local)\n`
+        message += `UTC Range: ${new Date(analysis.dateRange.start).toISOString()} to ${new Date(analysis.dateRange.end).toISOString()}\n\n`
         
         message += `Total Orders Found: ${analysis.totalOrders}\n\n`
         

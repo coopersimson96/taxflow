@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { withWebhookDb } from '@/lib/prisma'
+import { getStoreTimezone, getStoreDayRange } from '@/lib/utils/timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,20 +59,15 @@ export async function POST(request: NextRequest) {
     // Default to August 15, 2025 if no date specified
     const compareDate = targetDate ? new Date(targetDate) : new Date('2025-08-15')
     
-    // Calculate date range for the target date in PST
-    const year = compareDate.getFullYear()
-    const month = compareDate.getMonth()
-    const date = compareDate.getDate()
+    // Get store timezone
+    const storeTimezone = getStoreTimezone(integration)
+    console.log('🌍 Store timezone:', storeTimezone)
     
-    // PST midnight to midnight+1 day
-    const dayStartPST = new Date()
-    dayStartPST.setFullYear(year, month, date)
-    dayStartPST.setHours(0, 0, 0, 0)
+    // Calculate date range for the target date in store timezone
+    const dateRange = getStoreDayRange(compareDate, storeTimezone)
     
-    const dayEndPST = new Date(dayStartPST.getTime() + 24 * 60 * 60 * 1000)
-
     // Fetch orders from Shopify for that specific day
-    const requestUrl = `https://${shopDomain}/admin/api/2024-01/orders.json?status=any&created_at_min=${dayStartPST.toISOString()}&created_at_max=${dayEndPST.toISOString()}&limit=250`
+    const requestUrl = `https://${shopDomain}/admin/api/2024-01/orders.json?status=any&created_at_min=${dateRange.startUTC.toISOString()}&created_at_max=${dateRange.endUTC.toISOString()}&limit=250`
     
     console.log('🌐 Fetching Shopify orders from:', requestUrl)
     
@@ -120,8 +116,11 @@ export async function POST(request: NextRequest) {
     const analysis = {
       totalOrders: orders.length,
       dateRange: {
-        start: dayStartPST.toISOString(),
-        end: dayEndPST.toISOString()
+        start: dateRange.startUTC.toISOString(),
+        end: dateRange.endUTC.toISOString(),
+        startLocal: dateRange.startLocal.toISOString(),
+        endLocal: dateRange.endLocal.toISOString(),
+        timezone: storeTimezone
       },
       orderStatusBreakdown: {
         all: orders.length,

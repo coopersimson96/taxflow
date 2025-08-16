@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { withWebhookDb } from '@/lib/prisma'
+import { getStoreTimezone, getStoreDayRange } from '@/lib/utils/timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,27 +46,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Integration not found or access denied' }, { status: 404 })
     }
 
+    // Get store timezone
+    const storeTimezone = getStoreTimezone(integration)
+    
     // Calculate date range for the target date in store timezone
-    const storeTimezone = 'America/Los_Angeles'
-    
-    // Create the target date at midnight PST/PDT
-    const year = compareDate.getFullYear()
-    const month = compareDate.getMonth()
-    const date = compareDate.getDate()
-    
-    // Create date at midnight in PST/PDT timezone
-    const dayStartPST = new Date()
-    dayStartPST.setFullYear(year, month, date)
-    dayStartPST.setHours(0, 0, 0, 0)
-    
-    // Convert PST midnight to UTC for database queries
-    const pstMidnightString = `${year}-${String(month + 1).padStart(2, '0')}-${String(date).padStart(2, '0')}T08:00:00.000Z`
-    const dayStartUTC = new Date(pstMidnightString)
-    const dayEndUTC = new Date(dayStartUTC.getTime() + 24 * 60 * 60 * 1000)
+    const dateRange = getStoreDayRange(compareDate, storeTimezone)
+    const dayStartUTC = dateRange.startUTC
+    const dayEndUTC = dateRange.endUTC
 
     console.log('📅 Date range calculation:', {
       inputDate: compareDate.toISOString(),
-      dayStartPST: dayStartPST.toISOString(),
+      timezone: storeTimezone,
       dayStartUTC: dayStartUTC.toISOString(),
       dayEndUTC: dayEndUTC.toISOString()
     })

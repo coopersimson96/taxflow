@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { withWebhookDb } from '@/lib/prisma'
+import { getStoreTimezone, getStoreDayRange } from '@/lib/utils/timezone'
 
 export const dynamic = 'force-dynamic'
 
@@ -56,17 +57,14 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    // Analyze date patterns using store timezone
-    const storeTimezone = 'America/Los_Angeles' // PST/PDT - should match user's store
+    // Get store timezone
+    const storeTimezone = getStoreTimezone(integration)
     const now = new Date()
     
     // Calculate "today" in store timezone
-    const nowInStoreTime = new Date(now.toLocaleString("en-US", {timeZone: storeTimezone}))
-    const todayStartLocal = new Date(nowInStoreTime.getFullYear(), nowInStoreTime.getMonth(), nowInStoreTime.getDate())
-    
-    // Convert to UTC for database queries
-    const todayStartUTC = new Date(todayStartLocal.getTime() + (todayStartLocal.getTimezoneOffset() * 60000))
-    const todayEndUTC = new Date(todayStartUTC.getTime() + 24 * 60 * 60 * 1000)
+    const todayRange = getStoreDayRange(now, storeTimezone)
+    const todayStartUTC = todayRange.startUTC
+    const todayEndUTC = todayRange.endUTC
     
     const todayTransactions = transactions.filter(tx => {
       const txDate = new Date(tx.transactionDate)
@@ -101,7 +99,8 @@ export async function POST(request: NextRequest) {
         todayRange: {
           start: todayStartUTC.toISOString(),
           end: todayEndUTC.toISOString(),
-          localStart: todayStartLocal.toISOString(),
+          localStart: todayRange.startLocal.toISOString(),
+          localEnd: todayRange.endLocal.toISOString(),
           storeTimezone: storeTimezone
         },
         last7DaysStart: last7Days.toISOString(),
