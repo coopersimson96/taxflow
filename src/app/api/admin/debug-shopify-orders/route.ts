@@ -62,12 +62,17 @@ export async function POST(request: NextRequest) {
     // Get store timezone
     const storeTimezone = getStoreTimezone(integration)
     console.log('🌍 Store timezone:', storeTimezone)
-    console.log('🔍 Integration credentials:', {
-      hasCredentials: !!integration.credentials,
-      hasShopInfo: !!integration.credentials?.shopInfo,
-      shopInfoKeys: integration.credentials?.shopInfo ? Object.keys(integration.credentials.shopInfo) : [],
-      timezone: integration.credentials?.shopInfo?.timezone
-    })
+    
+    // Debug credentials structure
+    if (integration.credentials && typeof integration.credentials === 'object') {
+      const creds = integration.credentials as any
+      console.log('🔍 Integration credentials:', {
+        hasCredentials: true,
+        hasShopInfo: !!creds.shopInfo,
+        shopInfoKeys: creds.shopInfo ? Object.keys(creds.shopInfo) : [],
+        timezone: creds.shopInfo?.timezone
+      })
+    }
     
     // Calculate date range for the target date in store timezone
     const dateRange = getStoreDayRange(compareDate, storeTimezone)
