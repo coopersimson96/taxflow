@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = credentials.accessToken
-    const shopDomain = credentials.shopInfo?.myshopify_domain || credentials.shopInfo?.domain || integration.shop
+    const shopDomain = credentials.shopInfo?.myshopify_domain || credentials.shopInfo?.domain
 
     if (!shopDomain) {
       return NextResponse.json({ error: 'Shop domain not found' }, { status: 400 })
