@@ -123,12 +123,22 @@ export default function DebugImportStatusPage() {
         
         message += `Total Orders Found: ${analysis.totalOrders}\n\n`
         
-        message += `Price Field Totals:\n`
-        message += `total_price: $${analysis.priceFieldAnalysis.total_price.toFixed(2)}\n`
-        message += `current_total_price: $${analysis.priceFieldAnalysis.current_total_price.toFixed(2)}\n`
-        message += `subtotal_price: $${analysis.priceFieldAnalysis.subtotal_price.toFixed(2)}\n`
-        message += `total_tax: $${analysis.priceFieldAnalysis.total_tax.toFixed(2)}\n`
-        message += `total_discounts: $${analysis.priceFieldAnalysis.total_discounts.toFixed(2)}\n\n`
+        message += `Order Status Breakdown:\n`
+        message += `Paid: ${analysis.orderStatusBreakdown.paid}\n`
+        message += `Partially Paid: ${analysis.orderStatusBreakdown.partially_paid}\n`
+        message += `Authorized: ${analysis.orderStatusBreakdown.authorized}\n`
+        message += `Pending: ${analysis.orderStatusBreakdown.pending}\n`
+        message += `Refunded: ${analysis.orderStatusBreakdown.refunded}\n`
+        message += `Cancelled: ${analysis.orderStatusBreakdown.cancelled}\n\n`
+        
+        message += `Price Totals by Filter:\n`
+        message += `All Orders: $${analysis.priceFieldAnalysis.all_orders.total_price.toFixed(2)}\n`
+        message += `Paid Only: $${analysis.priceFieldAnalysis.paid_only.total_price.toFixed(2)}\n`
+        message += `Paid + Partially Paid: $${analysis.priceFieldAnalysis.paid_and_partially_paid.total_price.toFixed(2)}\n`
+        message += `Excluding Cancelled: $${analysis.priceFieldAnalysis.excluding_cancelled.total_price.toFixed(2)}\n`
+        message += `Excluding Refunded: $${analysis.priceFieldAnalysis.excluding_refunded.total_price.toFixed(2)}\n\n`
+        
+        message += `SHOPIFY LIKELY USES: $${analysis.priceFieldAnalysis.paid_only.current_total_price.toFixed(2)} (paid orders, current_total_price)\n\n`
         
         if (analysis.sampleOrders.length > 0) {
           message += `Sample Orders:\n`

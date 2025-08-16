@@ -94,6 +94,28 @@ export async function POST(request: NextRequest) {
     const shopifyData = await fetchResponse.json()
     const orders = shopifyData.orders || []
 
+    // Filter orders by financial status
+    const paidOrders = orders.filter((order: any) => order.financial_status === 'paid')
+    const partiallyPaidOrders = orders.filter((order: any) => order.financial_status === 'partially_paid')
+    const authorizedOrders = orders.filter((order: any) => order.financial_status === 'authorized')
+    const pendingOrders = orders.filter((order: any) => order.financial_status === 'pending')
+    const refundedOrders = orders.filter((order: any) => order.financial_status === 'refunded' || order.financial_status === 'partially_refunded')
+    const cancelledOrders = orders.filter((order: any) => order.cancelled_at !== null)
+
+    // Calculate totals for different order sets
+    const calculateTotals = (orderSet: any[]) => ({
+      total_price: orderSet.reduce((sum: number, order: any) => sum + parseFloat(order.total_price || '0'), 0),
+      current_total_price: orderSet.reduce((sum: number, order: any) => sum + parseFloat(order.current_total_price || '0'), 0),
+      subtotal_price: orderSet.reduce((sum: number, order: any) => sum + parseFloat(order.subtotal_price || '0'), 0),
+      total_tax: orderSet.reduce((sum: number, order: any) => sum + parseFloat(order.total_tax || '0'), 0),
+      net_sales: orderSet.reduce((sum: number, order: any) => {
+        const refunds = order.refunds?.reduce((refundSum: number, refund: any) => 
+          refundSum + refund.transactions?.reduce((txSum: number, tx: any) => 
+            tx.kind === 'refund' ? txSum + parseFloat(tx.amount || '0') : txSum, 0), 0) || 0
+        return sum + parseFloat(order.current_total_price || order.total_price || '0') - refunds
+      }, 0)
+    })
+
     // Analyze the different price fields available
     const analysis = {
       totalOrders: orders.length,
@@ -101,13 +123,21 @@ export async function POST(request: NextRequest) {
         start: dayStartPST.toISOString(),
         end: dayEndPST.toISOString()
       },
+      orderStatusBreakdown: {
+        all: orders.length,
+        paid: paidOrders.length,
+        partially_paid: partiallyPaidOrders.length,
+        authorized: authorizedOrders.length,
+        pending: pendingOrders.length,
+        refunded: refundedOrders.length,
+        cancelled: cancelledOrders.length
+      },
       priceFieldAnalysis: {
-        total_price: orders.reduce((sum: number, order: any) => sum + parseFloat(order.total_price || '0'), 0),
-        subtotal_price: orders.reduce((sum: number, order: any) => sum + parseFloat(order.subtotal_price || '0'), 0),
-        current_total_price: orders.reduce((sum: number, order: any) => sum + parseFloat(order.current_total_price || '0'), 0),
-        total_tax: orders.reduce((sum: number, order: any) => sum + parseFloat(order.total_tax || '0'), 0),
-        total_discounts: orders.reduce((sum: number, order: any) => sum + parseFloat(order.total_discounts || '0'), 0),
-        total_shipping: orders.reduce((sum: number, order: any) => sum + parseFloat(order.total_shipping_price_set?.shop_money?.amount || '0'), 0)
+        all_orders: calculateTotals(orders),
+        paid_only: calculateTotals(paidOrders),
+        paid_and_partially_paid: calculateTotals([...paidOrders, ...partiallyPaidOrders]),
+        excluding_cancelled: calculateTotals(orders.filter((o: any) => !o.cancelled_at)),
+        excluding_refunded: calculateTotals(orders.filter((o: any) => o.financial_status !== 'refunded'))
       },
       sampleOrders: orders.slice(0, 5).map((order: any) => ({
         id: order.id,
