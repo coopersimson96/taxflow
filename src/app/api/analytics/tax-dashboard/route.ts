@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
     // Get trend data if requested
     let trendData: TaxTrendData[] = []
     if (includeTrends) {
-      trendData = await calculateTrendData(organizationId, days)
+      trendData = await calculateTrendData(organizationId, days, integration)
     }
 
     const chartConfig: ChartConfig = {
@@ -259,7 +259,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generate daily payout data
-    const upcomingPayouts = await generateDailyPayoutData(organizationId)
+    const upcomingPayouts = await generateDailyPayoutData(organizationId, integration)
 
     // Get store information from integration
     const storeInfo = await getStoreInformation(organizationId)
@@ -273,7 +273,10 @@ export async function GET(request: NextRequest) {
       jurisdictionData,
       periodComparison,
       upcomingPayouts,
-      storeInfo
+      storeInfo: {
+        ...storeInfo,
+        timezone: integration ? getStoreTimezone(integration) : 'America/New_York'
+      }
     }
 
     return NextResponse.json({
@@ -609,7 +612,10 @@ function calculateJurisdictionData(transactions: any[]): TaxJurisdictionData[] {
   }))
 }
 
-async function calculateTrendData(organizationId: string, days: number): Promise<TaxTrendData[]> {
+async function calculateTrendData(organizationId: string, days: number, integration: any = null): Promise<TaxTrendData[]> {
+  // Get store timezone
+  const storeTimezone = integration ? getStoreTimezone(integration) : 'America/New_York'
+  
   const endDate = new Date()
   const startDate = new Date(endDate.getTime() - (days * 24 * 60 * 60 * 1000))
 
@@ -630,11 +636,13 @@ async function calculateTrendData(organizationId: string, days: number): Promise
     })
   })
 
-  // Group by date
+  // Group by date in store timezone
   const dateMap: { [key: string]: any } = {}
   
   transactions.forEach(tx => {
-    const dateKey = tx.transactionDate.toISOString().split('T')[0]
+    // Convert transaction date to store timezone for grouping
+    const dateInStoreTime = new Date(tx.transactionDate.toLocaleString("en-US", {timeZone: storeTimezone}))
+    const dateKey = dateInStoreTime.toISOString().split('T')[0]
     
     if (!dateMap[dateKey]) {
       dateMap[dateKey] = {
@@ -671,8 +679,11 @@ async function calculateTrendData(organizationId: string, days: number): Promise
   }))
 }
 
-async function generateDailyPayoutData(organizationId: string) {
+async function generateDailyPayoutData(organizationId: string, integration: any = null) {
   try {
+    // Get store timezone
+    const storeTimezone = integration ? getStoreTimezone(integration) : 'America/New_York'
+    
     // Get transactions from the last 5 days to generate payout data
     const endDate = new Date()
     const startDate = new Date(endDate.getTime() - 5 * 24 * 60 * 60 * 1000)
@@ -693,10 +704,12 @@ async function generateDailyPayoutData(organizationId: string) {
       })
     })
 
-    // Group transactions by date
+    // Group transactions by date in store timezone
     const dateGroups: { [key: string]: any[] } = {}
     transactions.forEach(tx => {
-      const dateKey = tx.transactionDate.toISOString().split('T')[0]
+      // Convert transaction date to store timezone for grouping
+      const dateInStoreTime = new Date(tx.transactionDate.toLocaleString("en-US", {timeZone: storeTimezone}))
+      const dateKey = dateInStoreTime.toISOString().split('T')[0]
       if (!dateGroups[dateKey]) {
         dateGroups[dateKey] = []
       }

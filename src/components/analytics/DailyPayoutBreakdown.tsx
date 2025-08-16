@@ -1,17 +1,19 @@
 import React from 'react'
-import { DailyPayoutData } from '@/types/tax-dashboard'
+import { DailyPayoutData, StoreInfo } from '@/types/tax-dashboard'
 import { cn } from '@/lib/utils'
 
 interface DailyPayoutBreakdownProps {
   payouts: DailyPayoutData[]
   isLoading?: boolean
   className?: string
+  storeInfo?: StoreInfo
 }
 
 const DailyPayoutBreakdown: React.FC<DailyPayoutBreakdownProps> = ({
   payouts,
   isLoading,
-  className
+  className,
+  storeInfo
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -20,19 +22,28 @@ const DailyPayoutBreakdown: React.FC<DailyPayoutBreakdownProps> = ({
     }).format(amount)
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string, storeTimezone?: string) => {
     const date = new Date(dateString)
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
     
-    if (date.toDateString() === today.toDateString()) {
+    // Get today in store timezone for proper comparison
+    const todayInStore = storeTimezone 
+      ? new Date(new Date().toLocaleString("en-US", {timeZone: storeTimezone}))
+      : new Date()
+    const yesterdayInStore = new Date(todayInStore)
+    yesterdayInStore.setDate(yesterdayInStore.getDate() - 1)
+    
+    // Compare dates in store timezone
+    const dateInStore = storeTimezone 
+      ? new Date(date.toLocaleString("en-US", {timeZone: storeTimezone}))
+      : date
+    
+    if (dateInStore.toDateString() === todayInStore.toDateString()) {
       return 'Today'
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateInStore.toDateString() === yesterdayInStore.toDateString()) {
       return 'Yesterday'
     }
     
-    return date.toLocaleDateString('en-US', {
+    return dateInStore.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
       day: 'numeric'
@@ -126,13 +137,13 @@ const DailyPayoutBreakdown: React.FC<DailyPayoutBreakdownProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-1">
                     <h4 className="text-lg font-semibold text-gray-900">
-                      {formatDate(payout.payoutDate)}
+                      {formatDate(payout.payoutDate, storeInfo?.timezone)}
                     </h4>
                     {getStatusBadge(payout.status)}
                   </div>
                   {payout.estimatedArrival && payout.status !== 'paid' && (
                     <p className="text-sm text-gray-500">
-                      Expected: {formatDate(payout.estimatedArrival)}
+                      Expected: {formatDate(payout.estimatedArrival, storeInfo?.timezone)}
                     </p>
                   )}
                 </div>

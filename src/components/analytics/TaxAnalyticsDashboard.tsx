@@ -403,6 +403,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           <DailyPayoutBreakdown 
             payouts={data.upcomingPayouts || []}
             isLoading={state.isLoading}
+            storeInfo={data.storeInfo}
           />
         )}
       </div>

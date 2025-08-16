@@ -4,6 +4,7 @@ export interface StoreInfo {
   shopDomain?: string | null
   currency: string
   country?: string | null
+  timezone?: string
 }
 
 // Enhanced Tax Dashboard Types
