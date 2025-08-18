@@ -95,6 +95,74 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const debugShopifyPayouts = async (integrationId: string) => {
+    try {
+      const targetDate = prompt('Enter date to check payouts (YYYY-MM-DD) or leave blank for recent:', new Date().toISOString().split('T')[0])
+      
+      console.log('Debugging Shopify payouts for integration:', integrationId, 'date:', targetDate)
+      
+      const response = await fetch('/api/admin/debug-shopify-payouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId, targetDate })
+      })
+      
+      const data = await response.json()
+      console.log('Shopify payouts debug response:', data)
+      
+      if (response.ok && data.success) {
+        const { results, analysis } = data
+        let message = `Shopify Payout API Test Results:\n\n`
+        
+        message += `Has Shopify Payments: ${analysis.hasShopifyPayments ? 'Yes' : 'No'}\n`
+        message += `Available Endpoints: ${analysis.availableEndpoints.length}\n\n`
+        
+        // Show each endpoint result
+        for (const [endpoint, result] of Object.entries(results)) {
+          message += `${endpoint}:\n`
+          message += `Status: ${result.status || 'N/A'} ${result.ok ? '✅' : '❌'}\n`
+          
+          if (result.data) {
+            const dataStr = JSON.stringify(result.data, null, 2)
+            if (dataStr.length > 500) {
+              message += `Data: ${dataStr.substring(0, 500)}...\n`
+            } else {
+              message += `Data: ${dataStr}\n`
+            }
+          } else if (result.error) {
+            message += `Error: ${result.error}\n`
+          }
+          message += `\n`
+        }
+        
+        if (analysis.payoutData) {
+          message += `\nPayout Data Found:\n`
+          message += JSON.stringify(analysis.payoutData.slice(0, 3), null, 2)
+        }
+        
+        message += `\n\nRecommendations:\n`
+        analysis.recommendations.forEach((rec: string) => {
+          message += `• ${rec}\n`
+        })
+        
+        setDebugModal({
+          isOpen: true,
+          title: 'Shopify Payout API Test',
+          content: message
+        })
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Shopify payouts debug failed:', data)
+        alert(`Shopify payouts debug failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Shopify payouts debug error:', error)
+      alert(`Shopify payouts debug failed: ${error}`)
+    }
+  }
+
   const debugShopifyOrders = async (integrationId: string) => {
     try {
       const targetDate = prompt('Enter date to check raw Shopify data (YYYY-MM-DD) or leave blank for Aug 15:', '2025-08-15')
@@ -649,6 +717,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-cyan-600 text-white text-sm rounded-lg hover:bg-cyan-700"
                         >
                           Raw Shopify
+                        </button>
+                        <button
+                          onClick={() => debugShopifyPayouts(store.id)}
+                          className="px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700"
+                        >
+                          Test Payouts
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}
