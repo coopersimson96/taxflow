@@ -33,6 +33,20 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
     }
   }
 
+  const diagnoseShopifyAPI = async () => {
+    setIsDebugLoading(true)
+    try {
+      const response = await fetch('/api/admin/diagnose-shopify-api')
+      const result = await response.json()
+      setDebugData({ ...result, isDiagnosis: true })
+    } catch (error) {
+      console.error('Shopify API diagnosis failed:', error)
+      setDebugData({ error: 'Failed to diagnose Shopify API', isDiagnosis: true })
+    } finally {
+      setIsDebugLoading(false)
+    }
+  }
+
   // Calculate breakdown percentages
   const breakdownItems = [
     { name: 'Federal Tax', amount: data.breakdown.federal, color: '#ef4444' },
@@ -109,9 +123,9 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
               <div className="text-white/80 text-lg md:text-xl">
                 From today's payout of {formatCurrency(data.todayPayoutAmount || 0, data.currency)}
                 <div className="text-white/60 text-sm mt-1">
-                  {data.todayPayoutAmount === 1468.47 ? 
-                    "Using known payout amount (API access pending)" : 
-                    "Based on actual Shopify payout data"
+                  {data.todayPayoutAmount > 0 ? 
+                    "Based on actual Shopify payout data" : 
+                    "⚠️ Shopify API access required - click 'Fix API Access' below"
                   }
                 </div>
               </div>
@@ -213,15 +227,15 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
             </button>
 
             <button
-              onClick={debugPayoutCalculation}
+              onClick={diagnoseShopifyAPI}
               disabled={isDebugLoading}
               className="bg-red-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-red-600 transition-all duration-200 border border-red-400 disabled:opacity-50"
             >
               <div className="flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{isDebugLoading ? 'Debugging...' : 'Debug Payout'}</span>
+                <span>{isDebugLoading ? 'Diagnosing...' : 'Fix API Access'}</span>
               </div>
             </button>
           </div>
@@ -260,9 +274,56 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
           {/* Debug Results */}
           {debugData && (
             <div className="mt-8 bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-400/30">
-              <h3 className="text-lg font-semibold text-red-100 mb-4">Debug: Payout Analysis</h3>
+              <h3 className="text-lg font-semibold text-red-100 mb-4">
+                {debugData.isDiagnosis ? "Shopify API Diagnosis" : "Debug: Payout Analysis"}
+              </h3>
+              
               {debugData.error ? (
                 <p className="text-red-200">Error: {debugData.error}</p>
+              ) : debugData.isDiagnosis && debugData.diagnosis ? (
+                <div className="space-y-4">
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-2">Store Info:</p>
+                    <p className="text-red-200 text-sm">Domain: {debugData.diagnosis.shopDomain}</p>
+                    <p className="text-red-200 text-sm">Access Token: {debugData.diagnosis.hasAccessToken ? '✅ Present' : '❌ Missing'}</p>
+                  </div>
+
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-3">API Test Results:</p>
+                    <div className="space-y-2 text-sm">
+                      {Object.entries(debugData.diagnosis.apiTests).map(([endpoint, result]: [string, any]) => (
+                        <div key={endpoint} className="flex justify-between items-center">
+                          <span className="text-red-200">{endpoint}:</span>
+                          <span className={`font-medium ${result.ok ? 'text-green-300' : 'text-red-300'}`}>
+                            {result.ok ? '✅ OK' : `❌ ${result.status || 'Failed'}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-2">Recommendations:</p>
+                    <div className="space-y-1 text-sm">
+                      {debugData.diagnosis.recommendations.map((rec: string, index: number) => (
+                        <p key={index} className={`${rec.startsWith('✅') ? 'text-green-300' : 'text-red-300'}`}>
+                          {rec}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {debugData.diagnosis.nextSteps && (
+                    <div className="bg-yellow-600/20 rounded-lg p-4 border border-yellow-400/30">
+                      <p className="text-yellow-100 font-medium mb-2">Next Steps to Fix:</p>
+                      <ol className="text-sm text-yellow-200 space-y-1">
+                        {debugData.diagnosis.nextSteps.map((step: string, index: number) => (
+                          <li key={index}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
               ) : debugData.debug ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -282,32 +343,9 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                       <p className="text-xs text-red-200">Missing amount</p>
                     </div>
                   </div>
-                  
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-3">Daily Breakdown (Last 7 Days):</p>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {Object.values(debugData.debug.dailyBreakdown).map((day: any) => (
-                        <div key={day.date} className="flex justify-between items-center text-sm bg-white/10 p-2 rounded">
-                          <span className="text-red-100">{day.date}</span>
-                          <span className="text-red-200">{day.transactions} orders</span>
-                          <span className="text-red-100">{formatCurrency(day.grossSales, data.currency)}</span>
-                          <span className="font-medium text-red-50">{formatCurrency(day.estimatedPayout, data.currency)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-red-100">
-                    <p className="font-medium">Likely Issues:</p>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-red-200">
-                      <li>Shopify payouts include transactions from 1-3 days ago, not just today</li>
-                      <li>Need to match payout dates with transaction processing dates</li>
-                      <li>Processing fees may differ from assumed 2.9% + $0.30</li>
-                    </ul>
-                  </div>
                 </div>
               ) : (
-                <p className="text-red-200">Loading debug data...</p>
+                <p className="text-red-200">Loading diagnosis...</p>
               )}
             </div>
           )}

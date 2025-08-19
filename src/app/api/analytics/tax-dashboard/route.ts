@@ -364,43 +364,11 @@ async function calculateTaxToSetAside(transactions: any[], days: number, integra
       }
     }
   } else {
-    console.log('❌ Shopify Payouts API failed, using manual payout amount')
-    // Fallback: Use the known payout amount of $1,468.47 until API access is fixed
-    todayPayoutAmount = 1468.47
-    
-    // Calculate tax percentage from recent transaction data
-    const totalSales = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
-    const totalTax = transactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
-    const taxRate = totalSales > 0 ? totalTax / totalSales : 0
-    
-    console.log('📊 Fallback tax calculation:', { totalSales, totalTax, taxRate, todayPayoutAmount })
-    
-    // Apply tax rate to known payout amount
-    todayTaxAmount = todayPayoutAmount * taxRate
-    
-    // Calculate proportional tax breakdown
-    if (totalTax > 0) {
-      const allTaxBreakdown = {
-        gst: transactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
-        pst: transactions.reduce((sum, tx) => sum + tx.pstAmount, 0) / 100,
-        hst: transactions.reduce((sum, tx) => sum + tx.hstAmount, 0) / 100,
-        qst: transactions.reduce((sum, tx) => sum + tx.qstAmount, 0) / 100,
-        stateTax: transactions.reduce((sum, tx) => sum + tx.stateTaxAmount, 0) / 100,
-        localTax: transactions.reduce((sum, tx) => sum + tx.localTaxAmount, 0) / 100,
-        other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
-      }
-      
-      // Scale breakdown proportionally to today's tax amount
-      todayBreakdown = {
-        gst: (allTaxBreakdown.gst / totalTax) * todayTaxAmount,
-        pst: (allTaxBreakdown.pst / totalTax) * todayTaxAmount,
-        hst: (allTaxBreakdown.hst / totalTax) * todayTaxAmount,
-        qst: (allTaxBreakdown.qst / totalTax) * todayTaxAmount,
-        stateTax: (allTaxBreakdown.stateTax / totalTax) * todayTaxAmount,
-        localTax: (allTaxBreakdown.localTax / totalTax) * todayTaxAmount,
-        other: (allTaxBreakdown.other / totalTax) * todayTaxAmount
-      }
-    }
+    console.log('❌ Shopify Payouts API failed - cannot calculate accurate tax amounts')
+    console.log('🔧 Please fix Shopify API access to get real payout data')
+    // Don't use fallback data - return zeros to indicate API issue needs fixing
+    todayPayoutAmount = 0
+    todayTaxAmount = 0
   }
 
   // Calculate monthly rolling total
