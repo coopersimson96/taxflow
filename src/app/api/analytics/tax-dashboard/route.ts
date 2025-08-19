@@ -315,52 +315,55 @@ function calculateTaxToSetAside(transactions: any[], days: number, integration: 
     other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
   }
 
-  // Get store timezone
-  const storeTimezone = integration ? getStoreTimezone(integration) : 'America/New_York'
-  const now = new Date()
+  // Calculate tax to set aside using actual Shopify payouts
+  const payoutData = await getActualShopifyPayouts(integration)
   
-  // Calculate payout date range - Shopify typically pays out transactions from 2 days ago
-  const payoutDate = new Date(now)
-  payoutDate.setDate(payoutDate.getDate() - 2)
-  const todayRange = getStoreDayRange(payoutDate, storeTimezone)
-  const todayStartUTC = todayRange.startUTC
-  const todayEndUTC = todayRange.endUTC
-  
-  console.log('🕐 Payout calculation (2 days ago):', {
-    serverTime: now.toISOString(),
-    payoutDate: payoutDate.toISOString(),
-    storeTimezone: storeTimezone,
-    payoutStartUTC: todayStartUTC.toISOString(),
-    payoutEndUTC: todayEndUTC.toISOString()
-  })
-  
-  const todayTransactions = transactions.filter(tx => {
-    const txDate = new Date(tx.transactionDate)
-    return txDate >= todayStartUTC && txDate < todayEndUTC
-  })
+  let todayPayoutAmount = 0
+  let todayTaxAmount = 0
+  let todayBreakdown = {
+    gst: 0, pst: 0, hst: 0, qst: 0, stateTax: 0, localTax: 0, other: 0
+  }
 
-  const todayTaxAmount = todayTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
-  const todayGrossSales = todayTransactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
-  
-  // Calculate estimated payout after processing fees
-  // Shopify typically charges 2.9% + $0.30 per transaction
-  const processingFeeRate = 0.029
-  const perTransactionFee = 0.30
-  const todayProcessingFees = (todayGrossSales * processingFeeRate) + (todayTransactions.length * perTransactionFee)
-  const todayPayoutAmount = todayGrossSales - todayProcessingFees
-
-  const todayBreakdown = {
-    gst: todayTransactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
-    pst: todayTransactions.reduce((sum, tx) => sum + tx.pstAmount, 0) / 100,
-    hst: todayTransactions.reduce((sum, tx) => sum + tx.hstAmount, 0) / 100,
-    qst: todayTransactions.reduce((sum, tx) => sum + tx.qstAmount, 0) / 100,
-    stateTax: todayTransactions.reduce((sum, tx) => sum + tx.stateTaxAmount, 0) / 100,
-    localTax: todayTransactions.reduce((sum, tx) => sum + tx.localTaxAmount, 0) / 100,
-    other: todayTransactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
+  if (payoutData && payoutData.todaysPayout) {
+    // Use actual payout amount from Shopify
+    todayPayoutAmount = payoutData.todaysPayout.amount
+    
+    // Calculate tax percentage from recent transaction data
+    const totalSales = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
+    const totalTax = transactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
+    const taxRate = totalSales > 0 ? totalTax / totalSales : 0
+    
+    // Apply tax rate to actual payout amount
+    todayTaxAmount = todayPayoutAmount * taxRate
+    
+    // Calculate proportional tax breakdown
+    if (totalTax > 0) {
+      const allTaxBreakdown = {
+        gst: transactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
+        pst: transactions.reduce((sum, tx) => sum + tx.pstAmount, 0) / 100,
+        hst: transactions.reduce((sum, tx) => sum + tx.hstAmount, 0) / 100,
+        qst: transactions.reduce((sum, tx) => sum + tx.qstAmount, 0) / 100,
+        stateTax: transactions.reduce((sum, tx) => sum + tx.stateTaxAmount, 0) / 100,
+        localTax: transactions.reduce((sum, tx) => sum + tx.localTaxAmount, 0) / 100,
+        other: transactions.reduce((sum, tx) => sum + tx.otherTaxAmount, 0) / 100
+      }
+      
+      // Scale breakdown proportionally to today's tax amount
+      todayBreakdown = {
+        gst: (allTaxBreakdown.gst / totalTax) * todayTaxAmount,
+        pst: (allTaxBreakdown.pst / totalTax) * todayTaxAmount,
+        hst: (allTaxBreakdown.hst / totalTax) * todayTaxAmount,
+        qst: (allTaxBreakdown.qst / totalTax) * todayTaxAmount,
+        stateTax: (allTaxBreakdown.stateTax / totalTax) * todayTaxAmount,
+        localTax: (allTaxBreakdown.localTax / totalTax) * todayTaxAmount,
+        other: (allTaxBreakdown.other / totalTax) * todayTaxAmount
+      }
+    }
   }
 
   // Calculate monthly rolling total
-  const monthStart = new Date(todayRange.startLocal.getFullYear(), todayRange.startLocal.getMonth(), 1)
+  const now = new Date()
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
   const monthlyTransactions = transactions.filter(tx => {
     const txDate = new Date(tx.transactionDate)
     return txDate >= monthStart && txDate <= now
@@ -787,6 +790,84 @@ async function generateDailyPayoutData(organizationId: string, integration: any 
   } catch (error) {
     console.error('Error generating daily payout data:', error)
     return []
+  }
+}
+
+async function getActualShopifyPayouts(integration: any) {
+  try {
+    if (!integration?.credentials?.accessToken) {
+      console.log('❌ No access token available for payout API')
+      return null
+    }
+
+    const credentials = integration.credentials as any
+    const accessToken = credentials.accessToken
+    const shopDomain = credentials.shopInfo?.myshopify_domain || credentials.shopInfo?.domain
+
+    if (!shopDomain) {
+      console.log('❌ No shop domain found')
+      return null
+    }
+
+    // Fetch recent payouts from Shopify
+    const payoutUrl = `https://${shopDomain}/admin/api/2024-01/shopify_payments/payouts.json?status=paid&limit=5`
+    
+    console.log('🌐 Fetching actual payouts from Shopify:', payoutUrl)
+    
+    const response = await fetch(payoutUrl, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      console.log('❌ Payout API failed:', response.status, response.statusText)
+      return null
+    }
+
+    const data = await response.json()
+    
+    if (!data.payouts || data.payouts.length === 0) {
+      console.log('❌ No payouts found')
+      return null
+    }
+
+    // Find today's payout (most recent)
+    const today = new Date().toISOString().split('T')[0]
+    const todaysPayout = data.payouts.find((payout: any) => {
+      const payoutDate = new Date(payout.date).toISOString().split('T')[0]
+      return payoutDate === today
+    })
+
+    // If no payout today, use the most recent one
+    const recentPayout = todaysPayout || data.payouts[0]
+
+    console.log('✅ Found actual payout:', {
+      id: recentPayout.id,
+      amount: recentPayout.amount,
+      date: recentPayout.date,
+      status: recentPayout.status
+    })
+
+    return {
+      todaysPayout: {
+        id: recentPayout.id,
+        amount: parseFloat(recentPayout.amount),
+        date: recentPayout.date,
+        status: recentPayout.status
+      },
+      allPayouts: data.payouts.map((p: any) => ({
+        id: p.id,
+        amount: parseFloat(p.amount),
+        date: p.date,
+        status: p.status
+      }))
+    }
+
+  } catch (error) {
+    console.error('❌ Error fetching Shopify payouts:', error)
+    return null
   }
 }
 
