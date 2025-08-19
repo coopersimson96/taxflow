@@ -35,7 +35,7 @@ export class UserService {
       })
 
       // CRITICAL FIX: Ensure user has an organization
-      await IntegrationService.ensureUserOrganization(user.id, user.name, user.email)
+      await IntegrationService.ensureUserOrganization(user.id, user.name || undefined, user.email)
 
       console.log('✅ User synced to database with organization:', user.email)
       return user
