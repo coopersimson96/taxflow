@@ -138,15 +138,16 @@ export async function POST(request: NextRequest) {
 
     // Check each endpoint result
     for (const [endpoint, result] of Object.entries(results)) {
-      if (result.ok && result.data) {
+      const res = result as any
+      if (res.ok && res.data) {
         analysis.availableEndpoints.push(endpoint)
         
-        if (endpoint.includes('balance/transactions') && result.data.transactions) {
+        if (endpoint.includes('balance/transactions') && res.data.transactions) {
           analysis.hasShopifyPayments = true
-          analysis.payoutData = result.data.transactions
-        } else if (endpoint.includes('payouts') && result.data.payouts) {
+          analysis.payoutData = res.data.transactions
+        } else if (endpoint.includes('payouts') && res.data.payouts) {
           analysis.hasShopifyPayments = true
-          analysis.payoutData = result.data.payouts
+          analysis.payoutData = res.data.payouts
         }
       }
     }

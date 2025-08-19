@@ -121,18 +121,19 @@ export default function DebugImportStatusPage() {
         
         // Show each endpoint result
         for (const [endpoint, result] of Object.entries(results)) {
+          const res = result as any
           message += `${endpoint}:\n`
-          message += `Status: ${result.status || 'N/A'} ${result.ok ? '✅' : '❌'}\n`
+          message += `Status: ${res.status || 'N/A'} ${res.ok ? '✅' : '❌'}\n`
           
-          if (result.data) {
-            const dataStr = JSON.stringify(result.data, null, 2)
+          if (res.data) {
+            const dataStr = JSON.stringify(res.data, null, 2)
             if (dataStr.length > 500) {
               message += `Data: ${dataStr.substring(0, 500)}...\n`
             } else {
               message += `Data: ${dataStr}\n`
             }
-          } else if (result.error) {
-            message += `Error: ${result.error}\n`
+          } else if (res.error) {
+            message += `Error: ${res.error}\n`
           }
           message += `\n`
         }
