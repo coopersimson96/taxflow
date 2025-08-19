@@ -160,10 +160,20 @@ export class IntegrationService {
       if (membershipCount === 0) {
         console.log('🔧 Creating default organization for user:', userId)
         
+        // Generate unique slug from user info
+        const baseSlug = (userName || userEmail || 'user')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        
+        // Add timestamp to ensure uniqueness
+        const uniqueSlug = `${baseSlug}-${Date.now()}`
+
         const organization = await withWebhookDb(async (db) => {
           return await db.organization.create({
             data: {
               name: `${userName || userEmail || 'User'}'s Organization`,
+              slug: uniqueSlug,
               members: {
                 create: {
                   userId,
