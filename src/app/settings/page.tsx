@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import LinkedEmails from '@/components/user/LinkedEmails'
+import DisconnectAccount from '@/components/settings/DisconnectAccount'
 import { Card } from '@/components/ui/Card'
 
 export default function SettingsPage() {
@@ -15,6 +16,7 @@ export default function SettingsPage() {
     { id: 'emails', label: 'Email Addresses' },
     { id: 'profile', label: 'Profile' },
     { id: 'notifications', label: 'Notifications' },
+    { id: 'account', label: 'Account' },
   ]
 
   return (
@@ -70,6 +72,8 @@ export default function SettingsPage() {
                 <p className="text-sm text-gray-600">Notification settings coming soon...</p>
               </div>
             )}
+
+            {activeTab === 'account' && <DisconnectAccount />}
           </Card>
         </div>
       </DashboardLayout>
