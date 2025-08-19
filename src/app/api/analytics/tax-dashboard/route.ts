@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
     }) : null
 
     // Calculate tax to set aside data
-    const taxToSetAside = calculateTaxToSetAside(currentTransactions, days, integration)
+    const taxToSetAside = await calculateTaxToSetAside(currentTransactions, days, integration)
 
     // Calculate summary metrics
     const summaryMetrics = calculateSummaryMetrics(currentTransactions)
@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateTaxToSetAside(transactions: any[], days: number, integration: any): TaxToSetAsideData {
+async function calculateTaxToSetAside(transactions: any[], days: number, integration: any): Promise<TaxToSetAsideData> {
   const totalTaxCollected = transactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
   const totalSales = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
 
