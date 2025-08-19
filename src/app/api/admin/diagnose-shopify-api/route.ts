@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { withWebhookDb } from '@/lib/prisma'
+import { IntegrationService } from '@/lib/services/integration-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,34 +12,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's integration
-    const user = await withWebhookDb(async (db) => {
-      return await db.user.findUnique({
-        where: { email: session.user.email! },
-        include: {
-          organizations: {
-            include: {
-              organization: {
-                include: {
-                  integrations: {
-                    where: {
-                      type: 'SHOPIFY',
-                      status: 'CONNECTED'
-                    }
-                  }
-                }
-              }
-            }
-          }
+    // Get user's integration using robust service
+    const { integration, debugInfo } = await IntegrationService.getUserIntegrationWithContext(session.user.email!)
+
+    if (!integration) {
+      return NextResponse.json({ 
+        error: 'No Shopify integration found',
+        debugInfo,
+        troubleshooting: {
+          commonCauses: [
+            'User account not linked to any organization',
+            'No Shopify store connected to your account',
+            'Integration in PENDING_USER_LINK status',
+            'Email mismatch between OAuth and Shopify store owner'
+          ],
+          nextSteps: debugInfo.needsOrganization ? 
+            ['Sign out and sign back in to create default organization'] :
+            debugInfo.needsShopifyConnection ?
+            ['Connect your Shopify store through the integrations page'] :
+            ['Contact support for manual account linking']
         }
-      })
-    })
-
-    if (!user?.organizations?.[0]?.organization?.integrations?.[0]) {
-      return NextResponse.json({ error: 'No Shopify integration found' }, { status: 404 })
+      }, { status: 404 })
     }
-
-    const integration = user.organizations[0].organization.integrations[0]
     const credentials = integration.credentials as any
 
     if (!credentials?.accessToken) {

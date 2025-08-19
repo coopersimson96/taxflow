@@ -1,4 +1,5 @@
 import { prisma } from '../prisma'
+import { IntegrationService } from './integration-service'
 
 export interface CreateUserData {
   email: string
@@ -33,7 +34,10 @@ export class UserService {
         },
       })
 
-      console.log('✅ User synced to database:', user.email)
+      // CRITICAL FIX: Ensure user has an organization
+      await IntegrationService.ensureUserOrganization(user.id, user.name, user.email)
+
+      console.log('✅ User synced to database with organization:', user.email)
       return user
     } catch (error) {
       console.error('❌ Error syncing user to database:', error)

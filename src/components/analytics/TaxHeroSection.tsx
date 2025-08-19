@@ -280,6 +280,38 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
               
               {debugData.error ? (
                 <p className="text-red-200">Error: {debugData.error}</p>
+              ) : debugData.isDiagnosis && debugData.troubleshooting ? (
+                <div className="space-y-4">
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-2">Issue Found:</p>
+                    <p className="text-red-200 text-sm">{debugData.error}</p>
+                  </div>
+
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-2">Debug Info:</p>
+                    <pre className="text-red-200 text-xs bg-black/20 p-2 rounded overflow-x-auto">
+                      {JSON.stringify(debugData.debugInfo, null, 2)}
+                    </pre>
+                  </div>
+
+                  <div className="bg-yellow-600/20 rounded-lg p-4 border border-yellow-400/30">
+                    <p className="text-yellow-100 font-medium mb-2">Common Causes:</p>
+                    <ul className="text-sm text-yellow-200 space-y-1">
+                      {debugData.troubleshooting.commonCauses.map((cause: string, index: number) => (
+                        <li key={index}>• {cause}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-green-600/20 rounded-lg p-4 border border-green-400/30">
+                    <p className="text-green-100 font-medium mb-2">Next Steps to Fix:</p>
+                    <ol className="text-sm text-green-200 space-y-1">
+                      {debugData.troubleshooting.nextSteps.map((step: string, index: number) => (
+                        <li key={index}>{index + 1}. {step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
               ) : debugData.isDiagnosis && debugData.diagnosis ? (
                 <div className="space-y-4">
                   <div className="bg-white/10 rounded-lg p-4">
