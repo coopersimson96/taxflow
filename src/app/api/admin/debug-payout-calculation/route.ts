@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     const todayEstimatedPayout = todayGrossSales - todayProcessingFees
 
     // Group transactions by date to see daily breakdown
-    const dailyBreakdown = {}
+    const dailyBreakdown: { [key: string]: any } = {}
     transactions.forEach(tx => {
       const dateKey = tx.transactionDate.toISOString().split('T')[0]
       if (!dailyBreakdown[dateKey]) {
