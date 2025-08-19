@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils'
 
 const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false }) => {
   const [showBreakdown, setShowBreakdown] = useState(false)
+  const [debugData, setDebugData] = useState<any>(null)
+  const [isDebugLoading, setIsDebugLoading] = useState(false)
 
   const formatCurrency = (amount: number, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -15,6 +17,20 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`
+  }
+
+  const debugPayoutCalculation = async () => {
+    setIsDebugLoading(true)
+    try {
+      const response = await fetch('/api/admin/debug-payout-calculation')
+      const result = await response.json()
+      setDebugData(result)
+    } catch (error) {
+      console.error('Debug payout calculation failed:', error)
+      setDebugData({ error: 'Failed to fetch debug data' })
+    } finally {
+      setIsDebugLoading(false)
+    }
   }
 
   // Calculate breakdown percentages
@@ -189,6 +205,19 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                 </svg>
               </div>
             </button>
+
+            <button
+              onClick={debugPayoutCalculation}
+              disabled={isDebugLoading}
+              className="bg-red-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-red-600 transition-all duration-200 border border-red-400 disabled:opacity-50"
+            >
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>{isDebugLoading ? 'Debugging...' : 'Debug Payout'}</span>
+              </div>
+            </button>
           </div>
 
           {/* Expandable Breakdown */}
@@ -219,6 +248,61 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Debug Results */}
+          {debugData && (
+            <div className="mt-8 bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-400/30">
+              <h3 className="text-lg font-semibold text-red-100 mb-4">Debug: Payout Analysis</h3>
+              {debugData.error ? (
+                <p className="text-red-200">Error: {debugData.error}</p>
+              ) : debugData.debug ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white/10 rounded-lg p-4">
+                      <p className="text-red-100 font-medium">Today's Calculated</p>
+                      <p className="text-2xl font-bold text-red-50">{formatCurrency(debugData.debug.todayStats.estimatedPayout, data.currency)}</p>
+                      <p className="text-xs text-red-200">{debugData.debug.todayStats.transactionCount} transactions</p>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4">
+                      <p className="text-red-100 font-medium">Actual Shopify Payout</p>
+                      <p className="text-2xl font-bold text-red-50">{formatCurrency(debugData.debug.actualShopifyPayout, data.currency)}</p>
+                      <p className="text-xs text-red-200">Aug 19th payout</p>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-4">
+                      <p className="text-red-100 font-medium">Difference</p>
+                      <p className="text-2xl font-bold text-orange-300">{formatCurrency(debugData.debug.difference, data.currency)}</p>
+                      <p className="text-xs text-red-200">Missing amount</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/10 rounded-lg p-4">
+                    <p className="text-red-100 font-medium mb-3">Daily Breakdown (Last 7 Days):</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {Object.values(debugData.debug.dailyBreakdown).map((day: any) => (
+                        <div key={day.date} className="flex justify-between items-center text-sm bg-white/10 p-2 rounded">
+                          <span className="text-red-100">{day.date}</span>
+                          <span className="text-red-200">{day.transactions} orders</span>
+                          <span className="text-red-100">{formatCurrency(day.grossSales, data.currency)}</span>
+                          <span className="font-medium text-red-50">{formatCurrency(day.estimatedPayout, data.currency)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm text-red-100">
+                    <p className="font-medium">Likely Issues:</p>
+                    <ul className="list-disc list-inside mt-1 space-y-1 text-red-200">
+                      <li>Shopify payouts include transactions from 1-3 days ago, not just today</li>
+                      <li>Need to match payout dates with transaction processing dates</li>
+                      <li>Processing fees may differ from assumed 2.9% + $0.30</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-red-200">Loading debug data...</p>
+              )}
             </div>
           )}
 
