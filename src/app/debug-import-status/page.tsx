@@ -95,6 +95,70 @@ export default function DebugImportStatusPage() {
     }
   }
 
+  const analyzePayouts = async (integrationId: string) => {
+    try {
+      console.log('Analyzing payouts for integration:', integrationId)
+      
+      const response = await fetch('/api/admin/analyze-payouts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ integrationId })
+      })
+      
+      const data = await response.json()
+      console.log('Payout analysis response:', data)
+      
+      if (response.ok && data.success) {
+        const { analysis } = data
+        let message = `Estimated Daily Payouts Analysis:\n\n`
+        
+        if (analysis.todaysPayout) {
+          const tp = analysis.todaysPayout
+          message += `TODAY'S ESTIMATED PAYOUT:\n`
+          message += `Date: ${tp.date}\n`
+          message += `Orders: ${tp.orderCount}\n`
+          message += `Gross Sales: $${tp.grossSales.toFixed(2)}\n`
+          message += `Processing Fees: -$${tp.processingFees.toFixed(2)}\n`
+          message += `Estimated Payout: $${tp.estimatedPayout.toFixed(2)}\n`
+          message += `Tax to Set Aside: $${tp.taxToSetAside.toFixed(2)} (${tp.taxRate.toFixed(1)}%)\n\n`
+        }
+        
+        message += `RECENT PAYOUTS (Last 10 days):\n\n`
+        
+        analysis.estimatedPayouts.forEach((payout: any) => {
+          message += `${payout.date}: $${payout.estimatedPayout.toFixed(2)} (Tax: $${payout.taxToSetAside.toFixed(2)})\n`
+        })
+        
+        message += `\n`
+        message += `SUMMARY (${analysis.totalDays} days):\n`
+        message += `Total Gross Sales: $${analysis.summary.totalGrossSales.toFixed(2)}\n`
+        message += `Total Tax Collected: $${analysis.summary.totalTax.toFixed(2)}\n`
+        message += `Total Processing Fees: $${analysis.summary.totalFees.toFixed(2)}\n`
+        message += `Total Estimated Payouts: $${analysis.summary.totalEstimatedPayouts.toFixed(2)}\n\n`
+        
+        message += `NOTES:\n`
+        analysis.notes.forEach((note: string) => {
+          message += `• ${note}\n`
+        })
+        
+        setDebugModal({
+          isOpen: true,
+          title: 'Payout Analysis',
+          content: message
+        })
+      } else {
+        const errorMsg = data.error || data.details || 'Unknown error'
+        console.error('Payout analysis failed:', data)
+        alert(`Payout analysis failed: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('Payout analysis error:', error)
+      alert(`Payout analysis failed: ${error}`)
+    }
+  }
+
   const debugShopifyPayouts = async (integrationId: string) => {
     try {
       const targetDate = prompt('Enter date to check payouts (YYYY-MM-DD) or leave blank for recent:', new Date().toISOString().split('T')[0])
@@ -724,6 +788,12 @@ export default function DebugImportStatusPage() {
                           className="px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700"
                         >
                           Test Payouts
+                        </button>
+                        <button
+                          onClick={() => analyzePayouts(store.id)}
+                          className="px-3 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700"
+                        >
+                          Analyze Payouts
                         </button>
                         <button
                           onClick={() => debugShopifyApi(store.id)}

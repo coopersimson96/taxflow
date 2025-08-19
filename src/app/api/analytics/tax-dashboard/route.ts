@@ -337,7 +337,14 @@ function calculateTaxToSetAside(transactions: any[], days: number, integration: 
   })
 
   const todayTaxAmount = todayTransactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
-  const todayPayoutAmount = todayTransactions.reduce((sum, tx) => sum + (tx.totalAmount - tx.taxAmount), 0) / 100
+  const todayGrossSales = todayTransactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
+  
+  // Calculate estimated payout after processing fees
+  // Shopify typically charges 2.9% + $0.30 per transaction
+  const processingFeeRate = 0.029
+  const perTransactionFee = 0.30
+  const todayProcessingFees = (todayGrossSales * processingFeeRate) + (todayTransactions.length * perTransactionFee)
+  const todayPayoutAmount = todayGrossSales - todayProcessingFees
 
   const todayBreakdown = {
     gst: todayTransactions.reduce((sum, tx) => sum + tx.gstAmount, 0) / 100,
