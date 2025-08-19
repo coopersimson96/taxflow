@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { DailyPayoutData, StoreInfo } from '@/types/tax-dashboard'
 import { cn } from '@/lib/utils'
 
@@ -15,11 +15,27 @@ const DailyPayoutBreakdown: React.FC<DailyPayoutBreakdownProps> = ({
   className,
   storeInfo
 }) => {
+  const [debugData, setDebugData] = useState<any>(null)
+  const [isDebugLoading, setIsDebugLoading] = useState(false)
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD'
     }).format(amount)
+  }
+
+  const debugPayoutCalculation = async () => {
+    setIsDebugLoading(true)
+    try {
+      const response = await fetch('/api/admin/debug-payout-calculation')
+      const data = await response.json()
+      setDebugData(data)
+    } catch (error) {
+      console.error('Debug payout calculation failed:', error)
+      setDebugData({ error: 'Failed to fetch debug data' })
+    } finally {
+      setIsDebugLoading(false)
+    }
   }
 
   const formatDate = (dateString: string, storeTimezone?: string) => {
@@ -247,6 +263,77 @@ const DailyPayoutBreakdown: React.FC<DailyPayoutBreakdownProps> = ({
           </div>
         )
       })}
+
+      {/* Debug Payout Calculation */}
+      <div className="bg-red-50 rounded-xl p-4 border border-red-200 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-medium text-red-900">Debug: Payout Calculation Issue</h4>
+            <p className="text-xs text-red-700 mt-1">Dashboard showing $325.66 but actual Shopify payout was $1468.47</p>
+          </div>
+          <button
+            onClick={debugPayoutCalculation}
+            disabled={isDebugLoading}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+          >
+            {isDebugLoading ? 'Analyzing...' : 'Debug Calculation'}
+          </button>
+        </div>
+        
+        {debugData && (
+          <div className="bg-white rounded-lg p-4 border text-sm">
+            <h5 className="font-semibold mb-2">Debug Results:</h5>
+            {debugData.error ? (
+              <p className="text-red-600">Error: {debugData.error}</p>
+            ) : debugData.debug ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 p-3 rounded">
+                    <p className="font-medium text-blue-900">Today's Calculated</p>
+                    <p className="text-lg text-blue-700">{formatCurrency(debugData.debug.todayStats.estimatedPayout)}</p>
+                    <p className="text-xs text-blue-600">{debugData.debug.todayStats.transactionCount} transactions</p>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded">
+                    <p className="font-medium text-green-900">Actual Shopify Payout</p>
+                    <p className="text-lg text-green-700">{formatCurrency(debugData.debug.actualShopifyPayout)}</p>
+                    <p className="text-xs text-green-600">Aug 19th payout</p>
+                  </div>
+                  <div className="bg-orange-50 p-3 rounded">
+                    <p className="font-medium text-orange-900">Difference</p>
+                    <p className="text-lg text-orange-700">{formatCurrency(debugData.debug.difference)}</p>
+                    <p className="text-xs text-orange-600">Missing amount</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="font-medium mb-2">Daily Breakdown (Last 7 Days):</p>
+                  <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                    {Object.values(debugData.debug.dailyBreakdown).map((day: any) => (
+                      <div key={day.date} className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
+                        <span>{day.date}</span>
+                        <span>{day.transactions} orders</span>
+                        <span>{formatCurrency(day.grossSales)}</span>
+                        <span className="font-medium">{formatCurrency(day.estimatedPayout)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="text-xs text-gray-600">
+                  <p className="font-medium">Likely Issues:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Shopify payouts include transactions from 1-3 days ago, not just today</li>
+                    <li>Need to match payout dates with transaction processing dates</li>
+                    <li>Processing fees may differ from assumed 2.9% + $0.30</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <p>Loading debug data...</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Summary Footer */}
       <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
