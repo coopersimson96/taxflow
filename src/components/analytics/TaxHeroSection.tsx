@@ -123,7 +123,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
               <div className="text-white/80 text-lg md:text-xl">
                 From today's payout of {formatCurrency(data.todayPayoutAmount || 0, data.currency)}
                 <div className="text-white/60 text-sm mt-1">
-                  {data.todayPayoutAmount > 0 ? 
+                  {(data.todayPayoutAmount || 0) > 0 ? 
                     "Based on actual Shopify payout data" : 
                     "⚠️ Shopify API access required - click 'Fix API Access' below"
                   }
