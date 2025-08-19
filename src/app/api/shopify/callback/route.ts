@@ -3,7 +3,7 @@ import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
 import { WebhookManager } from '@/lib/services/webhook-manager'
-import { HistoricalImportService } from '@/lib/services/historical-import'
+import { HistoricalImportService } from '@/lib/services/historical-import-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -385,17 +385,21 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      // Import historical data (last 12 months) for new connections
+      // Import historical data (last 90 days) for new connections  
       try {
-        console.log('📚 Starting historical data import (last 12 months)...')
+        console.log('📚 Starting historical data import (last 90 days)...')
         
         // Check if historical import has already been done
-        const integrationConfig = integration.config as any
-        if (!integrationConfig?.historicalImportCompleted) {
+        const importStatus = await HistoricalImportService.getImportStatus(integration.id)
+        if (!importStatus || importStatus.status === 'not_started') {
           // Trigger import asynchronously (don't block the callback)
-          HistoricalImportService.importHistoricalOrders(integration.id, 12)
-            .then(progress => {
-              console.log(`✅ Historical import completed: ${progress.processedOrders} orders imported`)
+          HistoricalImportService.importHistoricalOrders(integration.id, {
+            daysBack: 90,
+            batchSize: 50,
+            maxOrders: 1000
+          })
+            .then(result => {
+              console.log(`✅ Historical import completed: ${result.totalImported} orders imported`)
             })
             .catch(error => {
               console.error('❌ Historical import failed:', error)
@@ -403,7 +407,7 @@ export async function GET(request: NextRequest) {
           
           console.log('📥 Historical import started in background')
         } else {
-          console.log('⏭️ Historical import already completed, skipping')
+          console.log(`⏭️ Historical import status: ${importStatus.status}, skipping`)
         }
       } catch (importError) {
         console.error('❌ Failed to start historical import:', importError)

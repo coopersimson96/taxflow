@@ -1,23 +1,55 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import LinkedEmails from '@/components/user/LinkedEmails'
 import DisconnectAccount from '@/components/settings/DisconnectAccount'
+import ImportProgress from '@/components/settings/ImportProgress'
 import { Card } from '@/components/ui/Card'
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState('emails')
+  const [integrationId, setIntegrationId] = useState<string | null>(null)
 
   const tabs = [
     { id: 'emails', label: 'Email Addresses' },
     { id: 'profile', label: 'Profile' },
+    { id: 'data', label: 'Data & Import' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'account', label: 'Account' },
   ]
+
+  // Check URL for tab parameter
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabs.some(tab => tab.id === tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [])
+
+  // Fetch user's current integration
+  useEffect(() => {
+    const fetchIntegration = async () => {
+      try {
+        const response = await fetch('/api/user/current-integration')
+        const result = await response.json()
+        
+        if (result.integration) {
+          setIntegrationId(result.integration.id)
+        }
+      } catch (error) {
+        console.error('Failed to fetch integration:', error)
+      }
+    }
+
+    if (session?.user) {
+      fetchIntegration()
+    }
+  }, [session])
 
   return (
     <AuthGuard>
@@ -65,6 +97,8 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'data' && <ImportProgress integrationId={integrationId} />}
             
             {activeTab === 'notifications' && (
               <div>

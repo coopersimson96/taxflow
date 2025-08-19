@@ -271,6 +271,18 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                 <span>{isClearingIntegration ? 'Clearing...' : 'Clear Invalid Token'}</span>
               </div>
             </button>
+
+            <button
+              onClick={() => window.location.href = '/settings?tab=data'}
+              className="bg-purple-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-purple-600 transition-all duration-200 border border-purple-400"
+            >
+              <div className="flex items-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                </svg>
+                <span>Import Historical Data</span>
+              </div>
+            </button>
           </div>
 
           {/* Expandable Breakdown */}

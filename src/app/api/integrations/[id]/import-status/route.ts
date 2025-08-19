@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { HistoricalImportService } from '@/lib/services/historical-import'
+import { HistoricalImportService } from '@/lib/services/historical-import-service'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(
@@ -38,37 +38,24 @@ export async function GET(
       return NextResponse.json({ error: 'Integration not found' }, { status: 404 })
     }
 
-    // Get import progress
-    const progress = HistoricalImportService.getImportProgress(integrationId)
+    // Get import status using new service
+    const status = await HistoricalImportService.getImportStatus(integrationId)
     
-    // If no active import, check if it was completed previously
-    if (!progress) {
-      const config = integration.config as any
-      if (config?.historicalImportCompleted) {
-        return NextResponse.json({
-          status: 'completed',
-          completed: true,
-          importDate: config.historicalImportDate,
-          range: config.historicalImportRange
-        })
-      } else {
-        return NextResponse.json({
-          status: 'not_started',
-          completed: false
-        })
-      }
+    if (!status) {
+      return NextResponse.json({
+        status: 'not_started',
+        completed: false
+      })
     }
 
     return NextResponse.json({
-      status: progress.status,
-      totalOrders: progress.totalOrders,
-      processedOrders: progress.processedOrders,
-      percentComplete: progress.totalOrders > 0 
-        ? Math.round((progress.processedOrders / progress.totalOrders) * 100)
-        : 0,
-      startDate: progress.startDate,
-      endDate: progress.endDate,
-      error: progress.error
+      status: status.status,
+      progress: status.progress || 0,
+      totalImported: status.totalImported || 0,
+      startedAt: status.startedAt,
+      completedAt: status.completedAt,
+      failedAt: status.failedAt,
+      error: status.error
     })
 
   } catch (error) {
@@ -125,16 +112,20 @@ export async function POST(
     console.log('🚀 Starting manual historical import for integration:', integrationId)
 
     // Check if import is already running
-    const existingProgress = HistoricalImportService.getImportProgress(integrationId)
-    if (existingProgress && existingProgress.status === 'in_progress') {
+    const existingStatus = await HistoricalImportService.getImportStatus(integrationId)
+    if (existingStatus && existingStatus.status === 'in_progress') {
       return NextResponse.json({
         success: false,
         error: 'Import is already running for this integration'
       })
     }
 
-    // Start the historical import (12 months)
-    const importPromise = HistoricalImportService.importHistoricalOrders(integrationId, 12)
+    // Start the historical import (90 days)
+    const importPromise = HistoricalImportService.importHistoricalOrders(integrationId, {
+      daysBack: 90,
+      batchSize: 50,
+      maxOrders: 1000
+    })
     
     // Don't await the full import - let it run in background
     importPromise
