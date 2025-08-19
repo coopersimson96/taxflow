@@ -67,8 +67,10 @@ export async function GET(request: NextRequest) {
     const storeTimezone = integration ? getStoreTimezone(integration) : 'America/New_York'
     const now = new Date()
     
-    // Calculate today's date range in store timezone
-    const todayRange = getStoreDayRange(now, storeTimezone)
+    // Calculate payout date range - Shopify typically pays out transactions from 2 days ago
+    const payoutDate = new Date(now)
+    payoutDate.setDate(payoutDate.getDate() - 2)
+    const todayRange = getStoreDayRange(payoutDate, storeTimezone)
     const todayStartUTC = todayRange.startUTC
     const todayEndUTC = todayRange.endUTC
     
