@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { HistoricalImportService } from '@/lib/services/historical-import'
-import { prisma } from '@/lib/prisma'
+import { withWebhookDb } from '@/lib/prisma'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(
   request: NextRequest,
@@ -15,23 +17,26 @@ export async function GET(
     }
 
     const integrationId = params.id
+    console.log('📊 Import status request for integration:', integrationId)
 
     // Verify user has access to this integration
-    const integration = await prisma.integration.findUnique({
-      where: { id: integrationId },
-      include: {
-        organization: {
-          include: {
-            members: {
-              where: {
-                user: {
-                  email: session.user.email
+    const integration = await withWebhookDb(async (db) => {
+      return await db.integration.findUnique({
+        where: { id: integrationId },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: {
+                  user: {
+                    email: session.user.email
+                  }
                 }
               }
             }
           }
         }
-      }
+      })
     })
 
     if (!integration || integration.organization.members.length === 0) {
@@ -78,23 +83,26 @@ export async function POST(
     }
 
     const integrationId = params.id
+    console.log('📊 Import status request for integration:', integrationId)
 
     // Verify user has access to this integration
-    const integration = await prisma.integration.findUnique({
-      where: { id: integrationId },
-      include: {
-        organization: {
-          include: {
-            members: {
-              where: {
-                user: {
-                  email: session.user.email
+    const integration = await withWebhookDb(async (db) => {
+      return await db.integration.findUnique({
+        where: { id: integrationId },
+        include: {
+          organization: {
+            include: {
+              members: {
+                where: {
+                  user: {
+                    email: session.user.email
+                  }
                 }
               }
             }
           }
         }
-      }
+      })
     })
 
     if (!integration || integration.organization.members.length === 0) {

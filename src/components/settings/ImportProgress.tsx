@@ -18,30 +18,57 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
   const [importStatus, setImportStatus] = useState<ImportStatus | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isTriggering, setIsTriggering] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchImportStatus = useCallback(async () => {
-    if (!integrationId) return
+    if (!integrationId) {
+      console.log('No integration ID provided')
+      return
+    }
+    
+    console.log('📊 Fetching import status for integration:', integrationId)
     
     try {
       setIsLoading(true)
+      setError(null)
+      
       const response = await fetch(`/api/integrations/${integrationId}/import-status`)
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const errorText = `HTTP ${response.status}: ${response.statusText}`
+        console.error('API request failed:', errorText)
+        setError(errorText)
+        return
       }
       
       const text = await response.text()
-      if (!text) {
-        throw new Error('Empty response from server')
+      console.log('API response text:', text)
+      
+      if (!text || text === 'undefined') {
+        console.error('API returned invalid response:', text)
+        setError('Invalid response from server')
+        return
       }
       
-      const result = JSON.parse(text)
+      let result
+      try {
+        result = JSON.parse(text)
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Text was:', text)
+        setError('Failed to parse server response')
+        return
+      }
+      
+      console.log('Import status result:', result)
       
       if (result.status) {
         setImportStatus(result)
+      } else if (result.error) {
+        setError(result.error)
       }
     } catch (error) {
       console.error('Failed to fetch import status:', error)
+      setError(error instanceof Error ? error.message : 'Unknown error')
     } finally {
       setIsLoading(false)
     }
@@ -96,6 +123,28 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
     return (
       <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
         <p className="text-gray-600 text-sm">No Shopify integration found</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-start space-x-2">
+          <svg className="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-red-800 font-medium">Error loading import status</p>
+            <p className="text-red-600 text-sm mt-1">{error}</p>
+            <button 
+              onClick={fetchImportStatus}
+              className="text-red-700 underline text-sm mt-2 hover:text-red-800"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
