@@ -7,11 +7,13 @@ export class IntegrationService {
    */
   static async findUserShopifyIntegration(userEmail: string) {
     try {
+      console.log('🔍 Finding Shopify integration for user:', userEmail)
+      
       const integration = await withWebhookDb(async (db) => {
-        return await db.integration.findFirst({
+        // First, let's see all integrations for this user
+        const allIntegrations = await db.integration.findMany({
           where: {
             type: 'SHOPIFY',
-            // Accept any status - let the UI handle status-specific logic
             organization: {
               members: {
                 some: {
@@ -21,24 +23,21 @@ export class IntegrationService {
             }
           },
           include: {
-            organization: {
-              include: {
-                members: {
-                  where: {
-                    user: { email: userEmail }
-                  },
-                  include: {
-                    user: true
-                  }
-                }
-              }
-            }
+            organization: true
           }
         })
+
+        console.log(`📋 Found ${allIntegrations.length} Shopify integrations for user`)
+        allIntegrations.forEach((int, index) => {
+          console.log(`  ${index + 1}. ${int.name} (${int.status}) in org ${int.organization.name}`)
+        })
+
+        // Return the first one (or could add logic to pick the best one)
+        return allIntegrations[0] || null
       })
 
       if (integration) {
-        console.log('✅ Found integration:', {
+        console.log('✅ Selected integration:', {
           id: integration.id,
           status: integration.status,
           name: integration.name,

@@ -38,8 +38,26 @@ export default function SettingsPage() {
         const response = await fetch('/api/user/current-integration')
         const result = await response.json()
         
+        console.log('Current integration API response:', result)
+        
         if (result.integration) {
           setIntegrationId(result.integration.id)
+        } else {
+          console.log('No integration found. Debug info:', result.debug)
+          
+          // Fallback: Try the debug endpoint to get integration directly
+          try {
+            const debugResponse = await fetch('/api/debug/check-integration')
+            const debugResult = await debugResponse.json()
+            console.log('Debug endpoint response:', debugResult)
+            
+            if (debugResult.status === 'success' && debugResult.integration) {
+              console.log('Using integration from debug endpoint')
+              setIntegrationId(debugResult.integration.id)
+            }
+          } catch (debugError) {
+            console.error('Debug endpoint also failed:', debugError)
+          }
         }
       } catch (error) {
         console.error('Failed to fetch integration:', error)
