@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { IntegrationService } from '@/lib/services/integration-service'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -28,6 +30,12 @@ export async function GET(request: NextRequest) {
     }
 
     const credentials = integration.credentials as any
+    
+    console.log('✅ Returning integration:', {
+      id: integration.id,
+      status: integration.status,
+      name: integration.name
+    })
     
     return NextResponse.json({
       integration: {

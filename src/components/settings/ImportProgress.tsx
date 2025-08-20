@@ -25,7 +25,17 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
     try {
       setIsLoading(true)
       const response = await fetch(`/api/integrations/${integrationId}/import-status`)
-      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const text = await response.text()
+      if (!text) {
+        throw new Error('Empty response from server')
+      }
+      
+      const result = JSON.parse(text)
       
       if (result.status) {
         setImportStatus(result)
