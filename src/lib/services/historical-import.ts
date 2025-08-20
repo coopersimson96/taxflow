@@ -17,13 +17,18 @@ export class HistoricalImportService {
 
   /**
    * Import historical orders for a Shopify integration
-   * Default: Import last 12 months of data
+   * Supports both months back (legacy) and options object (new)
    */
   static async importHistoricalOrders(
     integrationId: string, 
-    monthsBack: number = 12
+    optionsOrMonths: number | { daysBack?: number; batchSize?: number; maxOrders?: number } = 12
   ): Promise<ImportProgress> {
-    console.log(`🕒 Starting historical import for integration ${integrationId}`)
+    // Parse options
+    const options = typeof optionsOrMonths === 'number' 
+      ? { daysBack: optionsOrMonths * 30, batchSize: 50, maxOrders: 1000 }
+      : { daysBack: 90, batchSize: 50, maxOrders: 1000, ...optionsOrMonths }
+
+    console.log(`🕒 Starting historical import for integration ${integrationId}`, options)
 
     // Create progress tracker
     const progress: ImportProgress = {
@@ -55,10 +60,10 @@ export class HistoricalImportService {
       const shop = credentials.shop
       const accessToken = credentials.accessToken
 
-      // Calculate date range (last 12 months)
+      // Calculate date range 
       const endDate = new Date()
       const startDate = new Date()
-      startDate.setMonth(startDate.getMonth() - monthsBack)
+      startDate.setDate(startDate.getDate() - options.daysBack)
 
       progress.startDate = startDate
       progress.endDate = endDate
@@ -66,17 +71,21 @@ export class HistoricalImportService {
 
       console.log(`📅 Importing orders from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
-      // Fetch orders from Shopify
-      const orders = await this.fetchAllOrders(shop, accessToken, startDate, endDate)
+      // Fetch orders from Shopify with maxOrders limit
+      const orders = await this.fetchAllOrders(shop, accessToken, startDate, endDate, options.maxOrders)
       progress.totalOrders = orders.length
 
-      console.log(`📦 Found ${orders.length} historical orders to import`)
+      console.log(`📦 Found ${orders.length} historical orders to import (max: ${options.maxOrders})`)
 
-      // Process orders in batches
-      const batchSize = 50
-      for (let i = 0; i < orders.length; i += batchSize) {
-        const batch = orders.slice(i, i + batchSize)
+      // Process orders in batches with configurable batch size
+      for (let i = 0; i < orders.length; i += options.batchSize) {
+        const batch = orders.slice(i, i + options.batchSize)
         await this.processBatch(batch, integration, progress)
+        
+        // Rate limiting - small delay between batches
+        if (i + options.batchSize < orders.length) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
       }
 
       progress.status = 'completed'
@@ -93,9 +102,11 @@ export class HistoricalImportService {
               ...integration.config as any,
               historicalImportCompleted: true,
               historicalImportDate: new Date().toISOString(),
+              totalImported: progress.processedOrders,
               historicalImportRange: {
                 start: startDate.toISOString(),
-                end: endDate.toISOString()
+                end: endDate.toISOString(),
+                daysBack: options.daysBack
               }
             }
           }
@@ -131,7 +142,8 @@ export class HistoricalImportService {
     shop: string,
     accessToken: string,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    maxOrders: number = 1000
   ): Promise<any[]> {
     const allOrders: any[] = []
     let pageInfo: string | null = null
@@ -141,6 +153,7 @@ export class HistoricalImportService {
       const params = new URLSearchParams({
         limit: limit.toString(),
         status: 'any',
+        financial_status: 'paid', // Only import paid orders
         created_at_min: startDate.toISOString(),
         created_at_max: endDate.toISOString(),
         fields: 'id,name,created_at,updated_at,total_price,subtotal_price,total_tax,currency,customer,line_items,shipping_lines,tax_lines,billing_address,shipping_address,financial_status,fulfillment_status,cancel_reason,cancelled_at,refunds'
@@ -164,7 +177,14 @@ export class HistoricalImportService {
       }
 
       const data = await response.json()
-      allOrders.push(...(data.orders || []))
+      const orders = data.orders || []
+      allOrders.push(...orders)
+
+      // Stop if we've reached maxOrders limit
+      if (allOrders.length >= maxOrders) {
+        console.log(`📋 Reached maxOrders limit of ${maxOrders}, stopping fetch`)
+        break
+      }
 
       // Check for pagination
       const linkHeader = response.headers.get('Link')
@@ -172,7 +192,8 @@ export class HistoricalImportService {
 
     } while (pageInfo)
 
-    return allOrders
+    // Trim to maxOrders if we went over
+    return allOrders.slice(0, maxOrders)
   }
 
   /**
@@ -287,5 +308,58 @@ export class HistoricalImportService {
    */
   static getImportProgress(integrationId: string): ImportProgress | undefined {
     return this.importProgress.get(integrationId)
+  }
+
+  /**
+   * Get import status from integration config and current progress
+   * This provides a unified view of import status
+   */
+  static async getImportStatus(integrationId: string) {
+    try {
+      // Check in-memory progress first
+      const activeProgress = this.getImportProgress(integrationId)
+      if (activeProgress && activeProgress.status === 'in_progress') {
+        return {
+          status: activeProgress.status,
+          progress: activeProgress.processedOrders,
+          totalImported: activeProgress.processedOrders,
+          startedAt: activeProgress.startDate.toISOString(),
+          error: activeProgress.error
+        }
+      }
+
+      // Check database for completed status
+      const integration = await withWebhookDb(async (db) => {
+        return await db.integration.findUnique({
+          where: { id: integrationId },
+          select: { config: true }
+        })
+      })
+
+      const config = integration?.config as any
+      if (config?.historicalImportCompleted) {
+        return {
+          status: 'completed' as const,
+          completedAt: config.historicalImportDate,
+          totalImported: config.totalImported || 0,
+          startedAt: config.historicalImportRange?.start
+        }
+      }
+
+      // Check if there was a failed import
+      if (activeProgress && activeProgress.status === 'failed') {
+        return {
+          status: activeProgress.status,
+          error: activeProgress.error,
+          failedAt: new Date().toISOString(),
+          progress: activeProgress.processedOrders
+        }
+      }
+
+      return null // Not started
+    } catch (error) {
+      console.error('Error getting import status:', error)
+      return null
+    }
   }
 }

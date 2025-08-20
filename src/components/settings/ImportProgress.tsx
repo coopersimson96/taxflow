@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 interface ImportStatus {
   status: 'not_started' | 'in_progress' | 'completed' | 'failed'
@@ -11,7 +11,7 @@ interface ImportStatus {
 }
 
 interface ImportProgressProps {
-  integrationId?: string
+  integrationId?: string | null
 }
 
 const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
@@ -19,40 +19,31 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isTriggering, setIsTriggering] = useState(false)
 
-  const fetchImportStatus = async () => {
+  const fetchImportStatus = useCallback(async () => {
     if (!integrationId) return
     
     try {
       setIsLoading(true)
-      const response = await fetch(`/api/admin/trigger-historical-import?integrationId=${integrationId}`)
+      const response = await fetch(`/api/integrations/${integrationId}/import-status`)
       const result = await response.json()
       
-      if (result.success) {
-        setImportStatus(result.status)
+      if (result.status) {
+        setImportStatus(result)
       }
     } catch (error) {
       console.error('Failed to fetch import status:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [integrationId])
 
   const triggerHistoricalImport = async () => {
     if (!integrationId) return
     
     try {
       setIsTriggering(true)
-      const response = await fetch('/api/admin/trigger-historical-import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          integrationId,
-          options: {
-            daysBack: 90,
-            batchSize: 50,
-            maxOrders: 1000
-          }
-        })
+      const response = await fetch(`/api/integrations/${integrationId}/import-status`, {
+        method: 'POST'
       })
       
       const result = await response.json()
@@ -89,7 +80,7 @@ const ImportProgress: React.FC<ImportProgressProps> = ({ integrationId }) => {
     if (integrationId) {
       fetchImportStatus()
     }
-  }, [integrationId])
+  }, [integrationId, fetchImportStatus])
 
   if (!integrationId) {
     return (

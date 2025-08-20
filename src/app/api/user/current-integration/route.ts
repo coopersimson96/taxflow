@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's current integration
-    const integration = await IntegrationService.getUserIntegration(session.user.email)
+    const integration = await IntegrationService.findUserShopifyIntegration(session.user.email)
     
     if (!integration) {
       return NextResponse.json({
@@ -20,13 +20,15 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    const credentials = integration.credentials as any
+    
     return NextResponse.json({
       integration: {
         id: integration.id,
         name: integration.name,
         type: integration.type,
         status: integration.status,
-        shopDomain: integration.credentials?.shop,
+        shopDomain: credentials?.shop,
         lastSyncAt: integration.lastSyncAt,
         syncStatus: integration.syncStatus
       }

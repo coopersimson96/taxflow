@@ -3,7 +3,7 @@ import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
 import { WebhookManager } from '@/lib/services/webhook-manager'
-import { HistoricalImportService } from '@/lib/services/historical-import-service'
+import { HistoricalImportService } from '@/lib/services/historical-import'
 
 export const dynamic = 'force-dynamic'
 
@@ -391,7 +391,7 @@ export async function GET(request: NextRequest) {
         
         // Check if historical import has already been done
         const importStatus = await HistoricalImportService.getImportStatus(integration.id)
-        if (!importStatus || importStatus.status === 'not_started') {
+        if (!importStatus || importStatus.status !== 'completed') {
           // Trigger import asynchronously (don't block the callback)
           HistoricalImportService.importHistoricalOrders(integration.id, {
             daysBack: 90,
@@ -399,7 +399,7 @@ export async function GET(request: NextRequest) {
             maxOrders: 1000
           })
             .then(result => {
-              console.log(`✅ Historical import completed: ${result.totalImported} orders imported`)
+              console.log(`✅ Historical import completed: ${result.processedOrders} orders imported`)
             })
             .catch(error => {
               console.error('❌ Historical import failed:', error)
