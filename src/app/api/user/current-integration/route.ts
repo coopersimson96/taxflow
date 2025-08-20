@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         integration: null,
         message: 'No Shopify store connected',
-        debug: debugInfo.debugInfo
+        debug: debugInfo?.debugInfo || null
       })
     }
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         name: integration.name,
         type: integration.type,
         status: integration.status,
-        shopDomain: credentials?.shop,
+        shopDomain: credentials?.shop || null,
         lastSyncAt: integration.lastSyncAt,
         syncStatus: integration.syncStatus
       }

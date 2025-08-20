@@ -32,8 +32,29 @@ export class IntegrationService {
           console.log(`  ${index + 1}. ${int.name} (${int.status}) in org ${int.organization.name}`)
         })
 
-        // Return the first one (or could add logic to pick the best one)
-        return allIntegrations[0] || null
+        // Include full organization data for the selected integration
+        if (allIntegrations.length > 0) {
+          const selectedId = allIntegrations[0].id
+          return await db.integration.findUnique({
+            where: { id: selectedId },
+            include: {
+              organization: {
+                include: {
+                  members: {
+                    where: {
+                      user: { email: userEmail }
+                    },
+                    include: {
+                      user: true
+                    }
+                  }
+                }
+              }
+            }
+          })
+        }
+        
+        return null
       })
 
       if (integration) {

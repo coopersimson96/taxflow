@@ -34,39 +34,50 @@ export default function SettingsPage() {
   // Fetch user's current integration
   useEffect(() => {
     const fetchIntegration = async () => {
+      if (!session?.user) return
+
       try {
         const response = await fetch('/api/user/current-integration')
-        const result = await response.json()
+        
+        // Check if response is ok
+        if (!response.ok) {
+          console.error('API returned error:', response.status, response.statusText)
+          return
+        }
+        
+        // Get response text first to check if it's valid
+        const text = await response.text()
+        if (!text) {
+          console.error('API returned empty response')
+          return
+        }
+        
+        // Parse JSON safely
+        let result
+        try {
+          result = JSON.parse(text)
+        } catch (parseError) {
+          console.error('Failed to parse JSON:', text)
+          return
+        }
         
         console.log('Current integration API response:', result)
         
         if (result.integration) {
           setIntegrationId(result.integration.id)
+          console.log('✅ Set integration ID:', result.integration.id)
+        } else if (result.error) {
+          console.error('API error:', result.error)
         } else {
-          console.log('No integration found. Debug info:', result.debug)
-          
-          // Fallback: Try the debug endpoint to get integration directly
-          try {
-            const debugResponse = await fetch('/api/debug/check-integration')
-            const debugResult = await debugResponse.json()
-            console.log('Debug endpoint response:', debugResult)
-            
-            if (debugResult.status === 'success' && debugResult.integration) {
-              console.log('Using integration from debug endpoint')
-              setIntegrationId(debugResult.integration.id)
-            }
-          } catch (debugError) {
-            console.error('Debug endpoint also failed:', debugError)
-          }
+          console.log('No integration found')
         }
+        
       } catch (error) {
         console.error('Failed to fetch integration:', error)
       }
     }
 
-    if (session?.user) {
-      fetchIntegration()
-    }
+    fetchIntegration()
   }, [session])
 
   return (
