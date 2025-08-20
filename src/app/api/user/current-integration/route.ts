@@ -10,13 +10,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    console.log('🔍 Looking for integration for user:', session.user.email)
+
     // Get user's current integration
     const integration = await IntegrationService.findUserShopifyIntegration(session.user.email)
     
     if (!integration) {
+      // Debug: Let's see what integrations exist for this user
+      const debugInfo = await IntegrationService.getUserIntegrationWithContext(session.user.email)
+      console.log('❌ No integration found. Debug info:', debugInfo)
+      
       return NextResponse.json({
         integration: null,
-        message: 'No Shopify store connected'
+        message: 'No Shopify store connected',
+        debug: debugInfo.debugInfo
       })
     }
 

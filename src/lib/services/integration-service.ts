@@ -11,7 +11,7 @@ export class IntegrationService {
         return await db.integration.findFirst({
           where: {
             type: 'SHOPIFY',
-            status: { in: ['CONNECTED', 'PENDING_USER_LINK'] },
+            // Accept any status - let the UI handle status-specific logic
             organization: {
               members: {
                 some: {
@@ -36,6 +36,17 @@ export class IntegrationService {
           }
         })
       })
+
+      if (integration) {
+        console.log('✅ Found integration:', {
+          id: integration.id,
+          status: integration.status,
+          name: integration.name,
+          organizationId: integration.organizationId
+        })
+      } else {
+        console.log('❌ No Shopify integration found for user:', userEmail)
+      }
 
       return integration
     } catch (error) {
