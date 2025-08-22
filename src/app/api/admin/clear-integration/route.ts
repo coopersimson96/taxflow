@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         organization: int.organization.name
       })),
       nextSteps: [
-        '1. Update SHOPIFY_SCOPES in .env.local to include: read_shopify_payments_payouts',
+        '1. Update SHOPIFY_SCOPES in .env.local to include: read_shopify_payments',
         '2. Restart your development server',
         '3. Go to /integrations and reconnect your Shopify store',
         '4. Accept the new permissions when prompted'
