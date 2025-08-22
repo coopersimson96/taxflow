@@ -16,6 +16,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const userEmail = session.user.email // TypeScript now knows this is not null
     const integrationId = params.id
     console.log('📊 Import status request for integration:', integrationId)
 
@@ -29,7 +30,7 @@ export async function GET(
               members: {
                 where: {
                   user: {
-                    email: session.user.email
+                    email: userEmail
                   }
                 }
               }
@@ -82,8 +83,9 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const userEmail = session.user.email // TypeScript now knows this is not null
     const integrationId = params.id
-    console.log('📊 Import status request for integration:', integrationId)
+    console.log('🚀 Starting manual historical import for integration:', integrationId)
 
     // Verify user has access to this integration
     const integration = await withWebhookDb(async (db) => {
@@ -95,7 +97,7 @@ export async function POST(
               members: {
                 where: {
                   user: {
-                    email: session.user.email
+                    email: userEmail
                   }
                 }
               }
