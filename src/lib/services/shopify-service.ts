@@ -226,7 +226,11 @@ export class ShopifyService {
       'orders/updated',
       'orders/cancelled',
       'refunds/create',
-      'app/uninstalled'
+      'app/uninstalled',
+      // GDPR mandatory webhooks
+      'customers/redact',
+      'customers/data_request',
+      'shop/redact'
     ]
 
     // Get existing webhooks
