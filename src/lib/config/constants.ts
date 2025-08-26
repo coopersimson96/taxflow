@@ -33,7 +33,7 @@ export const TIME_CONFIG = {
   HISTORICAL_IMPORT_DAYS_BACK: 90,
   POLLING_TIMEOUT_MS: 300000, // 5 minutes
   POLLING_INTERVAL_MS: 2000,  // 2 seconds
-} as const
+}
 
 // Date Range Presets
 export const DATE_RANGES = {

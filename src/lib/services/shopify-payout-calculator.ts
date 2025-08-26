@@ -82,10 +82,10 @@ export class ShopifyPayoutCalculator {
       })
     })
 
-    // Check metadata for stored plan
-    const metadata = integration?.metadata as any
-    if (metadata?.shopifyPlan) {
-      return this.PLANS[metadata.shopifyPlan] || this.PLANS.shopify
+    // Check config for stored plan
+    const config = integration?.config as any
+    if (config?.shopifyPlan) {
+      return this.PLANS[config.shopifyPlan] || this.PLANS.shopify
     }
 
     // Default to Shopify plan (most common)
@@ -125,7 +125,7 @@ export class ShopifyPayoutCalculator {
     const groupedOrders = this.groupOrdersByPayoutDate(orders)
     const calculations: PayoutCalculation[] = []
 
-    for (const [payoutDate, payoutOrders] of groupedOrders) {
+    for (const [payoutDate, payoutOrders] of Array.from(groupedOrders)) {
       let grossSales = 0
       let totalFees = 0
       let totalRefunds = 0
@@ -138,12 +138,15 @@ export class ShopifyPayoutCalculator {
         const fees = this.calculateFees(orderAmount, plan)
         totalFees += fees
 
-        // Add refunds if any
-        if (order.refunds && order.refunds.length > 0) {
-          order.refunds.forEach(refund => {
-            refund.refund_line_items.forEach(item => {
-              totalRefunds += parseFloat(item.subtotal)
-            })
+        // Add refunds if any (checking for any refund-related fields)
+        const orderWithRefunds = order as any
+        if (orderWithRefunds.refunds && orderWithRefunds.refunds.length > 0) {
+          orderWithRefunds.refunds.forEach((refund: any) => {
+            if (refund.refund_line_items) {
+              refund.refund_line_items.forEach((item: any) => {
+                totalRefunds += parseFloat(item.subtotal || '0')
+              })
+            }
           })
         }
       })
@@ -181,12 +184,12 @@ export class ShopifyPayoutCalculator {
 
       if (!integration) throw new Error('Integration not found')
 
-      const metadata = (integration.metadata as any) || {}
-      metadata.shopifyPlan = plan
+      const config = (integration.config as any) || {}
+      config.shopifyPlan = plan
 
       await db.integration.update({
         where: { id: integrationId },
-        data: { metadata }
+        data: { config }
       })
     })
   }
