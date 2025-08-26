@@ -819,6 +819,17 @@ async function getActualShopifyPayouts(integration: any) {
       return null
     }
 
+    // Check if we have payment scope
+    const hasPaymentScope = credentials.scope?.includes('read_shopify_payments') || 
+                          credentials.scope?.includes('read_shopify_payments_payouts')
+    
+    if (!hasPaymentScope) {
+      console.log('⚠️ Payment scope not available - using calculated payouts')
+      // Import and use our calculation engine
+      const { calculateEstimatedPayouts } = await import('./calculate-payouts')
+      return await calculateEstimatedPayouts(integration, start, end)
+    }
+
     // Fetch recent payouts from Shopify
     const payoutUrl = `https://${shopDomain}/admin/api/2024-01/shopify_payments/payouts.json?status=paid&limit=5`
     
@@ -833,7 +844,10 @@ async function getActualShopifyPayouts(integration: any) {
 
     if (!response.ok) {
       console.log('❌ Payout API failed:', response.status, response.statusText)
-      return null
+      // Fallback to calculated payouts if API fails
+      console.log('🔄 Falling back to calculated payouts')
+      const { calculateEstimatedPayouts } = await import('./calculate-payouts')
+      return await calculateEstimatedPayouts(integration, start, end)
     }
 
     const data = await response.json()
