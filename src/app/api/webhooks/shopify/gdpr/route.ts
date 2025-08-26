@@ -115,9 +115,10 @@ async function handleCustomerDataRequest(data: any) {
       },
       select: {
         id: true,
-        amount: true,
+        totalAmount: true,
         transactionDate: true,
-        taxAmount: true
+        taxAmount: true,
+        orderNumber: true
       }
     })
   })
