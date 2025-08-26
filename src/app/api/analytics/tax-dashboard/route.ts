@@ -217,7 +217,7 @@ export async function GET(request: NextRequest) {
     }) : null
 
     // Calculate tax to set aside data
-    const taxToSetAside = await calculateTaxToSetAside(currentTransactions, days, integration)
+    const taxToSetAside = await calculateTaxToSetAside(currentTransactions, days, integration, startDate, endDate)
 
     // Calculate summary metrics
     const summaryMetrics = calculateSummaryMetrics(currentTransactions)
@@ -299,7 +299,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function calculateTaxToSetAside(transactions: any[], days: number, integration: any): Promise<TaxToSetAsideData> {
+async function calculateTaxToSetAside(transactions: any[], days: number, integration: any, startDate?: Date, endDate?: Date): Promise<TaxToSetAsideData> {
   const totalTaxCollected = transactions.reduce((sum, tx) => sum + tx.taxAmount, 0) / 100
   const totalSales = transactions.reduce((sum, tx) => sum + tx.totalAmount, 0) / 100
 
@@ -317,7 +317,7 @@ async function calculateTaxToSetAside(transactions: any[], days: number, integra
 
   // Try to get actual Shopify payouts, but fallback to estimation if it fails
   console.log('🔍 Attempting to fetch actual Shopify payouts...')
-  const payoutData = await getActualShopifyPayouts(integration, start, end)
+  const payoutData = await getActualShopifyPayouts(integration, startDate, endDate)
   
   let todayPayoutAmount = 0
   let todayTaxAmount = 0
