@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { SHOPIFY_CONFIG } from '@/lib/config/constants'
 
 export interface ShopifyTokens {
   accessToken: string
@@ -14,7 +15,7 @@ export interface ShopifyWebhookData {
 }
 
 export class ShopifyService {
-  private static readonly API_VERSION = '2024-01'
+  private static readonly API_VERSION = SHOPIFY_CONFIG.API_VERSION
   private static readonly REQUIRED_SCOPES = ['read_orders', 'read_products']
 
   /**

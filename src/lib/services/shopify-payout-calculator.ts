@@ -5,6 +5,7 @@
 
 import { withWebhookDb } from '@/lib/prisma'
 import { ShopifyOrder } from '@/types/shopify'
+import { SHOPIFY_FEES, TAX_CONFIG, TIME_CONFIG } from '@/lib/config/constants'
 
 interface PayoutCalculation {
   payoutDate: string
@@ -24,10 +25,10 @@ interface ShopifyPlan {
 
 export class ShopifyPayoutCalculator {
   private static readonly PLANS: Record<string, ShopifyPlan> = {
-    basic: { name: 'basic', transactionFeePercent: 0.029, transactionFeeCents: 30 },
-    shopify: { name: 'shopify', transactionFeePercent: 0.026, transactionFeeCents: 30 },
-    advanced: { name: 'advanced', transactionFeePercent: 0.024, transactionFeeCents: 30 },
-    plus: { name: 'plus', transactionFeePercent: 0.023, transactionFeeCents: 30 }
+    basic: { name: 'basic', transactionFeePercent: SHOPIFY_FEES.BASIC.percent, transactionFeeCents: SHOPIFY_FEES.BASIC.fixed * 100 },
+    shopify: { name: 'shopify', transactionFeePercent: SHOPIFY_FEES.SHOPIFY.percent, transactionFeeCents: SHOPIFY_FEES.SHOPIFY.fixed * 100 },
+    advanced: { name: 'advanced', transactionFeePercent: SHOPIFY_FEES.ADVANCED.percent, transactionFeeCents: SHOPIFY_FEES.ADVANCED.fixed * 100 },
+    plus: { name: 'plus', transactionFeePercent: SHOPIFY_FEES.PLUS.percent, transactionFeeCents: SHOPIFY_FEES.PLUS.fixed * 100 }
   }
 
   /**
@@ -36,7 +37,7 @@ export class ShopifyPayoutCalculator {
    */
   static calculatePayoutDate(orderDate: Date): Date {
     const payout = new Date(orderDate)
-    let daysToAdd = 2 // Standard 2 business days
+    let daysToAdd = TIME_CONFIG.PAYOUT_PROCESSING_DAYS
 
     // Adjust for weekends
     const dayOfWeek = orderDate.getDay()
@@ -118,7 +119,7 @@ export class ShopifyPayoutCalculator {
   static async calculatePayouts(
     shopDomain: string,
     orders: ShopifyOrder[],
-    taxRate: number = 0.30 // Default 30% tax rate
+    taxRate: number = TAX_CONFIG.DEFAULT_TAX_RATE
   ): Promise<PayoutCalculation[]> {
     const plan = await this.detectShopifyPlan(shopDomain)
     const groupedOrders = this.groupOrdersByPayoutDate(orders)

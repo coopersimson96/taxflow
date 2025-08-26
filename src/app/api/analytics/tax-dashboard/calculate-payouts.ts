@@ -1,5 +1,6 @@
 import { ShopifyPayoutCalculator } from '@/lib/services/shopify-payout-calculator'
 import { ShopifyService } from '@/lib/services/shopify-service'
+import { SHOPIFY_CONFIG, TAX_CONFIG } from '@/lib/config/constants'
 
 /**
  * Calculate estimated payouts from orders when payout API is not available
@@ -27,7 +28,7 @@ export async function calculateEstimatedPayouts(
     const ordersResponse = await ShopifyService.makeApiRequest(
       shopDomain,
       accessToken,
-      `orders.json?status=any&financial_status=paid&created_at_min=${adjustedStartDate.toISOString()}&created_at_max=${endDate.toISOString()}&limit=250`
+      `orders.json?status=any&financial_status=paid&created_at_min=${adjustedStartDate.toISOString()}&created_at_max=${endDate.toISOString()}&limit=${SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST}`
     )
 
     if (!ordersResponse.orders || ordersResponse.orders.length === 0) {
@@ -41,7 +42,7 @@ export async function calculateEstimatedPayouts(
     const payoutCalculations = await ShopifyPayoutCalculator.calculatePayouts(
       shopDomain,
       ordersResponse.orders,
-      0.30 // Default 30% tax rate, can be adjusted
+      TAX_CONFIG.DEFAULT_TAX_RATE
     )
 
     // Find today's payout

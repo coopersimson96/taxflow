@@ -317,7 +317,7 @@ async function calculateTaxToSetAside(transactions: any[], days: number, integra
 
   // Try to get actual Shopify payouts, but fallback to estimation if it fails
   console.log('🔍 Attempting to fetch actual Shopify payouts...')
-  const payoutData = await getActualShopifyPayouts(integration)
+  const payoutData = await getActualShopifyPayouts(integration, start, end)
   
   let todayPayoutAmount = 0
   let todayTaxAmount = 0
@@ -803,7 +803,7 @@ async function generateDailyPayoutData(organizationId: string, integration: any 
   }
 }
 
-async function getActualShopifyPayouts(integration: any) {
+async function getActualShopifyPayouts(integration: any, startDate?: Date, endDate?: Date) {
   try {
     if (!integration?.credentials?.accessToken) {
       console.log('❌ No access token available for payout API')
@@ -827,7 +827,7 @@ async function getActualShopifyPayouts(integration: any) {
       console.log('⚠️ Payment scope not available - using calculated payouts')
       // Import and use our calculation engine
       const { calculateEstimatedPayouts } = await import('./calculate-payouts')
-      return await calculateEstimatedPayouts(integration, start, end)
+      return await calculateEstimatedPayouts(integration, startDate || new Date(), endDate || new Date())
     }
 
     // Fetch recent payouts from Shopify
@@ -847,7 +847,7 @@ async function getActualShopifyPayouts(integration: any) {
       // Fallback to calculated payouts if API fails
       console.log('🔄 Falling back to calculated payouts')
       const { calculateEstimatedPayouts } = await import('./calculate-payouts')
-      return await calculateEstimatedPayouts(integration, start, end)
+      return await calculateEstimatedPayouts(integration, startDate || new Date(), endDate || new Date())
     }
 
     const data = await response.json()
