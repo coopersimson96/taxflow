@@ -61,22 +61,30 @@ async function handleCustomerRedact(data: any) {
   
   // Delete customer-specific data from transactions
   await withWebhookDb(async (db) => {
-    await db.transaction.updateMany({
+    // First find the integration
+    const integration = await db.integration.findFirst({
       where: {
-        integration: {
-          credentials: {
-            path: '$.shop',
-            equals: shop_domain
-          }
-        },
-        customerEmail: customer.email
-      },
-      data: {
-        customerName: 'REDACTED',
-        customerEmail: 'REDACTED',
-        metadata: {}
+        type: 'SHOPIFY',
+        credentials: {
+          path: ['shop'],
+          equals: shop_domain
+        }
       }
     })
+
+    if (integration) {
+      await db.transaction.updateMany({
+        where: {
+          integrationId: integration.id,
+          customerEmail: customer.email
+        },
+        data: {
+          customerName: 'REDACTED',
+          customerEmail: 'REDACTED',
+          metadata: {}
+        }
+      })
+    }
   })
   
   console.log(`✅ Customer data redacted for ${customer.email} from ${shop_domain}`)
@@ -87,14 +95,22 @@ async function handleCustomerDataRequest(data: any) {
   
   // In production, you would email this data to the shop owner
   const customerData = await withWebhookDb(async (db) => {
+    // First find the integration
+    const integration = await db.integration.findFirst({
+      where: {
+        type: 'SHOPIFY',
+        credentials: {
+          path: ['shop'],
+          equals: shop_domain
+        }
+      }
+    })
+
+    if (!integration) return []
+
     return await db.transaction.findMany({
       where: {
-        integration: {
-          credentials: {
-            path: '$.shop',
-            equals: shop_domain
-          }
-        },
+        integrationId: integration.id,
         customerEmail: customer.email
       },
       select: {
@@ -120,7 +136,7 @@ async function handleShopRedact(data: any) {
       where: {
         type: 'SHOPIFY',
         credentials: {
-          path: '$.shop',
+          path: ['shop'],
           equals: shop_domain
         }
       }
