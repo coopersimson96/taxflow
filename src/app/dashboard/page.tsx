@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
+import DashboardPolaris from './dashboard-polaris'
+import { useEmbedded } from '@/hooks/useEmbedded'
 
 interface Store {
   integrationId: string
@@ -50,6 +52,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 
 
 function DashboardContent() {
+  const { isEmbedded, isLoading: isEmbeddedLoading } = useEmbedded()
   const { data: session, status } = useSession()
   const searchParams = useSearchParams()
   const [stores, setStores] = useState<Store[]>([])
@@ -59,6 +62,27 @@ function DashboardContent() {
   
   // Get organizationId from URL params
   const urlOrganizationId = searchParams.get('organizationId')
+  
+  // Use Polaris UI when embedded
+  if (isEmbedded) {
+    return <DashboardPolaris />
+  }
+  
+  // Show loading state while detecting embedded mode
+  if (isEmbeddedLoading) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
   
   // Debug logging - simplified
   useEffect(() => {
