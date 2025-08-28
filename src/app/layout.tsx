@@ -2,13 +2,14 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import SessionProvider from '@/components/providers/SessionProvider'
+import ShopifyAppProvider from '@/components/providers/AppBridgeProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Tax Analytics - Shopify & Square Integration',
-  description: 'Advanced tax analytics and reporting for Shopify and Square merchants',
-  keywords: ['tax analytics', 'shopify', 'square', 'tax reporting', 'e-commerce'],
+  title: 'Set Aside - Tax Analytics for Shopify',
+  description: 'Automatically calculate daily tax amounts from your Shopify payouts',
+  keywords: ['tax analytics', 'shopify', 'tax reporting', 'e-commerce', 'payout tracking'],
 }
 
 export default function RootLayout({
@@ -20,9 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <SessionProvider>
-          <div className="min-h-screen bg-gradient-to-br from-secondary-50 to-primary-50">
+          <ShopifyAppProvider>
             {children}
-          </div>
+          </ShopifyAppProvider>
         </SessionProvider>
       </body>
     </html>
