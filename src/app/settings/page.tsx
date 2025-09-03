@@ -13,27 +13,6 @@ import { useEmbedded } from '@/hooks/useEmbedded'
 
 export default function SettingsPage() {
   const { isEmbedded, isLoading } = useEmbedded()
-
-  // Use Polaris UI when embedded, traditional UI otherwise
-  if (isEmbedded) {
-    return <SettingsPolaris />
-  }
-
-  // Show loading state while detecting mode
-  if (isLoading) {
-    return (
-      <AuthGuard>
-        <DashboardLayout>
-          <div className="max-w-4xl mx-auto">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-32 mb-6"></div>
-              <div className="h-64 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        </DashboardLayout>
-      </AuthGuard>
-    )
-  }
   const { data: session } = useSession()
   const [activeTab, setActiveTab] = useState('emails')
   const [integrationId, setIntegrationId] = useState<string | null>(null)
@@ -103,6 +82,27 @@ export default function SettingsPage() {
 
     fetchIntegration()
   }, [session])
+
+  // Use Polaris UI when embedded, traditional UI otherwise
+  if (isEmbedded) {
+    return <SettingsPolaris />
+  }
+
+  // Show loading state while detecting mode
+  if (isLoading) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="max-w-4xl mx-auto">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-32 mb-6"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
 
   return (
     <AuthGuard>

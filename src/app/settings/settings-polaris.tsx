@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSession } from 'next-auth/react'
 import { 
   Page, 
@@ -32,7 +32,7 @@ export default function SettingsPolaris() {
   const [isLoadingIntegration, setIsLoadingIntegration] = useState(true)
 
   // Tab configuration
-  const tabs: TabDescriptor[] = [
+  const tabs: TabDescriptor[] = useMemo(() => [
     {
       id: 'emails',
       content: 'Email Addresses',
@@ -58,7 +58,7 @@ export default function SettingsPolaris() {
       content: 'Account',
       panelID: 'account-content'
     }
-  ]
+  ], [])
 
   // Check URL for tab parameter and set initial tab
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function SettingsPolaris() {
         setSelectedTab(tabIndex)
       }
     }
-  }, [])
+  }, [tabs])
 
   // Fetch user's current integration
   const fetchIntegration = useCallback(async () => {

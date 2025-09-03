@@ -12,12 +12,9 @@ import {
   Text,
   Banner,
   Spinner,
-  Stack,
   Box,
-  List,
-  Icon
+  List
 } from '@shopify/polaris'
-import { CircleCheckMajor } from '@shopify/polaris-icons'
 
 export default function ConnectPolaris() {
   const { data: session, status } = useSession()
@@ -153,7 +150,7 @@ export default function ConnectPolaris() {
       <Layout>
         <Layout.Section>
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <Stack vertical spacing="loose">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {success && (
                 <Banner tone="success" title="Store Connected Successfully">
                   <Text variant="bodyMd" as="p">
@@ -171,7 +168,7 @@ export default function ConnectPolaris() {
               )}
 
               <Card>
-                <Stack vertical spacing="loose">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <TextField
                     label="Shopify Store Domain"
                     value={shopDomain}
@@ -203,60 +200,60 @@ export default function ConnectPolaris() {
                   >
                     {isConnecting ? 'Connecting to Shopify...' : 'Connect Shopify Store'}
                   </Button>
-                </Stack>
+                </div>
               </Card>
 
               <Card>
-                <Stack vertical spacing="loose">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <Text variant="headingMd" as="h3">
                     What happens when you connect?
                   </Text>
                   
                   <List>
                     <List.Item>
-                      <Stack alignment="leading" spacing="tight">
-                        <Icon source={CircleCheckMajor} color="success" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <Text variant="bodyMd" as="span" tone="success">✓</Text>
                         <Text variant="bodyMd" as="span">
                           We'll securely access your order and product data
                         </Text>
-                      </Stack>
+                      </div>
                     </List.Item>
                     <List.Item>
-                      <Stack alignment="leading" spacing="tight">
-                        <Icon source={CircleCheckMajor} color="success" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <Text variant="bodyMd" as="span" tone="success">✓</Text>
                         <Text variant="bodyMd" as="span">
                           Automatic webhooks will track new orders in real-time
                         </Text>
-                      </Stack>
+                      </div>
                     </List.Item>
                     <List.Item>
-                      <Stack alignment="leading" spacing="tight">
-                        <Icon source={CircleCheckMajor} color="success" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <Text variant="bodyMd" as="span" tone="success">✓</Text>
                         <Text variant="bodyMd" as="span">
                           Start getting accurate tax collection reports immediately
                         </Text>
-                      </Stack>
+                      </div>
                     </List.Item>
                     <List.Item>
-                      <Stack alignment="leading" spacing="tight">
-                        <Icon source={CircleCheckMajor} color="success" />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                        <Text variant="bodyMd" as="span" tone="success">✓</Text>
                         <Text variant="bodyMd" as="span">
                           Know exactly how much tax money to set aside
                         </Text>
-                      </Stack>
+                      </div>
                     </List.Item>
                   </List>
-                </Stack>
+                </div>
               </Card>
 
               <Box paddingBlockStart="400">
                 <div style={{ textAlign: 'center' }}>
-                  <Text variant="bodySm" as="p" color="subdued">
+                  <Text variant="bodySm" as="p" tone="subdued">
                     Secured by Shopify OAuth. We never store your Shopify password.
                   </Text>
                 </div>
               </Box>
-            </Stack>
+            </div>
           </div>
         </Layout.Section>
       </Layout>

@@ -63,36 +63,7 @@ function DashboardContent() {
   // Get organizationId from URL params
   const urlOrganizationId = searchParams.get('organizationId')
   
-  // Use Polaris UI when embedded
-  if (isEmbedded) {
-    return <DashboardPolaris />
-  }
-  
-  // Show loading state while detecting embedded mode
-  if (isEmbeddedLoading) {
-    return (
-      <AuthGuard>
-        <DashboardLayout>
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading...</p>
-            </div>
-          </div>
-        </DashboardLayout>
-      </AuthGuard>
-    )
-  }
-  
-  // Debug logging - simplified
-  useEffect(() => {
-    console.log('🎯 Dashboard mounted:', {
-      sessionStatus: status,
-      sessionEmail: session?.user?.email,
-      timestamp: new Date().toISOString()
-    })
-  }, [status, session])
-  
+  // All hooks must be called before any conditional returns
   const fetchStores = useCallback(async () => {
     try {
       setIsLoadingStores(true)
@@ -118,12 +89,42 @@ function DashboardContent() {
     }
   }, [urlOrganizationId, selectedOrganizationId])
   
+  // Debug logging - simplified
+  useEffect(() => {
+    console.log('🎯 Dashboard mounted:', {
+      sessionStatus: status,
+      sessionEmail: session?.user?.email,
+      timestamp: new Date().toISOString()
+    })
+  }, [status, session])
+  
   // Fetch available stores when authenticated
   useEffect(() => {
     if (status === 'authenticated') {
       fetchStores()
     }
   }, [status, fetchStores])
+
+  // Use Polaris UI when embedded
+  if (isEmbedded) {
+    return <DashboardPolaris />
+  }
+  
+  // Show loading state while detecting embedded mode
+  if (isEmbeddedLoading) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
   
   // Loading state
   if (status === 'loading' || isLoadingStores) {

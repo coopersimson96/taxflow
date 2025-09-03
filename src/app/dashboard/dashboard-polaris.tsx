@@ -64,7 +64,7 @@ export default function DashboardPolaris() {
     } finally {
       setIsLoadingStores(false)
     }
-  }, [urlOrganizationId, selectedOrganizationId, session?.user?.email])
+  }, [urlOrganizationId, session?.user?.email])
   
   // Fetch available stores when authenticated
   useEffect(() => {
