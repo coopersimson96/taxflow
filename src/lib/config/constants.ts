@@ -85,3 +85,4 @@ export const VALIDATION = {
   ORDER_NUMBER_MAX_LENGTH: 50,
   CURRENCY_CODE_LENGTH: 3,
 } as const
+
