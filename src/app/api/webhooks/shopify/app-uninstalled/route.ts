@@ -138,12 +138,12 @@ async function deleteIntegrationData(integrationId: string) {
       where: { id: integrationId }
     })
 
-    if (!integration || integration.status === 'ACTIVE') {
-      console.log(`Integration ${integrationId} is active or not found, skipping deletion`)
+    if (!integration || integration.status === 'CONNECTED') {
+      console.log(`Integration ${integrationId} is connected or not found, skipping deletion`)
       return
     }
 
-    const uninstalledAt = integration.config?.uninstalledAt
+    const uninstalledAt = (integration.config as any)?.uninstalledAt
     if (!uninstalledAt) return
 
     const daysSinceUninstall = (Date.now() - new Date(uninstalledAt).getTime()) / (1000 * 60 * 60 * 24)
