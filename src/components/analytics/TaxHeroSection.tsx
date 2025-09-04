@@ -4,10 +4,6 @@ import { cn } from '@/lib/utils'
 
 const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false }) => {
   const [showBreakdown, setShowBreakdown] = useState(false)
-  const [debugData, setDebugData] = useState<any>(null)
-  const [isDebugLoading, setIsDebugLoading] = useState(false)
-  const [isClearingIntegration, setIsClearingIntegration] = useState(false)
-  const [clearResult, setClearResult] = useState<any>(null)
 
   const formatCurrency = (amount: number, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -19,52 +15,6 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
   const formatPercentage = (value: number) => {
     return `${value.toFixed(1)}%`
-  }
-
-  const debugPayoutCalculation = async () => {
-    setIsDebugLoading(true)
-    try {
-      const response = await fetch('/api/admin/debug-payout-calculation')
-      const result = await response.json()
-      setDebugData(result)
-    } catch (error) {
-      console.error('Debug payout calculation failed:', error)
-      setDebugData({ error: 'Failed to fetch debug data' })
-    } finally {
-      setIsDebugLoading(false)
-    }
-  }
-
-  const diagnoseShopifyAPI = async () => {
-    setIsDebugLoading(true)
-    try {
-      const response = await fetch('/api/admin/diagnose-shopify-api')
-      const result = await response.json()
-      setDebugData({ ...result, isDiagnosis: true })
-    } catch (error) {
-      console.error('Shopify API diagnosis failed:', error)
-      setDebugData({ error: 'Failed to diagnose Shopify API', isDiagnosis: true })
-    } finally {
-      setIsDebugLoading(false)
-    }
-  }
-
-  const clearInvalidIntegration = async () => {
-    setIsClearingIntegration(true)
-    try {
-      const response = await fetch('/api/admin/clear-integration', {
-        method: 'POST'
-      })
-      const result = await response.json()
-      setClearResult(result)
-      setDebugData({ ...result, isClearResult: true })
-    } catch (error) {
-      console.error('Clear integration failed:', error)
-      setClearResult({ error: 'Failed to clear integration' })
-      setDebugData({ error: 'Failed to clear integration', isClearResult: true })
-    } finally {
-      setIsClearingIntegration(false)
-    }
   }
 
   // Calculate breakdown percentages
@@ -247,32 +197,6 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
             </button>
 
             <button
-              onClick={diagnoseShopifyAPI}
-              disabled={isDebugLoading}
-              className="bg-red-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-red-600 transition-all duration-200 border border-red-400 disabled:opacity-50"
-            >
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{isDebugLoading ? 'Diagnosing...' : 'Fix API Access'}</span>
-              </div>
-            </button>
-
-            <button
-              onClick={clearInvalidIntegration}
-              disabled={isClearingIntegration}
-              className="bg-orange-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-orange-600 transition-all duration-200 border border-orange-400 disabled:opacity-50"
-            >
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                <span>{isClearingIntegration ? 'Clearing...' : 'Clear Invalid Token'}</span>
-              </div>
-            </button>
-
-            <button
               onClick={() => window.location.href = '/settings?tab=data'}
               className="bg-purple-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-purple-600 transition-all duration-200 border border-purple-400"
             >
@@ -316,143 +240,6 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
             </div>
           )}
 
-          {/* Debug Results */}
-          {debugData && (
-            <div className="mt-8 bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-400/30">
-              <h3 className="text-lg font-semibold text-red-100 mb-4">
-                {debugData.isDiagnosis ? "Shopify API Diagnosis" : "Debug: Payout Analysis"}
-              </h3>
-              
-              {debugData.error ? (
-                <p className="text-red-200">Error: {debugData.error}</p>
-              ) : debugData.isClearResult ? (
-                <div className="space-y-4">
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-green-100 font-medium mb-2">✅ Clear Integration Result:</p>
-                    <p className="text-green-200 text-sm">{debugData.message}</p>
-                  </div>
-
-                  {debugData.details && debugData.details.length > 0 && (
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <p className="text-green-100 font-medium mb-2">Cleared Integrations:</p>
-                      {debugData.details.map((detail: any, index: number) => (
-                        <div key={index} className="text-green-200 text-sm">
-                          • Shop: {detail.shop} (Status: {detail.status})
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="bg-blue-600/20 rounded-lg p-4 border border-blue-400/30">
-                    <p className="text-blue-100 font-medium mb-2">Next Steps:</p>
-                    <ol className="text-sm text-blue-200 space-y-1">
-                      {debugData.nextSteps && debugData.nextSteps.map((step: string, index: number) => (
-                        <li key={index}>{step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
-              ) : debugData.isDiagnosis && debugData.troubleshooting ? (
-                <div className="space-y-4">
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-2">Issue Found:</p>
-                    <p className="text-red-200 text-sm">{debugData.error}</p>
-                  </div>
-
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-2">Debug Info:</p>
-                    <pre className="text-red-200 text-xs bg-black/20 p-2 rounded overflow-x-auto">
-                      {JSON.stringify(debugData.debugInfo, null, 2)}
-                    </pre>
-                  </div>
-
-                  <div className="bg-yellow-600/20 rounded-lg p-4 border border-yellow-400/30">
-                    <p className="text-yellow-100 font-medium mb-2">Common Causes:</p>
-                    <ul className="text-sm text-yellow-200 space-y-1">
-                      {debugData.troubleshooting.commonCauses.map((cause: string, index: number) => (
-                        <li key={index}>• {cause}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-green-600/20 rounded-lg p-4 border border-green-400/30">
-                    <p className="text-green-100 font-medium mb-2">Next Steps to Fix:</p>
-                    <ol className="text-sm text-green-200 space-y-1">
-                      {debugData.troubleshooting.nextSteps.map((step: string, index: number) => (
-                        <li key={index}>{index + 1}. {step}</li>
-                      ))}
-                    </ol>
-                  </div>
-                </div>
-              ) : debugData.isDiagnosis && debugData.diagnosis ? (
-                <div className="space-y-4">
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-2">Store Info:</p>
-                    <p className="text-red-200 text-sm">Domain: {debugData.diagnosis.shopDomain}</p>
-                    <p className="text-red-200 text-sm">Access Token: {debugData.diagnosis.hasAccessToken ? '✅ Present' : '❌ Missing'}</p>
-                  </div>
-
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-3">API Test Results:</p>
-                    <div className="space-y-2 text-sm">
-                      {Object.entries(debugData.diagnosis.apiTests).map(([endpoint, result]: [string, any]) => (
-                        <div key={endpoint} className="flex justify-between items-center">
-                          <span className="text-red-200">{endpoint}:</span>
-                          <span className={`font-medium ${result.ok ? 'text-green-300' : 'text-red-300'}`}>
-                            {result.ok ? '✅ OK' : `❌ ${result.status || 'Failed'}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-white/10 rounded-lg p-4">
-                    <p className="text-red-100 font-medium mb-2">Recommendations:</p>
-                    <div className="space-y-1 text-sm">
-                      {debugData.diagnosis.recommendations.map((rec: string, index: number) => (
-                        <p key={index} className={`${rec.startsWith('✅') ? 'text-green-300' : 'text-red-300'}`}>
-                          {rec}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
-
-                  {debugData.diagnosis.nextSteps && (
-                    <div className="bg-yellow-600/20 rounded-lg p-4 border border-yellow-400/30">
-                      <p className="text-yellow-100 font-medium mb-2">Next Steps to Fix:</p>
-                      <ol className="text-sm text-yellow-200 space-y-1">
-                        {debugData.diagnosis.nextSteps.map((step: string, index: number) => (
-                          <li key={index}>{step}</li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                </div>
-              ) : debugData.debug ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <p className="text-red-100 font-medium">Today's Calculated</p>
-                      <p className="text-2xl font-bold text-red-50">{formatCurrency(debugData.debug.todayStats.estimatedPayout, data.currency)}</p>
-                      <p className="text-xs text-red-200">{debugData.debug.todayStats.transactionCount} transactions</p>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <p className="text-red-100 font-medium">Actual Shopify Payout</p>
-                      <p className="text-2xl font-bold text-red-50">{formatCurrency(debugData.debug.actualShopifyPayout, data.currency)}</p>
-                      <p className="text-xs text-red-200">Aug 19th payout</p>
-                    </div>
-                    <div className="bg-white/10 rounded-lg p-4">
-                      <p className="text-red-100 font-medium">Difference</p>
-                      <p className="text-2xl font-bold text-orange-300">{formatCurrency(debugData.debug.difference, data.currency)}</p>
-                      <p className="text-xs text-red-200">Missing amount</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-red-200">Loading diagnosis...</p>
-              )}
-            </div>
-          )}
 
           {/* Important Notice */}
           <div className="max-w-2xl mx-auto bg-yellow-500/20 backdrop-blur-sm border border-yellow-400/30 rounded-xl p-4">
