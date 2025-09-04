@@ -101,19 +101,32 @@ export async function GET(request: NextRequest) {
 
     if (!shouldSkipHmac) {
       // Standard OAuth flow - verify HMAC
-      const queryString = request.nextUrl.search.substring(1)
-      const queryWithoutHmac = queryString
-        .split('&')
-        .filter(param => !param.startsWith('hmac='))
+      // Shopify requires specific parameter handling for HMAC verification
+      const params: Record<string, string> = {}
+      searchParams.forEach((value, key) => {
+        if (key !== 'hmac' && key !== 'signature') {
+          params[key] = value
+        }
+      })
+      
+      // Sort parameters and create query string
+      const sortedParams = Object.keys(params)
         .sort()
+        .map(key => `${key}=${params[key]}`)
         .join('&')
 
-      const isValidHmac = ShopifyService.verifyHmac(queryWithoutHmac, hmac)
+      console.log('🔐 HMAC Verification Debug:')
+      console.log('- Sorted params:', sortedParams)
+      console.log('- HMAC from Shopify:', hmac)
+      console.log('- API Secret exists:', !!process.env.SHOPIFY_API_SECRET)
+      console.log('- API Secret length:', process.env.SHOPIFY_API_SECRET?.length)
+      
+      const isValidHmac = ShopifyService.verifyHmac(sortedParams, hmac)
       
       if (!isValidHmac) {
         console.error('❌ Invalid HMAC signature')
         console.error('Query params:', Object.fromEntries(searchParams.entries()))
-        console.error('Processed query:', queryWithoutHmac)
+        console.error('Processed query:', sortedParams)
         
         // Check if this might be a custom app that we should allowlist
         console.error('💡 If this is a custom distribution app, add the shop to customDistributionStores array')
