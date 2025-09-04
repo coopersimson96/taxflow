@@ -5,9 +5,9 @@ export class IntegrationService {
    * Find a user's Shopify integration across all their organizations
    * Handles multiple orgs and different integration statuses
    */
-  static async findUserShopifyIntegration(userEmail: string) {
+  static async findUserShopifyIntegration(userEmail: string, integrationId?: string) {
     try {
-      console.log('🔍 Finding Shopify integration for user:', userEmail)
+      console.log('🔍 Finding Shopify integration for user:', userEmail, 'integrationId:', integrationId)
       
       const integration = await withWebhookDb(async (db) => {
         // First, let's see all integrations for this user
@@ -32,9 +32,35 @@ export class IntegrationService {
           console.log(`  ${index + 1}. ${int.name} (${int.status}) in org ${int.organization.name}`)
         })
 
-        // Include full organization data for the selected integration
-        if (allIntegrations.length > 0) {
-          const selectedId = allIntegrations[0].id
+        // If integrationId provided, find that specific one
+        if (integrationId) {
+          const specific = allIntegrations.find(i => i.id === integrationId)
+          if (specific) {
+            return await db.integration.findUnique({
+              where: { id: specific.id },
+              include: {
+                organization: {
+                  include: {
+                    members: {
+                      where: {
+                        user: { email: userEmail }
+                      },
+                      include: {
+                        user: true
+                      }
+                    }
+                  }
+                }
+              }
+            })
+          }
+        }
+
+        // Otherwise return the first connected integration
+        const connectedIntegration = allIntegrations.find(i => i.status === 'CONNECTED') || allIntegrations[0]
+        
+        if (connectedIntegration) {
+          const selectedId = connectedIntegration.id
           return await db.integration.findUnique({
             where: { id: selectedId },
             include: {

@@ -12,10 +12,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    console.log('🔍 Looking for integration for user:', session.user.email)
+    // Get storeId from query params
+    const searchParams = request.nextUrl.searchParams
+    const storeId = searchParams.get('storeId')
 
-    // Get user's current integration
-    const integration = await IntegrationService.findUserShopifyIntegration(session.user.email)
+    console.log('🔍 Looking for integration for user:', session.user.email, 'storeId:', storeId)
+
+    // Get user's current integration (with optional storeId)
+    const integration = await IntegrationService.findUserShopifyIntegration(session.user.email, storeId || undefined)
     
     if (!integration) {
       // Debug: Let's see what integrations exist for this user
