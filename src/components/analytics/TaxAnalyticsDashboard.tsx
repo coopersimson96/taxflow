@@ -6,7 +6,6 @@ import TaxBreakdown from './TaxBreakdown'
 import TaxTrendsChart from './TaxTrendsChart'
 import OrderBreakdown from './OrderBreakdown'
 import DailyPayoutBreakdown from './DailyPayoutBreakdown'
-import { ImportProgress } from '@/components/dashboard/ImportProgress'
 import { ChartConfig } from '@/types/tax-dashboard'
 import { cn } from '@/lib/utils'
 
@@ -267,10 +266,6 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </button>
       </div>
 
-      {/* Import Progress (if active) */}
-      {integrationId && (
-        <ImportProgress integrationId={integrationId} />
-      )}
 
       {/* Tax Money to Set Aside - Hero Section */}
       <TaxHeroSection 
