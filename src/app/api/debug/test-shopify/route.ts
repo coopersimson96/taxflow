@@ -10,29 +10,43 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's integration
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: {
-        organizations: {
-          include: {
-            organization: {
-              include: {
-                integrations: {
-                  where: { type: 'SHOPIFY' }
+    // Get storeId from query params
+    const searchParams = request.nextUrl.searchParams
+    const storeId = searchParams.get('storeId')
+
+    let integration
+
+    if (storeId) {
+      // Use specific integration
+      integration = await prisma.integration.findUnique({
+        where: { id: storeId }
+      })
+    } else {
+      // Get user's first integration
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        include: {
+          organizations: {
+            include: {
+              organization: {
+                include: {
+                  integrations: {
+                    where: { type: 'SHOPIFY' }
+                  }
                 }
               }
             }
           }
         }
-      }
-    })
+      })
 
-    if (!user || user.organizations.length === 0) {
-      return NextResponse.json({ error: 'No organizations found' })
+      if (!user || user.organizations.length === 0) {
+        return NextResponse.json({ error: 'No organizations found' })
+      }
+
+      integration = user.organizations[0]?.organization.integrations[0]
     }
 
-    const integration = user.organizations[0]?.organization.integrations[0]
     if (!integration) {
       return NextResponse.json({ error: 'No Shopify integration found' })
     }
