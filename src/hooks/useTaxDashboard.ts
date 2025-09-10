@@ -3,6 +3,7 @@ import { TaxDashboardData, DashboardFilters, DashboardState } from '@/types/tax-
 
 interface UseTaxDashboardOptions {
   organizationId?: string
+  integrationId?: string
   autoRefresh?: boolean
   refreshInterval?: number
   initialFilters?: Partial<DashboardFilters>
@@ -31,6 +32,7 @@ const defaultFilters: DashboardFilters = {
 export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDashboardReturn {
   const {
     organizationId,
+    integrationId: optionIntegrationId,
     autoRefresh = false,
     refreshInterval = 5 * 60 * 1000, // 5 minutes
     initialFilters = {}
@@ -70,8 +72,10 @@ export function useTaxDashboard(options: UseTaxDashboardOptions = {}): UseTaxDas
         includeTrends: 'true'
       })
       
-      // Only add organizationId if it's not empty (let API auto-detect if empty)
-      if (organizationId && organizationId.trim() !== '') {
+      // Add integrationId if provided (preferred over organizationId)
+      if (optionIntegrationId && optionIntegrationId.trim() !== '') {
+        params.set('integrationId', optionIntegrationId)
+      } else if (organizationId && organizationId.trim() !== '') {
         params.set('organizationId', organizationId)
       }
 

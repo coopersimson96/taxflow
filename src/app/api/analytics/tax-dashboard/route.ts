@@ -57,10 +57,26 @@ export async function GET(request: NextRequest) {
     }
 
     let organizationId = request.nextUrl.searchParams.get('organizationId')
-    let integrationId: string | null = null
+    let integrationId = request.nextUrl.searchParams.get('integrationId')
     
+    // If integrationId is provided, use it to find the organization
+    if (integrationId && integrationId.trim() !== '') {
+      console.log('🔍 Using provided integrationId:', integrationId)
+      
+      const integration = await withWebhookDb(async (db) => {
+        return await db.integration.findUnique({
+          where: { id: integrationId },
+          include: { organization: true }
+        })
+      })
+      
+      if (integration) {
+        organizationId = integration.organizationId
+        console.log('🔍 Found organization from integration:', organizationId)
+      }
+    }
     // If no specific organization requested, find user's organizations
-    if (!organizationId || organizationId === '') {
+    else if (!organizationId || organizationId === '') {
       console.log('🔍 Finding user organizations...')
       
       // Get user with their organization memberships

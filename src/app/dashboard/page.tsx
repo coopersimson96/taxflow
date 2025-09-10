@@ -1,24 +1,12 @@
 'use client'
 
-import { useEffect, useState, useCallback, Component, ReactNode, Suspense } from 'react'
-import { useSession } from 'next-auth/react'
-import { useSearchParams } from 'next/navigation'
+import { Component, ReactNode, Suspense } from 'react'
 import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
 import DashboardPolaris from './dashboard-polaris'
 import { useEmbedded } from '@/hooks/useEmbedded'
-
-interface Store {
-  integrationId: string
-  organizationId: string
-  organizationName: string
-  storeName: string
-  shopDomain: string
-  role: string
-  createdAt: string
-  lastSyncAt: string | null
-}
+import { useStore } from '@/contexts/StoreContext'
 
 // Simple Error Boundary
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error?: Error}> {
@@ -50,84 +38,17 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
   }
 }
 
-
 function DashboardContent() {
   const { isEmbedded, isLoading: isEmbeddedLoading } = useEmbedded()
-  const { data: session, status } = useSession()
-  const searchParams = useSearchParams()
-  const [stores, setStores] = useState<Store[]>([])
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('')
-  const [isLoadingStores, setIsLoadingStores] = useState(true)
-  const [storeError, setStoreError] = useState<string | null>(null)
-  
-  // Get organizationId from URL params
-  const urlOrganizationId = searchParams.get('organizationId')
-  
-  // All hooks must be called before any conditional returns
-  const fetchStores = useCallback(async () => {
-    try {
-      setIsLoadingStores(true)
-      const response = await fetch('/api/debug/list-stores')
-      const data = await response.json()
-      
-      if (data.success) {
-        setStores(data.stores)
-        // Use URL organizationId if provided, otherwise auto-select first store
-        if (urlOrganizationId) {
-          setSelectedOrganizationId(urlOrganizationId)
-        } else if (data.stores.length > 0 && !selectedOrganizationId) {
-          setSelectedOrganizationId(data.stores[0].organizationId)
-        }
-      } else {
-        setStoreError(data.error || 'Failed to load stores')
-      }
-    } catch (error) {
-      setStoreError('Failed to load stores')
-      console.error('Error fetching stores:', error)
-    } finally {
-      setIsLoadingStores(false)
-    }
-  }, [urlOrganizationId, selectedOrganizationId])
-  
-  // Debug logging - simplified
-  useEffect(() => {
-    console.log('🎯 Dashboard mounted:', {
-      sessionStatus: status,
-      sessionEmail: session?.user?.email,
-      timestamp: new Date().toISOString()
-    })
-  }, [status, session])
-  
-  // Fetch available stores when authenticated
-  useEffect(() => {
-    if (status === 'authenticated') {
-      fetchStores()
-    }
-  }, [status, fetchStores])
+  const { stores, currentStore, setCurrentStore, loading: storeLoading, error: storeError } = useStore()
 
   // Use Polaris UI when embedded
   if (isEmbedded) {
     return <DashboardPolaris />
   }
   
-  // Show loading state while detecting embedded mode
-  if (isEmbeddedLoading) {
-    return (
-      <AuthGuard>
-        <DashboardLayout>
-          <div className="flex items-center justify-center min-h-96">
-            <div className="text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading...</p>
-            </div>
-          </div>
-        </DashboardLayout>
-      </AuthGuard>
-    )
-  }
-  
-  // Loading state
-  if (status === 'loading' || isLoadingStores) {
+  // Show loading state while detecting embedded mode or loading stores
+  if (isEmbeddedLoading || storeLoading) {
     return (
       <AuthGuard>
         <DashboardLayout>
@@ -142,7 +63,38 @@ function DashboardContent() {
     )
   }
 
-  // Store selection UI (when multiple stores)
+  // Error state
+  if (storeError) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="p-4 bg-red-50 border border-red-200 rounded">
+            <h3 className="text-red-800 font-semibold">Error Loading Stores</h3>
+            <p className="text-red-600">{storeError}</p>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
+
+  // No stores connected
+  if (stores.length === 0) {
+    return (
+      <AuthGuard>
+        <DashboardLayout>
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">No Stores Connected</h2>
+            <p className="text-gray-600 mb-6">Connect your Shopify store to start tracking tax analytics.</p>
+            <a href="/connect" className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+              Connect Store
+            </a>
+          </div>
+        </DashboardLayout>
+      </AuthGuard>
+    )
+  }
+
+  // Store selector (when multiple stores)
   const StoreSelector = () => {
     if (stores.length <= 1) return null
     
@@ -155,13 +107,16 @@ function DashboardContent() {
           </div>
           <div className="flex items-center space-x-4">
             <select
-              value={selectedOrganizationId}
-              onChange={(e) => setSelectedOrganizationId(e.target.value)}
+              value={currentStore?.id || ''}
+              onChange={(e) => {
+                const store = stores.find(s => s.id === e.target.value)
+                if (store) setCurrentStore(store)
+              }}
               className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               {stores.map((store) => (
-                <option key={store.organizationId} value={store.organizationId}>
-                  {store.storeName} ({store.shopDomain})
+                <option key={store.id} value={store.id}>
+                  {store.name} ({store.shop})
                 </option>
               ))}
             </select>
@@ -177,9 +132,12 @@ function DashboardContent() {
         <ErrorBoundary>
           <div className="space-y-6">
             <StoreSelector />
-            <TaxAnalyticsDashboard 
-              organizationId={selectedOrganizationId}
-            />
+            {currentStore && (
+              <TaxAnalyticsDashboard 
+                organizationId={currentStore.organizationId}
+                integrationId={currentStore.id}
+              />
+            )}
           </div>
         </ErrorBoundary>
       </DashboardLayout>

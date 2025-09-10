@@ -11,17 +11,20 @@ import { cn } from '@/lib/utils'
 
 interface TaxAnalyticsDashboardProps {
   organizationId: string
+  integrationId?: string
   className?: string
 }
 
 const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   organizationId,
+  integrationId: propIntegrationId,
   className
 }) => {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'trends' | 'orders' | 'jurisdictions' | 'payouts'>('overview')
   
   const { data, state, filters, updateFilters, refresh, isInitialLoading, integrationId } = useTaxDashboard({
     organizationId,
+    integrationId: propIntegrationId,
     autoRefresh: true,
     refreshInterval: 5 * 60 * 1000 // 5 minutes
   })
