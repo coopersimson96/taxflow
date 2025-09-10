@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       
       const integration = await withWebhookDb(async (db) => {
         return await db.integration.findUnique({
-          where: { id: integrationId },
+          where: { id: integrationId as string },
           include: { organization: true }
         })
       })
