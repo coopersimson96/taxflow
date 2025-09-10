@@ -59,6 +59,13 @@ export class HistoricalImportService {
       const credentials = integration.credentials as any
       const shop = credentials.shop
       const accessToken = credentials.accessToken
+      
+      console.log('🔍 Integration details:', {
+        shop: shop,
+        hasAccessToken: !!accessToken,
+        tokenLength: accessToken?.length,
+        credentialsKeys: Object.keys(credentials)
+      })
 
       // Calculate date range 
       const endDate = new Date()
@@ -117,6 +124,11 @@ export class HistoricalImportService {
 
     } catch (error) {
       console.error('❌ Historical import failed:', error)
+      console.error('Full error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error: error
+      })
       progress.status = 'failed'
       progress.error = error instanceof Error ? error.message : 'Unknown error'
       
@@ -163,7 +175,11 @@ export class HistoricalImportService {
         params.append('page_info', pageInfo)
       }
 
-      const url = `https://${shop}/admin/api/2024-01/orders.json?${params}`
+      // Ensure shop domain has .myshopify.com
+      const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`
+      const url = `https://${shopDomain}/admin/api/2024-01/orders.json?${params}`
+      
+      console.log(`🔗 Fetching orders from: ${url}`)
       const response = await fetch(url, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -173,6 +189,12 @@ export class HistoricalImportService {
 
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('❌ Shopify API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: url,
+          errorText: errorText
+        })
         throw new Error(`Failed to fetch orders: ${response.status} - ${errorText}`)
       }
 
