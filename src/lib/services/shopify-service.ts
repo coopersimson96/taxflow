@@ -282,22 +282,33 @@ export class ShopifyService {
    * Validate shop domain
    */
   static validateShopDomain(shop: string): boolean {
+    // Extract just the subdomain for validation
+    const subdomain = shop.replace(/\.myshopify\.com$/, '')
     const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$/
-    return shopRegex.test(shop) && shop.length <= 60
+    return shopRegex.test(subdomain) && subdomain.length <= 60
   }
 
   /**
-   * Extract shop domain from various formats
+   * Extract shop domain from various formats and ensure it includes .myshopify.com
    */
   static normalizeShopDomain(input: string): string {
-    // Remove protocol and .myshopify.com if present
-    let shop = input.replace(/^https?:\/\//, '').replace(/\.myshopify\.com.*$/, '')
+    // Remove protocol if present
+    let shop = input.replace(/^https?:\/\//, '')
     
-    // Extract subdomain if full domain provided
+    // Remove trailing slashes or paths
+    shop = shop.replace(/\/.*$/, '')
+    
+    // If it already has .myshopify.com, just return it lowercased
+    if (shop.includes('.myshopify.com')) {
+      return shop.toLowerCase()
+    }
+    
+    // If it has any other domain, extract just the subdomain
     if (shop.includes('.')) {
       shop = shop.split('.')[0]
     }
-
-    return shop.toLowerCase()
+    
+    // Ensure it ends with .myshopify.com
+    return `${shop}.myshopify.com`.toLowerCase()
   }
 }
