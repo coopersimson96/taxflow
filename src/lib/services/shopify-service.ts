@@ -116,7 +116,7 @@ export class ShopifyService {
         tokenUrl,
         shopDomain,
         errorMessage: fetchError instanceof Error ? fetchError.message : 'Unknown error',
-        cause: fetchError instanceof Error ? fetchError.cause : undefined,
+        cause: fetchError instanceof Error ? (fetchError as any).cause : undefined,
         isAbortError: fetchError instanceof Error && fetchError.name === 'AbortError'
       })
       
