@@ -235,7 +235,7 @@ export async function GET(request: NextRequest) {
             organizationId: tempOrganization.id,
             type: 'SHOPIFY',
             name: shopInfo.shop.name || normalizedShop,
-            status: 'PENDING_USER_LINK',
+            status: 'PENDING',
             credentials: {
               accessToken: tokens.accessToken,
               scope: tokens.scope,

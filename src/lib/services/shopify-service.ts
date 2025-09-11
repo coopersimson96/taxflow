@@ -93,13 +93,39 @@ export class ShopifyService {
     console.log('Making token exchange request to:', tokenUrl)
     console.log('Request body keys:', Object.keys(requestBody))
 
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    })
+    let response
+    try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+    } catch (fetchError) {
+      console.error('Fetch error during token exchange:', {
+        error: fetchError,
+        tokenUrl,
+        shopDomain,
+        errorMessage: fetchError instanceof Error ? fetchError.message : 'Unknown error',
+        cause: fetchError instanceof Error ? fetchError.cause : undefined,
+        isAbortError: fetchError instanceof Error && fetchError.name === 'AbortError'
+      })
+      
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('Token exchange timeout - Shopify took too long to respond')
+      }
+      
+      throw new Error(`Network error during token exchange: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`)
+    }
 
     console.log('Token exchange response status:', response.status)
 
