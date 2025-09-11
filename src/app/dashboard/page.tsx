@@ -116,7 +116,7 @@ function DashboardContent() {
             >
               {stores.map((store) => (
                 <option key={store.id} value={store.id}>
-                  {store.name} ({store.shop})
+                  {store.name} ({store.shopDomain})
                 </option>
               ))}
             </select>
