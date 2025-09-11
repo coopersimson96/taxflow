@@ -62,21 +62,27 @@ export class ShopifyService {
   static async exchangeCodeForToken(shop: string, code: string): Promise<ShopifyTokens> {
     const shopifyApiKey = process.env.SHOPIFY_API_KEY
     const shopifyApiSecret = process.env.SHOPIFY_API_SECRET
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/shopify/callback`
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
+    const redirectUri = `${baseUrl}/api/shopify/callback`
 
     console.log('Token exchange parameters:', {
       shop,
       codeLength: code?.length,
       hasApiKey: !!shopifyApiKey,
       hasApiSecret: !!shopifyApiSecret,
-      redirectUri
+      redirectUri,
+      baseUrl,
+      nextAuthUrl: process.env.NEXTAUTH_URL,
+      vercelUrl: process.env.VERCEL_URL
     })
 
     if (!shopifyApiKey || !shopifyApiSecret) {
       throw new Error('Shopify API credentials are not configured')
     }
 
-    const tokenUrl = `https://${shop}.myshopify.com/admin/oauth/access_token`
+    // Ensure shop has .myshopify.com suffix for the API call
+    const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`
+    const tokenUrl = `https://${shopDomain}/admin/oauth/access_token`
     const requestBody = {
       client_id: shopifyApiKey,
       client_secret: shopifyApiSecret,
@@ -99,8 +105,26 @@ export class ShopifyService {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Token exchange error response:', errorText)
-      throw new Error(`Failed to exchange code for token: ${response.status} ${errorText}`)
+      console.error('Token exchange error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText,
+        tokenUrl: tokenUrl,
+        redirectUri: redirectUri,
+        shop: shop,
+        shopDomain: shopDomain
+      })
+      
+      // Parse error if it's JSON
+      let errorMessage = errorText
+      try {
+        const errorJson = JSON.parse(errorText)
+        errorMessage = errorJson.error_description || errorJson.error || errorText
+      } catch (e) {
+        // Not JSON, use raw text
+      }
+      
+      throw new Error(`Failed to exchange code for token: ${response.status} - ${errorMessage}`)
     }
 
     const data = await response.json()
