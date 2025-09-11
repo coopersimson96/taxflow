@@ -23,7 +23,7 @@ export async function DELETE(
         include: { 
           organization: {
             include: {
-              userOrganizations: {
+              members: {
                 where: { 
                   user: { email: session.user!.email! }
                 }
@@ -39,7 +39,7 @@ export async function DELETE(
     }
 
     // Check if user has access to this integration
-    const hasAccess = integration.organization.userOrganizations.length > 0
+    const hasAccess = integration.organization.members.length > 0
     if (!hasAccess) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }

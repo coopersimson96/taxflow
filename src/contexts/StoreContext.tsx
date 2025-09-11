@@ -7,7 +7,7 @@ interface Store {
   id: string
   organizationId: string
   name: string
-  shop: string
+  shopDomain: string
   status: string
 }
 
@@ -88,3 +88,6 @@ export function useStore() {
   }
   return context
 }
+
+// Export as useStoreContext for compatibility
+export const useStoreContext = useStore
