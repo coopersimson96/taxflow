@@ -23,12 +23,24 @@ export class ShopifyService {
    */
   static generateAuthUrl(shop: string, state: string): string {
     const shopifyApiKey = process.env.SHOPIFY_API_KEY
-    const redirectUri = `${process.env.NEXTAUTH_URL}/api/shopify/callback`
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
+    const redirectUri = `${baseUrl}/api/shopify/callback`
     const scopes = process.env.SHOPIFY_SCOPES || this.REQUIRED_SCOPES.join(',')
 
     if (!shopifyApiKey) {
       throw new Error('SHOPIFY_API_KEY is not configured')
     }
+
+    console.log('OAuth Configuration:', {
+      shop,
+      baseUrl,
+      redirectUri,
+      hasApiKey: !!shopifyApiKey,
+      scopes
+    })
+
+    // Ensure shop domain doesn't include .myshopify.com for the OAuth URL
+    const shopSubdomain = shop.replace('.myshopify.com', '')
 
     const params = new URLSearchParams({
       client_id: shopifyApiKey,
@@ -38,7 +50,10 @@ export class ShopifyService {
       'grant_options[]': 'per-user'
     })
 
-    return `https://${shop}.myshopify.com/admin/oauth/authorize?${params.toString()}`
+    const authUrl = `https://${shopSubdomain}.myshopify.com/admin/oauth/authorize?${params.toString()}`
+    console.log('Generated OAuth URL:', authUrl)
+    
+    return authUrl
   }
 
   /**

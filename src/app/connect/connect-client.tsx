@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import TroubleshootingGuide from './troubleshooting'
 
 export default function ConnectClient() {
   const { data: session, status } = useSession()
@@ -86,6 +87,13 @@ export default function ConnectClient() {
         throw new Error(data.error || 'Failed to initiate connection')
       }
 
+      // Validate the auth URL before redirecting
+      if (!data.authUrl || !data.authUrl.startsWith('https://')) {
+        throw new Error('Invalid authorization URL received')
+      }
+
+      console.log('Redirecting to Shopify OAuth:', data.authUrl)
+      
       // Redirect to Shopify OAuth
       window.location.href = data.authUrl
 
@@ -240,6 +248,8 @@ export default function ConnectClient() {
                 <span>Know exactly how much tax money to set aside</span>
               </div>
             </div>
+            
+            <TroubleshootingGuide />
           </div>
         </Card>
 
