@@ -6,6 +6,7 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import LinkedEmails from '@/components/user/LinkedEmails'
 import DisconnectAccount from '@/components/settings/DisconnectAccount'
+import DisconnectStore from '@/components/settings/DisconnectStore'
 import ImportProgress from '@/components/settings/ImportProgress'
 import { Card } from '@/components/ui/Card'
 import SettingsPolaris from './settings-polaris'
@@ -21,6 +22,7 @@ export default function SettingsPage() {
     { id: 'emails', label: 'Email Addresses' },
     { id: 'profile', label: 'Profile' },
     { id: 'data', label: 'Data & Import' },
+    { id: 'store', label: 'Store Connection' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'account', label: 'Account' },
   ], [])
@@ -152,6 +154,8 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'data' && <ImportProgress integrationId={integrationId} />}
+            
+            {activeTab === 'store' && <DisconnectStore />}
             
             {activeTab === 'notifications' && (
               <div>
