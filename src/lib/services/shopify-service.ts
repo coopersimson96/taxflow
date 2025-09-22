@@ -23,7 +23,7 @@ export class ShopifyService {
    */
   static generateAuthUrl(shop: string, state: string): string {
     const shopifyApiKey = process.env.SHOPIFY_API_KEY
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
+    const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
     const redirectUri = `${baseUrl}/api/shopify/callback`
     const scopes = process.env.SHOPIFY_SCOPES || this.REQUIRED_SCOPES.join(',')
 
@@ -62,7 +62,7 @@ export class ShopifyService {
   static async exchangeCodeForToken(shop: string, code: string): Promise<ShopifyTokens> {
     const shopifyApiKey = process.env.SHOPIFY_API_KEY
     const shopifyApiSecret = process.env.SHOPIFY_API_SECRET
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL
+    const baseUrl = process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '')
     const redirectUri = `${baseUrl}/api/shopify/callback`
 
     console.log('Token exchange parameters:', {
