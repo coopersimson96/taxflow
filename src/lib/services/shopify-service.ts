@@ -82,8 +82,8 @@ export class ShopifyService {
       throw new Error('Shopify API credentials are not configured')
     }
 
-    // Ensure shop has .myshopify.com suffix for the API call
-    const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`
+    // Shop should already be normalized, but ensure it has .myshopify.com
+    const shopDomain = shop.endsWith('.myshopify.com') ? shop : `${shop}.myshopify.com`
     const tokenUrl = `https://${shopDomain}/admin/oauth/access_token`
     const requestBody = {
       client_id: shopifyApiKey,
