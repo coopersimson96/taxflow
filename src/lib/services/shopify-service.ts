@@ -73,7 +73,9 @@ export class ShopifyService {
       redirectUri,
       baseUrl,
       nextAuthUrl: process.env.NEXTAUTH_URL,
-      vercelUrl: process.env.VERCEL_URL
+      vercelUrl: process.env.VERCEL_URL,
+      isVercel: !!process.env.VERCEL,
+      vercelRegion: process.env.VERCEL_REGION
     })
 
     if (!shopifyApiKey || !shopifyApiSecret) {
@@ -92,39 +94,86 @@ export class ShopifyService {
 
     console.log('Making token exchange request to:', tokenUrl)
     console.log('Request body keys:', Object.keys(requestBody))
+    console.log('Environment:', {
+      nodeVersion: process.version,
+      platform: process.platform,
+      isVercel: !!process.env.VERCEL
+    })
 
     let response
-    try {
-      // Add timeout to prevent hanging
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-      
-      response = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-    } catch (fetchError) {
-      console.error('Fetch error during token exchange:', {
-        error: fetchError,
-        tokenUrl,
-        shopDomain,
-        errorMessage: fetchError instanceof Error ? fetchError.message : 'Unknown error',
-        cause: fetchError instanceof Error ? (fetchError as any).cause : undefined,
-        isAbortError: fetchError instanceof Error && fetchError.name === 'AbortError'
-      })
-      
-      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-        throw new Error('Token exchange timeout - Shopify took too long to respond')
+    let retryCount = 0
+    const maxRetries = 2
+    
+    while (retryCount <= maxRetries) {
+      try {
+        // Add timeout to prevent hanging
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout (increased for Vercel)
+        
+        console.log(`Token exchange attempt ${retryCount + 1} of ${maxRetries + 1}...`)
+        
+        response = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'TaxFlow-Shopify-App/1.0 (Vercel)',
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
+          // @ts-ignore - Next.js specific options that might help with Vercel
+          cache: 'no-store',
+          next: { revalidate: 0 }
+        })
+        
+        clearTimeout(timeoutId)
+        
+        // If we got a response, break out of retry loop
+        console.log('Got response from Shopify:', response.status)
+        break
+        
+      } catch (fetchError) {
+        console.error(`Fetch error during token exchange (attempt ${retryCount + 1}):`, {
+          error: fetchError,
+          tokenUrl,
+          shopDomain,
+          errorMessage: fetchError instanceof Error ? fetchError.message : 'Unknown error',
+          errorName: fetchError instanceof Error ? fetchError.name : 'Unknown',
+          cause: fetchError instanceof Error ? (fetchError as any).cause : undefined,
+          isAbortError: fetchError instanceof Error && fetchError.name === 'AbortError',
+          stack: fetchError instanceof Error ? fetchError.stack : undefined
+        })
+        
+        // If this is the last retry, throw the error
+        if (retryCount === maxRetries) {
+          // Provide more detailed error information
+          const errorDetails = fetchError instanceof Error ? {
+            message: fetchError.message,
+            name: fetchError.name,
+            cause: (fetchError as any).cause,
+            code: (fetchError as any).code,
+            errno: (fetchError as any).errno,
+            syscall: (fetchError as any).syscall
+          } : { message: 'Unknown error' }
+          
+          if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+            throw new Error('Token exchange timeout - Shopify took too long to respond. This might be a network issue in the Vercel environment.')
+          }
+          
+          // Check for specific network errors
+          if (fetchError instanceof Error && fetchError.message.includes('fetch failed')) {
+            throw new Error(`Network error during token exchange. This appears to be a Vercel-specific network issue. Error details: ${JSON.stringify(errorDetails)}`)
+          }
+          
+          throw new Error(`Network error during token exchange after ${maxRetries + 1} attempts: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`)
+        }
+        
+        // Wait before retrying
+        const delay = (retryCount + 1) * 1000 // Exponential backoff
+        console.log(`Waiting ${delay}ms before retry...`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        retryCount++
       }
-      
-      throw new Error(`Network error during token exchange: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`)
     }
 
     console.log('Token exchange response status:', response.status)
