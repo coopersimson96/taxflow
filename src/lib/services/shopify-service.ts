@@ -176,13 +176,13 @@ export class ShopifyService {
       }
     }
 
-    console.log('Token exchange response status:', response.status)
+    console.log('Token exchange response status:', response?.status)
 
-    if (!response.ok) {
-      const errorText = await response.text()
+    if (!response || !response.ok) {
+      const errorText = response ? await response.text() : 'No response received'
       console.error('Token exchange error response:', {
-        status: response.status,
-        statusText: response.statusText,
+        status: response?.status,
+        statusText: response?.statusText,
         errorText: errorText,
         tokenUrl: tokenUrl,
         redirectUri: redirectUri,
@@ -199,9 +199,13 @@ export class ShopifyService {
         // Not JSON, use raw text
       }
       
-      throw new Error(`Failed to exchange code for token: ${response.status} - ${errorMessage}`)
+      throw new Error(`Failed to exchange code for token: ${response?.status || 'No response'} - ${errorMessage}`)
     }
 
+    if (!response) {
+      throw new Error('No response received from token exchange')
+    }
+    
     const data = await response.json()
     console.log('Token exchange successful, received keys:', Object.keys(data))
     
