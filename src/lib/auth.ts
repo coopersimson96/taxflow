@@ -31,13 +31,23 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (user) {
-        token.user = user
+        token.id = user.id
+        token.name = user.name
+        token.email = user.email
+        token.image = user.image
       }
       return token
     },
     async session({ session, token }) {
-      if (token.user) {
-        session.user = token.user
+      if (token.id) {
+        session.user = {
+          id: token.id as string,
+          name: token.name,
+          email: token.email,
+          image: token.image,
+          organizations: [],
+          currentOrganization: null,
+        }
       }
       return session
     },
