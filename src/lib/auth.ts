@@ -14,12 +14,10 @@ if (!googleClientId || !googleClientSecret) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   providers: googleClientId && googleClientSecret ? [
     GoogleProvider({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
-      allowDangerousEmailAccountLinking: true,
     }),
   ] : [],
   pages: {
@@ -27,7 +25,21 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.user = user
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token.user) {
+        session.user = token.user
+      }
+      return session
+    },
   },
 }
