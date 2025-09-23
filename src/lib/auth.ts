@@ -42,9 +42,9 @@ export const authOptions: NextAuthOptions = {
       if (token.id) {
         session.user = {
           id: token.id as string,
-          name: token.name,
-          email: token.email,
-          image: token.image,
+          name: token.name as string | null | undefined,
+          email: token.email as string | null | undefined,
+          image: token.image as string | null | undefined,
           organizations: [],
           currentOrganization: null,
         }
