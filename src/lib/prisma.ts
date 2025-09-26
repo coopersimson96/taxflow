@@ -24,9 +24,13 @@ const createPrismaClient = () => new PrismaClient({
   })
 })
 
-export const prisma = process.env.VERCEL
-  ? createPrismaClient() // Always create fresh client in serverless
-  : globalThis.prisma ?? (globalThis.prisma = createPrismaClient())
+// Use singleton pattern even in production to avoid connection issues
+export const prisma = globalThis.prisma ?? (globalThis.prisma = createPrismaClient())
+
+// Ensure Prisma client is properly initialized for serverless
+if (process.env.NODE_ENV === 'production' && !globalThis.prisma) {
+  globalThis.prisma = prisma
+}
 
 // Database connection utility functions
 export async function connectToDatabase() {

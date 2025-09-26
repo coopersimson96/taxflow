@@ -14,10 +14,12 @@ if (!googleClientId || !googleClientSecret) {
 }
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: googleClientId && googleClientSecret ? [
     GoogleProvider({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
+      allowDangerousEmailAccountLinking: true,
     }),
   ] : [],
   pages: {
@@ -25,28 +27,36 @@ export const authOptions: NextAuthOptions = {
     error: '/auth/error',
   },
   session: {
-    strategy: 'jwt',
+    strategy: 'database',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id
-        token.name = user.name
-        token.email = user.email
-        token.image = user.image
-      }
-      return token
-    },
-    async session({ session, token }) {
-      if (token.id) {
-        session.user = {
-          id: token.id as string,
-          name: token.name as string | null | undefined,
-          email: token.email as string | null | undefined,
-          image: token.image as string | null | undefined,
-          organizations: [],
-          currentOrganization: null,
+    async session({ session, user }) {
+      if (session?.user) {
+        session.user.id = user.id
+        
+        // Load user's organizations
+        const userWithOrgs = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: {
+            organizations: {
+              include: {
+                organization: true
+              }
+            }
+          }
+        })
+        
+        if (userWithOrgs) {
+          session.user.organizations = userWithOrgs.organizations.map(om => ({
+            id: om.organization.id,
+            name: om.organization.name,
+            slug: om.organization.slug,
+            role: om.role
+          }))
+          
+          // Set current organization (first one for now)
+          session.user.currentOrganization = session.user.organizations[0] || null
         }
       }
       return session
