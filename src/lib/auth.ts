@@ -62,4 +62,5 @@ export const authOptions: NextAuthOptions = {
       return session
     },
   },
+  debug: true, // Enable debug logging to see what's happening
 }
