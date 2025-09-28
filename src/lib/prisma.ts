@@ -5,32 +5,25 @@ declare global {
   var prisma: PrismaClient | undefined
 }
 
-// Create fresh Prisma Client for production to avoid cached connections
-// In production (serverless), always create fresh client
-const createPrismaClient = () => new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  },
-  // Configure for serverless environments (Vercel)
-  ...(process.env.VERCEL && {
-    errorFormat: 'minimal',
-    transactionOptions: {
-      maxWait: 5000,
-      timeout: 10000,
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL
+      }
     }
   })
-})
-
-// Use singleton pattern even in production to avoid connection issues
-export const prisma = globalThis.prisma ?? (globalThis.prisma = createPrismaClient())
-
-// Ensure Prisma client is properly initialized for serverless
-if (process.env.NODE_ENV === 'production' && !globalThis.prisma) {
-  globalThis.prisma = prisma
 }
+
+// Critical fix: Use proper singleton pattern for Vercel
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined
+}
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Database connection utility functions
 export async function connectToDatabase() {
