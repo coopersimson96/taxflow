@@ -26,15 +26,7 @@ export default function AuthGuard({
   const { session, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
-  useEffect(() => {
-    if (!isLoading && requireAuth && !isAuthenticated) {
-      if (redirectTo) {
-        router.push(redirectTo)
-      } else {
-        router.push('/auth/signin')
-      }
-    }
-  }, [isLoading, isAuthenticated, requireAuth, redirectTo, router])
+  // Note: Removed client-side redirect logic as middleware handles authentication redirects
 
   // Show loading state
   if (isLoading) {

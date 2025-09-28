@@ -15,14 +15,7 @@ export default function SignInClient() {
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const errorParam = searchParams.get('error')
 
-  useEffect(() => {
-    // Check if user is already signed in
-    getSession().then((session) => {
-      if (session) {
-        router.push(callbackUrl)
-      }
-    })
-  }, [router, callbackUrl])
+  // Note: Removed client-side redirect check as middleware handles this
 
   useEffect(() => {
     // Handle authentication errors
