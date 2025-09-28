@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
       userId: session1?.user?.id
     })
     
-    // Test 2: Try with request context
-    const session2 = await getServerSession(request as any, authOptions)
-    console.log('Test 2 - getServerSession with request:', {
+    // Test 2: Alternative approach - just test with different timing
+    await new Promise(resolve => setTimeout(resolve, 100)) // Small delay
+    const session2 = await getServerSession(authOptions)
+    console.log('Test 2 - getServerSession after delay:', {
       sessionExists: !!session2,
       userExists: !!session2?.user,
       email: session2?.user?.email,
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         sessionExists: !!session1,
         email: session1?.user?.email
       },
-      test2_getServerSessionWithRequest: {
+      test2_getServerSessionAfterDelay: {
         sessionExists: !!session2,
         email: session2?.user?.email
       },
