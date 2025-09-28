@@ -3,15 +3,8 @@ import GoogleProvider from 'next-auth/providers/google'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import { PrismaClient } from '@prisma/client'
 
-// Create a dedicated Prisma client for NextAuth to ensure consistent connections
-const authPrisma = new PrismaClient({
-  log: ['error', 'warn'],
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL
-    }
-  }
-})
+// Import the main Prisma client to ensure consistency
+import { prisma } from './prisma'
 
 // Validate environment variables
 const googleClientId = process.env.GOOGLE_CLIENT_ID
@@ -24,7 +17,7 @@ if (!googleClientId || !googleClientSecret) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(authPrisma),
+  adapter: PrismaAdapter(prisma),
   providers: googleClientId && googleClientSecret ? [
     GoogleProvider({
       clientId: googleClientId,
@@ -52,7 +45,7 @@ export const authOptions: NextAuthOptions = {
           
           // Try to load user's organizations - but don't fail if this fails
           try {
-            const userWithOrgs = await authPrisma.user.findUnique({
+            const userWithOrgs = await prisma.user.findUnique({
               where: { id: user.id },
               include: {
                 organizations: {
