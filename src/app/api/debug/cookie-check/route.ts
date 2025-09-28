@@ -32,9 +32,7 @@ export async function GET(request: NextRequest) {
       allNextAuthCookies: nextAuthCookies.map(c => ({
         name: c.name,
         hasValue: !!c.value,
-        httpOnly: c.httpOnly,
-        secure: c.secure,
-        sameSite: c.sameSite
+        valueLength: c.value?.length || 0
       })),
       totalCookies: allCookies.length,
       timestamp: new Date().toISOString()
