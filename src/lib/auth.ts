@@ -42,35 +42,68 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, user }) {
-      if (session?.user) {
-        session.user.id = user.id
-        
-        // Load user's organizations
-        const userWithOrgs = await authPrisma.user.findUnique({
-          where: { id: user.id },
-          include: {
-            organizations: {
-              include: {
-                organization: true
-              }
-            }
-          }
-        })
-        
-        if (userWithOrgs) {
-          session.user.organizations = userWithOrgs.organizations.map(om => ({
-            id: om.organization.id,
-            name: om.organization.name,
-            slug: om.organization.slug,
-            role: om.role
-          }))
+      try {
+        if (session?.user) {
+          session.user.id = user.id
           
-          // Set current organization (first one for now)
-          session.user.currentOrganization = session.user.organizations[0] || null
+          // Initialize empty arrays to prevent undefined errors
+          session.user.organizations = []
+          session.user.currentOrganization = null
+          
+          // Try to load user's organizations - but don't fail if this fails
+          try {
+            const userWithOrgs = await authPrisma.user.findUnique({
+              where: { id: user.id },
+              include: {
+                organizations: {
+                  include: {
+                    organization: true
+                  }
+                }
+              }
+            })
+            
+            if (userWithOrgs?.organizations) {
+              session.user.organizations = userWithOrgs.organizations.map(om => ({
+                id: om.organization.id,
+                name: om.organization.name,
+                slug: om.organization.slug,
+                role: om.role
+              }))
+              
+              // Set current organization (first one for now)
+              session.user.currentOrganization = session.user.organizations[0] || null
+            }
+          } catch (orgError) {
+            console.error('[auth] Failed to load organizations:', orgError)
+            // Continue with empty organizations - don't break the session
+          }
         }
+        
+        console.log('[auth] Session callback completed for user:', user.id)
+        return session
+      } catch (error) {
+        console.error('[auth] Session callback error:', error)
+        // Return the basic session even if organization loading fails
+        if (session?.user) {
+          session.user.id = user.id
+          session.user.organizations = []
+          session.user.currentOrganization = null
+        }
+        return session
       }
-      return session
     },
   },
-  debug: true, // Enable debug logging to see what's happening
+  debug: true,
+  logger: {
+    error(code, metadata) {
+      console.error('[next-auth][error]', code, metadata)
+    },
+    warn(code) {
+      console.warn('[next-auth][warn]', code)
+    },
+    debug(code, metadata) {
+      console.log('[next-auth][debug]', code, metadata)
+    }
+  },
 }
