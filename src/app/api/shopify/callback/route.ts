@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma } from '@/lib/prisma'
 import { UserService } from '@/lib/services/user-service'
@@ -183,15 +185,24 @@ export async function GET(request: NextRequest) {
       console.log('Shop email:', shopInfo.shop.email)
       console.log('Customer email:', shopInfo.shop.customer_email)
       
-      // Priority 1: Use state parameter (most reliable)
-      if (connectingUserEmail) {
+      // Priority 1: Use currently authenticated user (most reliable for authenticated flows)
+      const session = await getServerSession(authOptions)
+      if (session?.user?.email) {
+        connectingUser = await prisma.user.findUnique({
+          where: { email: session.user.email }
+        })
+        console.log('Found authenticated user:', connectingUser ? 'YES' : 'NO', session.user.email)
+      }
+      
+      // Priority 2: Use state parameter (for non-authenticated flows)
+      if (!connectingUser && connectingUserEmail) {
         connectingUser = await prisma.user.findUnique({
           where: { email: connectingUserEmail }
         })
         console.log('Found user from state:', connectingUser ? 'YES' : 'NO')
       }
       
-      // Priority 2: Try shop email fallback
+      // Priority 3: Try shop email fallback (least reliable)
       if (!connectingUser) {
         connectingUser = await prisma.user.findFirst({
           where: { 
@@ -204,7 +215,7 @@ export async function GET(request: NextRequest) {
         console.log('Found user from shop emails:', connectingUser ? 'YES' : 'NO')
       }
 
-      // Priority 3: FOUNDATIONAL FIX - If no user found, store connection info for manual linking
+      // Priority 4: FOUNDATIONAL FIX - If no user found, store connection info for manual linking
       if (!connectingUser) {
         console.log('❌ No user found - creating orphaned integration for manual linking')
         
