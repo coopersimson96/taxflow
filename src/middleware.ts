@@ -1,6 +1,16 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
+/**
+ * Secure middleware with explicit route definitions
+ * 
+ * Security layers:
+ * 1. Public routes - No authentication required
+ * 2. Public API routes - Secured by external mechanisms (HMAC, OAuth state)
+ * 3. Protected API routes - Authentication required at middleware + authorization at API level
+ * 4. Protected pages - Full authentication + authorization at middleware level
+ */
+
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl
@@ -15,23 +25,53 @@ export default withAuth(
       return NextResponse.next()
     }
 
-    // Allow access to public pages and API endpoints
-    if (
-      pathname === '/' ||
-      pathname.startsWith('/api/auth/') ||
-      pathname.startsWith('/api/user/') ||
-      pathname.startsWith('/api/admin/') ||
-      pathname.startsWith('/api/webhooks/') ||
-      pathname.startsWith('/api/shopify/') ||
-      pathname.startsWith('/api/debug/') ||
-      pathname.startsWith('/api/analytics/') ||
-      pathname.startsWith('/api/integrations/') ||
-      pathname.startsWith('/terms') ||
-      pathname.startsWith('/privacy') ||
-      pathname.startsWith('/_next/') ||
-      pathname.startsWith('/images/') ||
-      pathname.includes('.')
-    ) {
+    // Define public routes that don't require authentication
+    const publicRoutes = [
+      '/',
+      '/terms',
+      '/privacy',
+    ]
+    
+    // Define API routes that should bypass middleware auth (they handle auth internally)
+    const publicApiRoutes = [
+      '/api/auth/',      // NextAuth routes
+      '/api/webhooks/',  // Shopify webhooks (secured by HMAC)
+      '/api/shopify/',   // Shopify OAuth (secured by state/HMAC)
+    ]
+    
+    // Define API routes that require authentication but are handled at API level
+    const protectedApiRoutes = [
+      '/api/user/stores',         // User's connected stores
+      '/api/user/current-integration', // Current integration data
+      '/api/user/find-orphaned-stores', // Find orphaned stores
+      '/api/user/link-store',     // Link user to store
+      '/api/analytics/',          // Tax analytics data
+      '/api/integrations/',       // Integration management
+      '/api/admin/',              // Admin functions
+      '/api/debug/',              // Debug endpoints
+    ]
+    
+    // Allow public routes
+    if (publicRoutes.includes(pathname) || 
+        pathname.startsWith('/_next/') || 
+        pathname.startsWith('/images/') || 
+        pathname.includes('.')) {
+      return NextResponse.next()
+    }
+    
+    // Allow public API routes (no auth required)
+    if (publicApiRoutes.some(route => pathname.startsWith(route))) {
+      return NextResponse.next()
+    }
+    
+    // For protected API routes, ensure user is authenticated but let API handle authorization
+    if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
+      if (!token) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
       return NextResponse.next()
     }
 
@@ -66,28 +106,28 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Always allow access to auth pages, public routes, and API endpoints
+        // Define routes that don't require authentication at all
+        const publicPaths = [
+          '/auth/',
+          '/',
+          '/api/auth/',
+          '/api/webhooks/',
+          '/api/shopify/',
+          '/terms',
+          '/privacy',
+          '/_next/',
+          '/images/'
+        ]
+        
+        // Always allow access to public routes
         if (
-          pathname.startsWith('/auth/') ||
-          pathname === '/' ||
-          pathname.startsWith('/api/auth/') ||
-          pathname.startsWith('/api/user/') ||
-          pathname.startsWith('/api/admin/') ||
-          pathname.startsWith('/api/webhooks/') ||
-          pathname.startsWith('/api/shopify/') ||
-          pathname.startsWith('/api/debug/') ||
-          pathname.startsWith('/api/analytics/') ||
-          pathname.startsWith('/api/integrations/') ||
-          pathname.startsWith('/terms') ||
-          pathname.startsWith('/privacy') ||
-          pathname.startsWith('/_next/') ||
-          pathname.startsWith('/images/') ||
+          publicPaths.some(path => pathname.startsWith(path)) ||
           pathname.includes('.')
         ) {
           return true
         }
-
-        // For all other routes, require authentication
+        
+        // For protected routes, require authentication
         return !!token
       },
     },
