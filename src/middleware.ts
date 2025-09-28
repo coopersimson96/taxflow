@@ -39,12 +39,9 @@ export default withAuth(
       '/api/shopify/',   // Shopify OAuth (secured by state/HMAC)
     ]
     
-    // Define API routes that require authentication but are handled at API level
+    // Define API routes that require authentication - handled consistently at API level
     const protectedApiRoutes = [
-      '/api/user/stores',         // User's connected stores
-      '/api/user/current-integration', // Current integration data
-      '/api/user/find-orphaned-stores', // Find orphaned stores
-      '/api/user/link-store',     // Link user to store
+      '/api/user/',               // All user endpoints
       '/api/analytics/',          // Tax analytics data
       '/api/integrations/',       // Integration management
       '/api/admin/',              // Admin functions
@@ -64,14 +61,10 @@ export default withAuth(
       return NextResponse.next()
     }
     
-    // For protected API routes, ensure user is authenticated but let API handle authorization
+    // For protected API routes, let them handle authentication themselves
+    // This ensures consistency between middleware and getServerSession
     if (protectedApiRoutes.some(route => pathname.startsWith(route))) {
-      if (!token) {
-        return NextResponse.json(
-          { error: 'Authentication required' },
-          { status: 401 }
-        )
-      }
+      // Don't block at middleware level - let API routes handle auth consistently
       return NextResponse.next()
     }
 

@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { requireAuth } from '@/lib/session-utils'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 [/api/user/stores] Starting request...')
+    console.log('🔍 [/api/user/stores] Starting request with unified session management...')
     
-    // Add detailed session debugging
-    const session = await getServerSession(authOptions)
-    console.log('🔍 [/api/user/stores] Session check:', {
-      sessionExists: !!session,
-      userExists: !!session?.user,
-      email: session?.user?.email,
-      userId: session?.user?.id,
-      sessionId: session?.user?.id || 'no-session-id'
-    })
-    
-    if (!session?.user?.email) {
-      console.log('❌ [/api/user/stores] No session or email found')
+    // Use unified session management for consistency
+    let session
+    try {
+      session = await requireAuth()
+      console.log('✅ [/api/user/stores] Authentication successful for:', session.user.email)
+    } catch (error) {
+      console.log('❌ [/api/user/stores] Authentication failed:', error)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    console.log('✅ [/api/user/stores] Valid session found for:', session.user.email)
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
