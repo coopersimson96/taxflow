@@ -30,10 +30,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               
               {/* Navigation Links */}
               <nav className="hidden md:flex space-x-4">
-                <a href="/dashboard" className="text-secondary-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                <a href="/dashboard" className="text-accent-300 hover:text-white px-3 py-2 text-sm font-semibold transition-colors">
                   Dashboard
                 </a>
-                <a href="/settings" className="text-secondary-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
+                <a href="/settings" className="text-accent-300 hover:text-white px-3 py-2 text-sm font-semibold transition-colors">
                   Settings
                 </a>
               </nav>
