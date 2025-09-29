@@ -31,10 +31,10 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 
   const chartConfig: ChartConfig = {
     colors: {
-      primary: '#3b82f6',
-      secondary: '#10b981',
+      primary: '#061d19',
+      secondary: '#b8ff90',
       gst: '#10b981',
-      pst: '#3b82f6',
+      pst: '#3fa5ff',
       hst: '#8b5cf6',
       qst: '#f59e0b',
       stateTax: '#ef4444',
@@ -42,8 +42,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       other: '#6b7280'
     },
     gradients: {
-      primary: ['#3b82f6', '#1d4ed8'],
-      tax: ['#10b981', '#059669']
+      primary: ['#061d19', '#0f2920'],
+      tax: ['#b8ff90', '#a6e682']
     }
   }
 
@@ -231,10 +231,10 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       {/* Header with controls */}
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-primary-900">
             {data?.storeInfo?.storeName || 'Your Store'} Tax Dashboard
           </h1>
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-4 text-sm text-secondary">
             <span>Last updated: {new Date(state.lastRefresh).toLocaleTimeString()}</span>
             <div className="flex items-center space-x-1">
               <div className={cn(
@@ -253,7 +253,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           onClick={refresh}
           disabled={state.isLoading}
           className={cn(
-            "flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors",
+            "btn-primary",
             state.isLoading && "opacity-50 cursor-not-allowed"
           )}
         >
@@ -277,15 +277,15 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       />
 
       {/* Timeframe Selector - Controls data below */}
-      <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+      <div className="card">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-sm font-medium text-gray-700">Analytics Timeframe</h3>
-            <p className="text-xs text-gray-500 mt-1">Select time period for the data below</p>
+            <h3 className="text-sm font-medium text-primary-900">Analytics Timeframe</h3>
+            <p className="text-xs text-muted mt-1">Select time period for the data below</p>
           </div>
           
           {/* Date range presets */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-secondary-400 rounded-lg p-1">
             {presetButtons.map(preset => (
               <button
                 key={preset.key}
@@ -293,8 +293,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
                 className={cn(
                   "px-3 py-2 text-sm font-medium rounded transition-colors",
                   filters.dateRange.preset === preset.key.replace('this', '').toLowerCase().replace('week', '7days').replace('month', '30days').replace('quarter', '90days').replace('year', '1year')
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "bg-white text-primary-900 shadow-sm"
+                    : "text-secondary hover:text-primary-900"
                 )}
               >
                 {preset.label}
@@ -312,7 +312,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       />
 
       {/* Navigation tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-secondary-400">
         <nav className="-mb-px flex space-x-8">
           {tabs.map((tab) => (
             <button
@@ -321,8 +321,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
               className={cn(
                 "flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors",
                 selectedTab === tab.id
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-primary-900 text-primary-900"
+                  : "border-transparent text-muted hover:text-primary-900 hover:border-secondary-500"
               )}
             >
               {tab.icon}

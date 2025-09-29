@@ -31,7 +31,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
   if (isLoading) {
     return (
-      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl shadow-2xl">
+      <div className="relative overflow-hidden bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 rounded-2xl shadow-2xl">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative p-8 md:p-12">
           <div className="animate-pulse">
@@ -53,7 +53,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl shadow-2xl">
+    <div className="relative overflow-hidden bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 rounded-2xl shadow-2xl">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -70,7 +70,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-4 right-4 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
         <div className="absolute bottom-8 left-8 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-purple-300/20 rounded-full blur-lg"></div>
+        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-accent-300/20 rounded-full blur-lg"></div>
       </div>
 
       <div className="relative p-8 md:p-12">
@@ -169,8 +169,8 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <button className="group relative bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+            <button className="group relative bg-white text-primary-900 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-primary-700 opacity-0 group-hover:opacity-10 transition-opacity"></div>
               <div className="relative flex items-center space-x-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
@@ -198,7 +198,7 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
 
             <button
               onClick={() => window.location.href = '/settings?tab=data'}
-              className="bg-purple-500 text-white px-6 py-4 rounded-xl font-medium hover:bg-purple-600 transition-all duration-200 border border-purple-400"
+              className="btn-secondary px-6 py-4 text-base"
             >
               <div className="flex items-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
