@@ -13,27 +13,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth()
 
   return (
-    <div className="min-h-screen bg-secondary-50">
+    <div className="min-h-screen bg-secondary-300">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-primary card border-0 rounded-none shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left side - Logo and Organization Switcher */}
             <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">TA</span>
+                <div className="w-8 h-8 bg-accent-300 rounded-lg flex items-center justify-center">
+                  <span className="text-primary-900 font-bold text-sm">SA</span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">Tax Analytics</h1>
+                <h1 className="text-xl font-bold text-white">Set Aside</h1>
               </div>
               <OrganizationSwitcher />
               
               {/* Navigation Links */}
               <nav className="hidden md:flex space-x-4">
-                <a href="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                <a href="/dashboard" className="text-secondary-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
                   Dashboard
                 </a>
-                <a href="/settings" className="text-gray-600 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                <a href="/settings" className="text-secondary-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors">
                   Settings
                 </a>
               </nav>
@@ -71,22 +71,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Welcome to Tax Analytics!
+              <h2 className="text-2xl font-bold text-primary-900 mb-2">
+                Welcome to Set Aside!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-secondary mb-6">
                 Your organization has been created and you're ready to start tracking taxes.
                 <br />
                 Connect your Shopify or Square accounts to begin importing transaction data.
               </p>
               <div className="space-y-3">
-                <a href="/connect" className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <a href="/connect" className="btn-primary">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12.04 2.15c.75 0 1.36.61 1.36 1.36v8.94c0 .75-.61 1.36-1.36 1.36s-1.36-.61-1.36-1.36V3.51c0-.75.61-1.36 1.36-1.36zM7.5 7.07c.53-.53 1.39-.53 1.92 0l6.32 6.32c.53.53.53 1.39 0 1.92-.53.53-1.39.53-1.92 0L7.5 8.99c-.53-.53-.53-1.39 0-1.92z"/>
                   </svg>
                   Connect Shopify
                 </a>
-                <button className="inline-flex items-center px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors ml-3">
+                <button className="btn-secondary ml-3">
                   <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm0 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/>
                   </svg>

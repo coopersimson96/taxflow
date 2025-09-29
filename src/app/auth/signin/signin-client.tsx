@@ -60,30 +60,29 @@ export default function SignInClient() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome to Tax Analytics
+    <div className="min-h-screen flex items-center justify-center bg-secondary-300 px-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold mb-4 text-primary-900">
+            Welcome to Set Aside
           </h1>
-          <p className="text-gray-600">
+          <p className="text-xl text-secondary">
             Sign in to access your tax reporting dashboard
           </p>
         </div>
 
-        <Card className="p-8 shadow-lg">
+        <div className="card">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600 text-center">{error}</p>
+            <div className="mb-8 p-4 bg-error-50 border-2 border-error-200 rounded-xl">
+              <p className="text-error-600 text-center font-medium">{error}</p>
             </div>
           )}
 
-          <div className="space-y-4">
-            <Button
+          <div className="space-y-6">
+            <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-              size="lg"
+              className="w-full btn-primary flex items-center justify-center gap-3 text-lg py-4"
             >
               <svg
                 className="w-5 h-5"
@@ -108,29 +107,29 @@ export default function SignInClient() {
                 />
               </svg>
               {isLoading ? 'Signing in...' : 'Continue with Google'}
-            </Button>
+            </button>
           </div>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted">
               By signing in, you agree to our{' '}
-              <a href="/terms" className="text-primary-600 hover:text-primary-700">
+              <a href="/terms" className="text-highlight-500 hover:text-primary-900 transition-colors">
                 Terms of Service
               </a>{' '}
               and{' '}
-              <a href="/privacy" className="text-primary-600 hover:text-primary-700">
+              <a href="/privacy" className="text-highlight-500 hover:text-primary-900 transition-colors">
                 Privacy Policy
               </a>
             </p>
           </div>
-        </Card>
+        </div>
 
         <div className="mt-8 text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+            <h3 className="text-lg font-semibold text-primary-900 mb-3">
               What happens after you sign in?
             </h3>
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-2 text-sm text-secondary">
               <p>✓ We'll create your organization automatically</p>
               <p>✓ You can connect your Shopify and Square accounts</p>
               <p>✓ Start tracking sales tax across all platforms</p>
