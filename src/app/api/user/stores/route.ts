@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
               include: {
                 integrations: {
                   where: {
-                    type: 'SHOPIFY'
+                    type: 'SHOPIFY',
+                    status: 'CONNECTED'
                   }
                 }
               }
