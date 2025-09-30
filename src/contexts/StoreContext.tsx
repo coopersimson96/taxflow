@@ -56,9 +56,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           setCurrentStore(data.stores[0])
           localStorage.setItem('currentStoreId', data.stores[0].id)
         } else {
-          // No stores - clear any cached data
-          setCurrentStore(null)
-          localStorage.removeItem('currentStoreId')
+          // No stores found - check for orphaned stores that might belong to this user
+          await checkForOrphanedStores()
         }
       } else {
         setError('Failed to fetch stores')
@@ -67,6 +66,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkForOrphanedStores = async () => {
+    try {
+      console.log('🔍 Checking for orphaned stores...')
+      const orphanedResponse = await fetch('/api/user/find-orphaned-stores')
+      if (orphanedResponse.ok) {
+        const orphanedData = await orphanedResponse.json()
+        const hasOrphaned = orphanedData.orphanedOrganizations?.length > 0 || orphanedData.pendingIntegrations?.length > 0
+        
+        if (hasOrphaned) {
+          console.log('✅ Found orphaned stores, attempting auto-link...')
+          // Try to auto-link the first orphaned store
+          const linkResponse = await fetch('/api/user/link-store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              organizationId: orphanedData.orphanedOrganizations?.[0]?.id || orphanedData.pendingIntegrations?.[0]?.organizationId
+            })
+          })
+          
+          if (linkResponse.ok) {
+            console.log('✅ Auto-linked orphaned store, refreshing...')
+            // Refresh stores after successful link
+            await fetchStores()
+            return
+          }
+        }
+      }
+      
+      // No orphaned stores found or linking failed - clear cached data
+      setCurrentStore(null)
+      localStorage.removeItem('currentStoreId')
+    } catch (error) {
+      console.error('Error checking orphaned stores:', error)
+      // Fallback to clearing cached data
+      setCurrentStore(null)
+      localStorage.removeItem('currentStoreId')
     }
   }
 
