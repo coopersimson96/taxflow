@@ -316,28 +316,57 @@ export async function GET(request: NextRequest) {
           console.log('Creating new organization...')
           isNewOrganization = true
           
-          // Create a new organization for this shop
-          const organization = await prisma.organization.create({
-            data: {
-              name: shopInfo.shop.name || normalizedShop,
-              slug: normalizedShop.replace('.', '-'),
-              description: `Tax tracking for ${shopInfo.shop.name || normalizedShop}`,
-              settings: {
-                shopifyShop: normalizedShop,
-                timezone: shopInfo.shop.timezone || 'America/New_York',
-                currency: shopInfo.shop.currency || 'USD',
-                country: shopInfo.shop.country_name || shopInfo.shop.country
-              },
-              members: {
-                create: {
+          // Check if an organization with this slug already exists (safety check)
+          const proposedSlug = normalizedShop.replace('.', '-')
+          const existingOrgBySlug = await prisma.organization.findUnique({
+            where: { slug: proposedSlug },
+            include: { members: true }
+          })
+          
+          if (existingOrgBySlug) {
+            console.log('Found existing organization by slug, adding user as member:', existingOrgBySlug.id)
+            organizationId = existingOrgBySlug.id
+            
+            // Check if the connecting user is already a member
+            const isMember = existingOrgBySlug.members.some(
+              member => member.userId === connectingUser.id
+            )
+            
+            if (!isMember) {
+              // Add the user as a member
+              await prisma.organizationMember.create({
+                data: {
                   userId: connectingUser.id,
-                  role: 'OWNER' // First user gets OWNER role
+                  organizationId: existingOrgBySlug.id,
+                  role: 'ADMIN' // New connections get ADMIN role
+                }
+              })
+              console.log('Added user as organization member')
+            }
+          } else {
+            // Create a new organization for this shop
+            const organization = await prisma.organization.create({
+              data: {
+                name: shopInfo.shop.name || normalizedShop,
+                slug: proposedSlug,
+                description: `Tax tracking for ${shopInfo.shop.name || normalizedShop}`,
+                settings: {
+                  shopifyShop: normalizedShop,
+                  timezone: shopInfo.shop.timezone || 'America/New_York',
+                  currency: shopInfo.shop.currency || 'USD',
+                  country: shopInfo.shop.country_name || shopInfo.shop.country
+                },
+                members: {
+                  create: {
+                    userId: connectingUser.id,
+                    role: 'OWNER' // First user gets OWNER role
+                  }
                 }
               }
-            }
-          })
-          console.log('Organization created with owner:', organization.id)
-          organizationId = organization.id
+            })
+            console.log('Organization created with owner:', organization.id)
+            organizationId = organization.id
+          }
         }
       } catch (orgError) {
         console.error('Organization setup error:', orgError)

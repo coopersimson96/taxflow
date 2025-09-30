@@ -53,10 +53,10 @@ export async function GET() {
       }
     })
 
-    // Also find any integrations with PENDING_USER_LINK status
+    // Also find any integrations with PENDING status (since PENDING_USER_LINK doesn't exist in schema)
     const pendingIntegrations = await prisma.integration.findMany({
       where: {
-        status: 'PENDING_USER_LINK',
+        status: 'PENDING',
         type: 'SHOPIFY'
       },
       include: {
