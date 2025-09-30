@@ -43,20 +43,22 @@ export async function GET(request: NextRequest) {
     
     console.log('✅ [/api/user/stores] User found with', user.organizations.length, 'organizations')
 
-    // Transform the data to a simpler format
-    const stores = user.organizations.map(org => {
-      const shopifyIntegration = org.organization.integrations[0]
-      const credentials = shopifyIntegration?.credentials as any || {}
-      
-      return {
-        id: shopifyIntegration?.id || org.organizationId,
-        organizationId: org.organizationId,
-        name: org.organization.name,
-        shop: credentials.shop || 'Unknown',
-        status: shopifyIntegration?.status || 'DISCONNECTED',
-        role: org.role
-      }
-    })
+    // Transform the data to a simpler format - only include orgs with connected integrations
+    const stores = user.organizations
+      .filter(org => org.organization.integrations.length > 0) // Only orgs with integrations
+      .map(org => {
+        const shopifyIntegration = org.organization.integrations[0]
+        const credentials = shopifyIntegration?.credentials as any || {}
+        
+        return {
+          id: shopifyIntegration.id, // Now we know this exists
+          organizationId: org.organizationId,
+          name: org.organization.name,
+          shop: credentials.shop || 'Unknown',
+          status: shopifyIntegration.status,
+          role: org.role
+        }
+      })
 
     console.log('✅ [/api/user/stores] Returning', stores.length, 'stores for user')
     
