@@ -273,7 +273,7 @@ export async function GET(request: NextRequest) {
       try {
         console.log('Setting up organization...')
         
-        // Check if this shop already has an organization
+        // Check if this shop already has an organization (including disconnected ones)
         const existingIntegration = await prisma.integration.findFirst({
           where: {
             type: 'SHOPIFY',
@@ -281,6 +281,7 @@ export async function GET(request: NextRequest) {
               path: ['shop'],
               equals: normalizedShop
             }
+            // No status filter - find ANY integration for this shop
           },
           include: {
             organization: {
