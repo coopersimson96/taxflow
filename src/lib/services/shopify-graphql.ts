@@ -113,8 +113,8 @@ export class ShopifyGraphQLService {
                   }
                 }
                 currencyCode
-                financialStatus
-                fulfillmentStatus
+                displayFinancialStatus
+                displayFulfillmentStatus
                 cancelReason
                 cancelledAt
                 lineItems(first: 50) {
@@ -277,8 +277,8 @@ export class ShopifyGraphQLService {
       subtotal_price: graphqlOrder.subtotalPriceSet?.shopMoney?.amount || '0',
       total_tax: graphqlOrder.totalTaxSet?.shopMoney?.amount || '0',
       currency: graphqlOrder.currencyCode,
-      financial_status: graphqlOrder.financialStatus?.toLowerCase(),
-      fulfillment_status: graphqlOrder.fulfillmentStatus?.toLowerCase(),
+      financial_status: graphqlOrder.displayFinancialStatus?.toLowerCase(),
+      fulfillment_status: graphqlOrder.displayFulfillmentStatus?.toLowerCase(),
       cancel_reason: graphqlOrder.cancelReason,
       cancelled_at: graphqlOrder.cancelledAt,
       

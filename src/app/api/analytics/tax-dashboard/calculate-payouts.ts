@@ -1,5 +1,6 @@
 import { ShopifyPayoutCalculator } from '@/lib/services/shopify-payout-calculator'
 import { ShopifyService } from '@/lib/services/shopify-service'
+import { ShopifyGraphQLService } from '@/lib/services/shopify-graphql'
 import { SHOPIFY_CONFIG, TAX_CONFIG } from '@/lib/config/constants'
 
 /**
@@ -24,24 +25,31 @@ export async function calculateEstimatedPayouts(
     const adjustedStartDate = new Date(startDate)
     adjustedStartDate.setDate(adjustedStartDate.getDate() - 3)
 
-    // Get paid orders only
-    const ordersResponse = await ShopifyService.makeApiRequest(
+    // Get paid orders using GraphQL API (avoids protected customer data restrictions)
+    console.log('🚀 Using GraphQL API for payout calculation order fetch')
+    
+    const result = await ShopifyGraphQLService.fetchOrders(
       shopDomain,
       accessToken,
-      `orders.json?status=any&financial_status=paid&created_at_min=${adjustedStartDate.toISOString()}&created_at_max=${endDate.toISOString()}&limit=${SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST}`
+      adjustedStartDate,
+      endDate,
+      SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250
     )
 
-    if (!ordersResponse.orders || ordersResponse.orders.length === 0) {
+    if (!result.orders || result.orders.length === 0) {
       console.log('📦 No paid orders found for payout calculation')
       return null
     }
 
-    console.log(`📦 Found ${ordersResponse.orders.length} paid orders for payout calculation`)
+    // Transform GraphQL orders to REST-like format for compatibility with payout calculator
+    const orders = result.orders.map(order => ShopifyGraphQLService.transformGraphQLOrder(order))
+    
+    console.log(`📦 Found ${orders.length} paid orders for payout calculation`)
 
     // Calculate payouts using our estimation engine
     const payoutCalculations = await ShopifyPayoutCalculator.calculatePayouts(
       shopDomain,
-      ordersResponse.orders,
+      orders,
       TAX_CONFIG.DEFAULT_TAX_RATE
     )
 
