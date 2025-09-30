@@ -1,5 +1,6 @@
 import { prisma, withWebhookDb } from '@/lib/prisma'
 import { ShopifyService } from './shopify-service'
+import { ShopifyGraphQLService } from './shopify-graphql'
 import { processTaxData } from '@/lib/utils/tax-processor'
 
 interface ImportProgress {
@@ -78,8 +79,8 @@ export class HistoricalImportService {
 
       console.log(`📅 Importing orders from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
-      // Fetch orders from Shopify with maxOrders limit
-      const orders = await this.fetchAllOrders(shop, accessToken, startDate, endDate, options.maxOrders)
+      // Fetch orders from Shopify GraphQL API with maxOrders limit
+      const orders = await this.fetchAllOrdersGraphQL(shop, accessToken, startDate, endDate, options.maxOrders)
       progress.totalOrders = orders.length
 
       console.log(`📦 Found ${orders.length} historical orders to import (max: ${options.maxOrders})`)
@@ -148,9 +149,83 @@ export class HistoricalImportService {
   }
 
   /**
-   * Fetch all orders from Shopify within date range
+   * Fetch all orders from Shopify using GraphQL API (avoids protected customer data restrictions)
+   * 
+   * TODO: BEFORE SHOPIFY SUBMISSION - Review and potentially remove either GraphQL or REST method
+   * to simplify codebase. Keep only the method that works best in production environment.
+   * Current strategy: GraphQL primary, REST fallback for compatibility.
    */
-  private static async fetchAllOrders(
+  private static async fetchAllOrdersGraphQL(
+    shop: string,
+    accessToken: string,
+    startDate: Date,
+    endDate: Date,
+    maxOrders: number = 1000
+  ): Promise<any[]> {
+    const allOrders: any[] = []
+    let cursor: string | undefined = undefined
+    const limit = 50 // GraphQL recommended page size
+
+    console.log(`🚀 Starting GraphQL order fetch for shop: ${shop}`)
+
+    do {
+      try {
+        console.log(`📄 Fetching page with cursor: ${cursor || 'first page'}`)
+        
+        const result = await ShopifyGraphQLService.fetchOrders(
+          shop,
+          accessToken,
+          startDate,
+          endDate,
+          limit,
+          cursor
+        )
+
+        // Transform GraphQL orders to REST-like format for compatibility
+        const transformedOrders = result.orders.map(order => 
+          ShopifyGraphQLService.transformGraphQLOrder(order)
+        )
+
+        allOrders.push(...transformedOrders)
+        console.log(`📦 Fetched ${transformedOrders.length} orders (total: ${allOrders.length})`)
+
+        // Stop if we've reached maxOrders limit
+        if (allOrders.length >= maxOrders) {
+          console.log(`📋 Reached maxOrders limit of ${maxOrders}, stopping fetch`)
+          break
+        }
+
+        // Update cursor for next page
+        if (result.pageInfo.hasNextPage) {
+          cursor = result.pageInfo.endCursor
+        } else {
+          cursor = undefined
+        }
+
+      } catch (error) {
+        console.error('❌ GraphQL fetch error:', error)
+        throw error
+      }
+
+    } while (cursor)
+
+    // Trim to maxOrders if we went over
+    const finalOrders = allOrders.slice(0, maxOrders)
+    console.log(`✅ GraphQL fetch completed: ${finalOrders.length} orders total`)
+    
+    return finalOrders
+  }
+
+  /**
+   * Fetch all orders from Shopify using REST API (DEPRECATED - FALLBACK ONLY)
+   * 
+   * WARNING: This method may fail with 403 errors for protected customer data.
+   * Use fetchAllOrdersGraphQL() as primary method.
+   * 
+   * TODO: BEFORE SHOPIFY SUBMISSION - Consider removing this method if GraphQL works
+   * reliably in production. Kept for webhook compatibility and fallback scenarios.
+   */
+  private static async fetchAllOrdersREST(
     shop: string,
     accessToken: string,
     startDate: Date,
@@ -161,6 +236,8 @@ export class HistoricalImportService {
     let pageInfo: string | null = null
     const limit = 250 // Max allowed by Shopify
 
+    console.log(`⚠️  Using REST API fallback for shop: ${shop}`)
+
     do {
       const params = new URLSearchParams({
         limit: limit.toString(),
@@ -168,7 +245,8 @@ export class HistoricalImportService {
         financial_status: 'paid', // Only import paid orders
         created_at_min: startDate.toISOString(),
         created_at_max: endDate.toISOString(),
-        fields: 'id,name,created_at,updated_at,total_price,subtotal_price,total_tax,currency,customer,line_items,shipping_lines,tax_lines,billing_address,shipping_address,financial_status,fulfillment_status,cancel_reason,cancelled_at,refunds'
+        // Removed 'customer' field to avoid protected data restrictions
+        fields: 'id,name,created_at,updated_at,total_price,subtotal_price,total_tax,currency,line_items,shipping_lines,tax_lines,billing_address,shipping_address,financial_status,fulfillment_status,cancel_reason,cancelled_at,refunds'
       })
 
       if (pageInfo) {
@@ -179,7 +257,7 @@ export class HistoricalImportService {
       const shopDomain = shop.includes('.myshopify.com') ? shop : `${shop}.myshopify.com`
       const url = `https://${shopDomain}/admin/api/2024-01/orders.json?${params}`
       
-      console.log(`🔗 Fetching orders from: ${url}`)
+      console.log(`🔗 REST API fallback - Fetching orders from: ${url}`)
       const response = await fetch(url, {
         headers: {
           'X-Shopify-Access-Token': accessToken,
@@ -189,13 +267,13 @@ export class HistoricalImportService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('❌ Shopify API error:', {
+        console.error('❌ REST API error:', {
           status: response.status,
           statusText: response.statusText,
           url: url,
           errorText: errorText
         })
-        throw new Error(`Failed to fetch orders: ${response.status} - ${errorText}`)
+        throw new Error(`REST API failed: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
@@ -204,7 +282,7 @@ export class HistoricalImportService {
 
       // Stop if we've reached maxOrders limit
       if (allOrders.length >= maxOrders) {
-        console.log(`📋 Reached maxOrders limit of ${maxOrders}, stopping fetch`)
+        console.log(`📋 REST fallback - Reached maxOrders limit of ${maxOrders}`)
         break
       }
 
@@ -215,11 +293,14 @@ export class HistoricalImportService {
     } while (pageInfo)
 
     // Trim to maxOrders if we went over
-    return allOrders.slice(0, maxOrders)
+    const finalOrders = allOrders.slice(0, maxOrders)
+    console.log(`✅ REST fallback completed: ${finalOrders.length} orders`)
+    
+    return finalOrders
   }
 
   /**
-   * Extract page info from Link header
+   * Extract page info from Link header (used by REST API fallback)
    */
   private static extractPageInfo(linkHeader: string | null, rel: string): string | null {
     if (!linkHeader) return null
