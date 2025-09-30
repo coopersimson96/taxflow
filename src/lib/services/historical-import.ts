@@ -1,6 +1,7 @@
 import { prisma, withWebhookDb } from '@/lib/prisma'
 import { ShopifyService } from './shopify-service'
 import { ShopifyGraphQLService } from './shopify-graphql'
+import { SampleDataGenerator } from './sample-data-generator' // TODO: REMOVE BEFORE SHOPIFY SUBMISSION
 import { processTaxData } from '@/lib/utils/tax-processor'
 
 interface ImportProgress {
@@ -79,8 +80,16 @@ export class HistoricalImportService {
 
       console.log(`📅 Importing orders from ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
-      // Fetch orders from Shopify GraphQL API with maxOrders limit
-      const orders = await this.fetchAllOrdersGraphQL(shop, accessToken, startDate, endDate, options.maxOrders)
+      // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data logic and use only GraphQL
+      let orders: any[]
+      if (SampleDataGenerator.shouldUseSampleData()) {
+        console.log('🎲 Using sample data for development (Shopify APIs restricted)')
+        orders = SampleDataGenerator.generateSampleOrders(startDate, endDate, options.maxOrders)
+        SampleDataGenerator.logSampleDataUsage('Historical Import', orders.length)
+      } else {
+        // Fetch orders from Shopify GraphQL API with maxOrders limit
+        orders = await this.fetchAllOrdersGraphQL(shop, accessToken, startDate, endDate, options.maxOrders)
+      }
       progress.totalOrders = orders.length
 
       console.log(`📦 Found ${orders.length} historical orders to import (max: ${options.maxOrders})`)

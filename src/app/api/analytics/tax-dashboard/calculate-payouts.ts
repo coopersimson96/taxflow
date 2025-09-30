@@ -1,6 +1,7 @@
 import { ShopifyPayoutCalculator } from '@/lib/services/shopify-payout-calculator'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { ShopifyGraphQLService } from '@/lib/services/shopify-graphql'
+import { SampleDataGenerator } from '@/lib/services/sample-data-generator' // TODO: REMOVE BEFORE SHOPIFY SUBMISSION
 import { SHOPIFY_CONFIG, TAX_CONFIG } from '@/lib/config/constants'
 
 /**
@@ -25,26 +26,39 @@ export async function calculateEstimatedPayouts(
     const adjustedStartDate = new Date(startDate)
     adjustedStartDate.setDate(adjustedStartDate.getDate() - 3)
 
-    // Get paid orders using GraphQL API (avoids protected customer data restrictions)
-    console.log('🚀 Using GraphQL API for payout calculation order fetch')
-    
-    const result = await ShopifyGraphQLService.fetchOrders(
-      shopDomain,
-      accessToken,
-      adjustedStartDate,
-      endDate,
-      SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250
-    )
+    // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data logic and use only GraphQL
+    let orders: any[]
+    if (SampleDataGenerator.shouldUseSampleData()) {
+      console.log('🎲 Using sample data for payout calculation (Shopify APIs restricted)')
+      orders = SampleDataGenerator.generateSampleOrders(adjustedStartDate, endDate, SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250)
+      SampleDataGenerator.logSampleDataUsage('Payout Calculation', orders.length)
+    } else {
+      // Get paid orders using GraphQL API (avoids protected customer data restrictions)
+      console.log('🚀 Using GraphQL API for payout calculation order fetch')
+      
+      const result = await ShopifyGraphQLService.fetchOrders(
+        shopDomain,
+        accessToken,
+        adjustedStartDate,
+        endDate,
+        SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250
+      )
 
-    if (!result.orders || result.orders.length === 0) {
-      console.log('📦 No paid orders found for payout calculation')
-      return null
+      if (!result.orders || result.orders.length === 0) {
+        console.log('📦 No paid orders found for payout calculation')
+        return null
+      }
+
+      // Transform GraphQL orders to REST-like format for compatibility with payout calculator
+      orders = result.orders.map(order => ShopifyGraphQLService.transformGraphQLOrder(order))
     }
 
-    // Transform GraphQL orders to REST-like format for compatibility with payout calculator
-    const orders = result.orders.map(order => ShopifyGraphQLService.transformGraphQLOrder(order))
+    if (orders.length === 0) {
+      console.log('📦 No orders found for payout calculation')
+      return null
+    }
     
-    console.log(`📦 Found ${orders.length} paid orders for payout calculation`)
+    console.log(`📦 Found ${orders.length} orders for payout calculation`)
 
     // Calculate payouts using our estimation engine
     const payoutCalculations = await ShopifyPayoutCalculator.calculatePayouts(
