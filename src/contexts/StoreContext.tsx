@@ -37,7 +37,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const fetchStores = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/user/stores')
+      // Add cache-busting to force fresh data
+      const response = await fetch('/api/user/stores?_t=' + Date.now())
       if (response.ok) {
         const data = await response.json()
         setStores(data.stores || [])
@@ -47,9 +48,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (savedStoreId && data.stores.length > 0) {
           const saved = data.stores.find((s: Store) => s.id === savedStoreId)
           setCurrentStore(saved || data.stores[0])
+          // Clean up if saved store no longer exists
+          if (!saved && savedStoreId) {
+            localStorage.removeItem('currentStoreId')
+          }
         } else if (data.stores.length > 0) {
           setCurrentStore(data.stores[0])
           localStorage.setItem('currentStoreId', data.stores[0].id)
+        } else {
+          // No stores - clear any cached data
+          setCurrentStore(null)
+          localStorage.removeItem('currentStoreId')
         }
       } else {
         setError('Failed to fetch stores')
