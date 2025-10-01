@@ -77,12 +77,41 @@ export class SampleDataGenerator {
     { id: 1008, title: 'Eco-Friendly Tote Bag', price: 12.50 }
   ];
 
+  // Canadian tax rates as of 2024
+  // HST: Harmonized Sales Tax (combined federal + provincial)
+  // GST: Goods and Services Tax (federal)
+  // PST: Provincial Sales Tax
+  private static readonly CANADIAN_TAX_CONFIG = {
+    // HST provinces
+    ON: { province: 'Ontario', hst: 0.13, gst: 0, pst: 0 },
+    NS: { province: 'Nova Scotia', hst: 0.15, gst: 0, pst: 0 },
+    NB: { province: 'New Brunswick', hst: 0.15, gst: 0, pst: 0 },
+    NL: { province: 'Newfoundland and Labrador', hst: 0.15, gst: 0, pst: 0 },
+    PE: { province: 'Prince Edward Island', hst: 0.15, gst: 0, pst: 0 },
+    
+    // GST + PST provinces
+    BC: { province: 'British Columbia', hst: 0, gst: 0.05, pst: 0.07 },
+    SK: { province: 'Saskatchewan', hst: 0, gst: 0.05, pst: 0.06 },
+    MB: { province: 'Manitoba', hst: 0, gst: 0.05, pst: 0.07 },
+    QC: { province: 'Quebec', hst: 0, gst: 0.05, pst: 0.09975 }, // QST instead of PST
+    
+    // GST only territories
+    AB: { province: 'Alberta', hst: 0, gst: 0.05, pst: 0 },
+    NT: { province: 'Northwest Territories', hst: 0, gst: 0.05, pst: 0 },
+    NU: { province: 'Nunavut', hst: 0, gst: 0.05, pst: 0 },
+    YT: { province: 'Yukon', hst: 0, gst: 0.05, pst: 0 }
+  };
+
   private static readonly SAMPLE_LOCATIONS = [
-    { city: 'New York', province: 'New York', province_code: 'NY', country: 'United States', country_code: 'US', zip: '10001', tax_rate: 0.08875 },
-    { city: 'Los Angeles', province: 'California', province_code: 'CA', country: 'United States', country_code: 'US', zip: '90210', tax_rate: 0.0975 },
-    { city: 'Toronto', province: 'Ontario', province_code: 'ON', country: 'Canada', country_code: 'CA', zip: 'M5V 3A8', tax_rate: 0.13 },
-    { city: 'Austin', province: 'Texas', province_code: 'TX', country: 'United States', country_code: 'US', zip: '73301', tax_rate: 0.0825 },
-    { city: 'Seattle', province: 'Washington', province_code: 'WA', country: 'United States', country_code: 'US', zip: '98101', tax_rate: 0.101 }
+    // Canadian locations with proper tax structure
+    { city: 'Toronto', province: 'Ontario', province_code: 'ON', country: 'Canada', country_code: 'CA', zip: 'M5V 3A8' },
+    { city: 'Vancouver', province: 'British Columbia', province_code: 'BC', country: 'Canada', country_code: 'CA', zip: 'V6B 4Y8' },
+    { city: 'Montreal', province: 'Quebec', province_code: 'QC', country: 'Canada', country_code: 'CA', zip: 'H2Y 1A6' },
+    { city: 'Calgary', province: 'Alberta', province_code: 'AB', country: 'Canada', country_code: 'CA', zip: 'T2P 0L4' },
+    { city: 'Halifax', province: 'Nova Scotia', province_code: 'NS', country: 'Canada', country_code: 'CA', zip: 'B3J 1P3' },
+    { city: 'Winnipeg', province: 'Manitoba', province_code: 'MB', country: 'Canada', country_code: 'CA', zip: 'R3B 0T6' },
+    { city: 'Regina', province: 'Saskatchewan', province_code: 'SK', country: 'Canada', country_code: 'CA', zip: 'S4P 3A3' },
+    { city: 'Charlottetown', province: 'Prince Edward Island', province_code: 'PE', country: 'Canada', country_code: 'CA', zip: 'C1A 4P3' }
   ];
 
   /**
@@ -136,7 +165,10 @@ export class SampleDataGenerator {
       const product = this.SAMPLE_PRODUCTS[Math.floor(Math.random() * this.SAMPLE_PRODUCTS.length)];
       const quantity = Math.floor(Math.random() * 3) + 1;
       const itemTotal = product.price * quantity;
-      const taxAmount = itemTotal * location.tax_rate;
+      
+      // Generate Canadian tax lines based on province
+      const taxLines = this.generateCanadianTaxLines(location.province_code, itemTotal);
+      const totalItemTax = taxLines.reduce((sum, line) => sum + parseFloat(line.price), 0);
 
       lineItems.push({
         id: orderId * 100 + i,
@@ -145,11 +177,7 @@ export class SampleDataGenerator {
         variant_title: 'Default',
         price: product.price.toFixed(2),
         total_price: itemTotal.toFixed(2),
-        tax_lines: [{
-          title: `${location.province_code} Tax`,
-          rate: location.tax_rate,
-          price: taxAmount.toFixed(2)
-        }],
+        tax_lines: taxLines,
         product_id: product.id,
         product_title: product.title
       });
@@ -159,11 +187,19 @@ export class SampleDataGenerator {
 
     // Calculate shipping (10% of orders have free shipping)
     const shippingCost = Math.random() < 0.1 ? 0 : 8.99;
-    const shippingTax = shippingCost * location.tax_rate;
+    const shippingTaxLines = shippingCost > 0 ? this.generateCanadianTaxLines(location.province_code, shippingCost) : [];
     
-    // Calculate totals
-    const totalTax = lineItems.reduce((sum, item) => sum + parseFloat(item.tax_lines[0].price), 0) + shippingTax;
+    // Calculate total taxes from all line items and shipping
+    const totalItemTax = lineItems.reduce((sum, item) => 
+      sum + item.tax_lines.reduce((lineSum, tax) => lineSum + parseFloat(tax.price), 0), 0
+    );
+    const totalShippingTax = shippingTaxLines.reduce((sum, line) => sum + parseFloat(line.price), 0);
+    const totalTax = totalItemTax + totalShippingTax;
+    
     const totalPrice = subtotal + shippingCost + totalTax;
+
+    // Generate order-level tax lines (aggregate of all taxes)
+    const orderTaxLines = this.aggregateCanadianTaxLines(location.province_code, totalItemTax + totalShippingTax);
 
     return {
       id: orderId,
@@ -173,7 +209,7 @@ export class SampleDataGenerator {
       total_price: totalPrice.toFixed(2),
       subtotal_price: subtotal.toFixed(2),
       total_tax: totalTax.toFixed(2),
-      currency: 'USD',
+      currency: 'CAD', // Canadian dollars
       financial_status: 'paid',
       fulfillment_status: Math.random() < 0.8 ? 'fulfilled' : 'unfulfilled',
       cancel_reason: null,
@@ -182,21 +218,93 @@ export class SampleDataGenerator {
       shipping_lines: shippingCost > 0 ? [{
         title: 'Standard Shipping',
         price: shippingCost.toFixed(2),
-        tax_lines: [{
-          title: `${location.province_code} Tax`,
-          rate: location.tax_rate,
-          price: shippingTax.toFixed(2)
-        }]
+        tax_lines: shippingTaxLines
       }] : [],
-      tax_lines: [{
-        title: `${location.province_code} Tax`,
-        rate: location.tax_rate,
-        price: totalTax.toFixed(2)
-      }],
+      tax_lines: orderTaxLines,
       billing_address: location,
       shipping_address: location,
       refunds: []
     };
+  }
+
+  /**
+   * Generate Canadian tax lines based on province
+   */
+  private static generateCanadianTaxLines(provinceCode: string, amount: number): SampleTaxLine[] {
+    const taxConfig = this.CANADIAN_TAX_CONFIG[provinceCode as keyof typeof this.CANADIAN_TAX_CONFIG];
+    if (!taxConfig) return [];
+
+    const taxLines: SampleTaxLine[] = [];
+
+    // HST provinces (single combined tax)
+    if (taxConfig.hst > 0) {
+      taxLines.push({
+        title: `HST ${(taxConfig.hst * 100).toFixed(0)}%`,
+        rate: taxConfig.hst,
+        price: (amount * taxConfig.hst).toFixed(2)
+      });
+    } else {
+      // GST + PST provinces (separate taxes)
+      if (taxConfig.gst > 0) {
+        taxLines.push({
+          title: `GST ${(taxConfig.gst * 100).toFixed(0)}%`,
+          rate: taxConfig.gst,
+          price: (amount * taxConfig.gst).toFixed(2)
+        });
+      }
+
+      if (taxConfig.pst > 0) {
+        const pstTitle = provinceCode === 'QC' ? 'QST' : 'PST';
+        taxLines.push({
+          title: `${pstTitle} ${(taxConfig.pst * 100).toFixed(2)}%`,
+          rate: taxConfig.pst,
+          price: (amount * taxConfig.pst).toFixed(2)
+        });
+      }
+    }
+
+    return taxLines;
+  }
+
+  /**
+   * Aggregate Canadian tax lines for order-level display
+   */
+  private static aggregateCanadianTaxLines(provinceCode: string, totalTaxAmount: number): SampleTaxLine[] {
+    const taxConfig = this.CANADIAN_TAX_CONFIG[provinceCode as keyof typeof this.CANADIAN_TAX_CONFIG];
+    if (!taxConfig) return [];
+
+    const taxLines: SampleTaxLine[] = [];
+    const totalRate = taxConfig.hst || (taxConfig.gst + taxConfig.pst);
+
+    // For order-level, show breakdown of total tax collected
+    if (taxConfig.hst > 0) {
+      taxLines.push({
+        title: `HST (${provinceCode})`,
+        rate: taxConfig.hst,
+        price: totalTaxAmount.toFixed(2)
+      });
+    } else {
+      if (taxConfig.gst > 0) {
+        const gstPortion = (totalTaxAmount * taxConfig.gst / totalRate);
+        taxLines.push({
+          title: `GST`,
+          rate: taxConfig.gst,
+          price: gstPortion.toFixed(2)
+        });
+      }
+
+      if (taxConfig.pst > 0) {
+        const pstPortion = (totalTaxAmount * taxConfig.pst / totalRate);
+        const pstTitle = provinceCode === 'QC' ? 'QST' : 'PST';
+        taxLines.push({
+          title: `${pstTitle} (${provinceCode})`,
+          rate: taxConfig.pst,
+          price: pstPortion.toFixed(2)
+        });
+      }
+    }
+
+    return taxLines;
   }
 
   /**
