@@ -841,7 +841,15 @@ async function getActualShopifyPayouts(integration: any, startDate?: Date, endDa
     
     if (!hasPaymentScope) {
       console.log('⚠️ Payment scope not available - using calculated payouts')
-      // Import and use our calculation engine
+      
+      // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data check
+      if (process.env.USE_SAMPLE_DATA === 'true') {
+        console.log('🎲 Using database transactions for payout calculation (sample data mode)')
+        // Don't call calculateEstimatedPayouts in sample mode - it will try to fetch from Shopify
+        return null // Let the main function use database transactions
+      }
+      
+      // Import and use our calculation engine for real Shopify data
       const { calculateEstimatedPayouts } = await import('./calculate-payouts')
       return await calculateEstimatedPayouts(integration, startDate || new Date(), endDate || new Date())
     }
@@ -860,7 +868,14 @@ async function getActualShopifyPayouts(integration: any, startDate?: Date, endDa
 
     if (!response.ok) {
       console.log('❌ Payout API failed:', response.status, response.statusText)
-      // Fallback to calculated payouts if API fails
+      
+      // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data check
+      if (process.env.USE_SAMPLE_DATA === 'true') {
+        console.log('🎲 Shopify API failed in sample mode - using database transactions')
+        return null // Let the main function use database transactions
+      }
+      
+      // Fallback to calculated payouts if API fails (real Shopify data)
       console.log('🔄 Falling back to calculated payouts')
       const { calculateEstimatedPayouts } = await import('./calculate-payouts')
       return await calculateEstimatedPayouts(integration, startDate || new Date(), endDate || new Date())
