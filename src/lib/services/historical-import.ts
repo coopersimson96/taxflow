@@ -82,13 +82,34 @@ export class HistoricalImportService {
 
       // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data logic and use only GraphQL
       let orders: any[]
-      if (SampleDataGenerator.shouldUseSampleData()) {
-        console.log('🎲 Using sample data for development (Shopify APIs restricted)')
-        orders = SampleDataGenerator.generateSampleOrders(startDate, endDate, options.maxOrders)
-        SampleDataGenerator.logSampleDataUsage('Historical Import', orders.length)
-      } else {
-        // Fetch orders from Shopify GraphQL API with maxOrders limit
-        orders = await this.fetchAllOrdersGraphQL(shop, accessToken, startDate, endDate, options.maxOrders)
+      
+      try {
+        if (SampleDataGenerator.shouldUseSampleData()) {
+          console.log('🎲 Using sample data for development (USE_SAMPLE_DATA=true)')
+          orders = SampleDataGenerator.generateSampleOrders(startDate, endDate, options.maxOrders)
+          SampleDataGenerator.logSampleDataUsage('Historical Import', orders.length)
+        } else {
+          // Fetch orders from Shopify GraphQL API with maxOrders limit
+          orders = await this.fetchAllOrdersGraphQL(shop, accessToken, startDate, endDate, options.maxOrders)
+        }
+      } catch (apiError) {
+        // Check if this is a protected data error
+        if (apiError instanceof Error && 
+            (apiError.message.includes('not approved to access') || 
+             apiError.message.includes('protected customer data'))) {
+          
+          console.error('🔒 Protected customer data error detected')
+          console.error('💡 To test the app: Set USE_SAMPLE_DATA=true in your environment variables')
+          console.error('📋 For production: Submit app to Shopify for protected data approval')
+          
+          // Re-throw with clearer error message
+          throw new Error(
+            'App requires Shopify protected customer data approval. ' +
+            'For development testing, set USE_SAMPLE_DATA=true in environment variables.'
+          )
+        }
+        // Re-throw other errors as-is
+        throw apiError
       }
       progress.totalOrders = orders.length
 

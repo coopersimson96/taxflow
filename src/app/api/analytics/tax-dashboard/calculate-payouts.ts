@@ -28,29 +28,46 @@ export async function calculateEstimatedPayouts(
 
     // TODO: BEFORE SHOPIFY SUBMISSION - Remove sample data logic and use only GraphQL
     let orders: any[]
-    if (SampleDataGenerator.shouldUseSampleData()) {
-      console.log('🎲 Using sample data for payout calculation (Shopify APIs restricted)')
-      orders = SampleDataGenerator.generateSampleOrders(adjustedStartDate, endDate, SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250)
-      SampleDataGenerator.logSampleDataUsage('Payout Calculation', orders.length)
-    } else {
-      // Get paid orders using GraphQL API (avoids protected customer data restrictions)
-      console.log('🚀 Using GraphQL API for payout calculation order fetch')
-      
-      const result = await ShopifyGraphQLService.fetchOrders(
-        shopDomain,
-        accessToken,
-        adjustedStartDate,
-        endDate,
-        SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250
-      )
+    
+    try {
+      if (SampleDataGenerator.shouldUseSampleData()) {
+        console.log('🎲 Using sample data for payout calculation (USE_SAMPLE_DATA=true)')
+        orders = SampleDataGenerator.generateSampleOrders(adjustedStartDate, endDate, SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250)
+        SampleDataGenerator.logSampleDataUsage('Payout Calculation', orders.length)
+      } else {
+        // Get paid orders using GraphQL API (avoids protected customer data restrictions)
+        console.log('🚀 Using GraphQL API for payout calculation order fetch')
+        
+        const result = await ShopifyGraphQLService.fetchOrders(
+          shopDomain,
+          accessToken,
+          adjustedStartDate,
+          endDate,
+          SHOPIFY_CONFIG.MAX_ORDERS_PER_REQUEST || 250
+        )
 
-      if (!result.orders || result.orders.length === 0) {
-        console.log('📦 No paid orders found for payout calculation')
+        if (!result.orders || result.orders.length === 0) {
+          console.log('📦 No paid orders found for payout calculation')
+          return null
+        }
+
+        // Transform GraphQL orders to REST-like format for compatibility with payout calculator
+        orders = result.orders.map(order => ShopifyGraphQLService.transformGraphQLOrder(order))
+      }
+    } catch (apiError) {
+      // Check if this is a protected data error
+      if (apiError instanceof Error && 
+          (apiError.message.includes('not approved to access') || 
+           apiError.message.includes('protected customer data'))) {
+        
+        console.error('🔒 Protected customer data error in payout calculation')
+        console.error('💡 To test the app: Set USE_SAMPLE_DATA=true in your environment variables')
+        
+        // Return null instead of throwing to allow dashboard to render with limited data
         return null
       }
-
-      // Transform GraphQL orders to REST-like format for compatibility with payout calculator
-      orders = result.orders.map(order => ShopifyGraphQLService.transformGraphQLOrder(order))
+      // Re-throw other errors
+      throw apiError
     }
 
     if (orders.length === 0) {

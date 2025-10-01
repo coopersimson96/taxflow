@@ -201,12 +201,14 @@ export class SampleDataGenerator {
 
   /**
    * Check if we should use sample data (when APIs are restricted)
+   * 
+   * IMPORTANT: This is a temporary solution for development/testing only.
+   * The proper fix is to submit the app to Shopify for protected data approval.
    */
   static shouldUseSampleData(): boolean {
-    // Use sample data in development or when explicitly enabled
-    return process.env.NODE_ENV === 'development' || 
-           process.env.USE_SAMPLE_DATA === 'true' ||
-           process.env.SHOPIFY_USE_SAMPLE_DATA === 'true';
+    // Only use sample data when explicitly enabled via environment variable
+    // This ensures we don't accidentally use sample data in production
+    return process.env.USE_SAMPLE_DATA === 'true';
   }
 
   /**
