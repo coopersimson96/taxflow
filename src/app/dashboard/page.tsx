@@ -157,7 +157,7 @@ function DashboardContent() {
       <AuthGuard>
         <div className="min-h-screen bg-gradient-to-br from-stone-50 to-zinc-50">
           {/* Premium Dashboard Layout */}
-          <div className="max-w-5xl mx-auto px-6 md:px-8 lg:px-12 py-8">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 lg:px-8 py-8">
             <ErrorBoundary>
               <div className="space-y-10">
                 

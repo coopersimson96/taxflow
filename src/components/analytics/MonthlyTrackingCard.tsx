@@ -67,8 +67,8 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   // Loading State
   if (isLoading) {
     return (
-      <div className={cn("w-full", className)}>
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8 animate-pulse">
+      <div className={cn("w-full h-full", className)}>
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8 animate-pulse h-full flex flex-col justify-center">
           <div className="flex justify-between items-center mb-8">
             <div className="h-8 bg-gray-200 rounded w-48"></div>
             <div className="h-6 bg-gray-200 rounded w-24"></div>
@@ -92,8 +92,8 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
 
   if (!data) {
     return (
-      <div className={cn("w-full", className)}>
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8">
+      <div className={cn("w-full h-full", className)}>
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8 h-full flex flex-col justify-center">
           <div className="text-center py-12">
             <BarChart3 className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-zinc-700 mb-2">No Monthly Data</h3>
@@ -107,8 +107,8 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   const status = getStatusBadge(data.completionPercentage)
 
   return (
-    <div className={cn("w-full group", className)}>
-      <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl shadow-lg border border-zinc-200/50 p-8 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+    <div className={cn("w-full h-full group", className)}>
+      <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl shadow-lg border border-zinc-200/50 p-8 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 h-full flex flex-col">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -127,7 +127,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         </div>
 
         {/* Large Display Row */}
-        <div className="mb-6">
+        <div className="mb-6 flex-grow">
           <div className="text-sm uppercase tracking-wide text-zinc-500 font-semibold mb-2">
             TOTAL TAX TO TRACK THIS MONTH
           </div>
@@ -137,7 +137,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         </div>
 
         {/* Two-Column Grid */}
-        <div className="grid grid-cols-2 gap-6 my-6">
+        <div className="grid grid-cols-2 gap-6 my-6 flex-grow">
           {/* Set Aside */}
           <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
             <div className="flex items-center space-x-2 mb-2">

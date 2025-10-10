@@ -107,9 +107,9 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   return (
     <div className={cn("space-y-8", className)}>
       {/* Hero Cards Row - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Hero Payout Card */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <HeroPayoutCard
             data={payoutData ? {
               amount: payoutData.payoutAmount,
@@ -135,7 +135,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </div>
 
         {/* Monthly Tracking Summary Card */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 h-full">
           <MonthlyTrackingCard
             data={monthlyData}
             isLoading={monthlyLoading}

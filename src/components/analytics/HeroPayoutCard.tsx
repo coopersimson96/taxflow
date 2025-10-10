@@ -54,8 +54,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // Loading State
   if (isLoading) {
     return (
-      <div className={cn("w-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl p-8 animate-pulse">
+      <div className={cn("w-full h-full", className)}>
+        <div className="bg-white rounded-2xl shadow-xl p-8 animate-pulse h-full flex flex-col justify-center">
           <div className="text-center space-y-6">
             <div className="space-y-4">
               <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
@@ -75,8 +75,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // STATE 3: CONFIRMED SET ASIDE
   if (state === 'confirmed' && data) {
     return (
-      <div className={cn("w-full", className)}>
-        <div className="bg-green-100 rounded-2xl p-6 border-2 border-green-200">
+      <div className={cn("w-full h-full", className)}>
+        <div className="bg-green-100 rounded-2xl p-6 border-2 border-green-200 h-full flex flex-col justify-center">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
@@ -110,8 +110,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // STATE 2: NO PAYOUT TODAY
   if (state === 'no_payout') {
     return (
-      <div className={cn("w-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8">
+      <div className={cn("w-full h-full", className)}>
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col">
           <div className="text-center space-y-8">
             {/* Header */}
             <div className="space-y-2">
@@ -182,8 +182,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (!data) return null
 
   return (
-    <div className={cn("w-full", className)}>
-      <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className={cn("w-full h-full", className)}>
+      <div className="bg-white rounded-2xl shadow-xl p-8 h-full flex flex-col">
         <div className="text-center space-y-8">
           {/* Header */}
           <div className="space-y-2">
