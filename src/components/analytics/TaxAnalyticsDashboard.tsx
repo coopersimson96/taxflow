@@ -7,6 +7,7 @@ import TaxHeroSection from './TaxHeroSection'
 import HeroPayoutCard from './HeroPayoutCard'
 import MonthlyTrackingCard from './MonthlyTrackingCard'
 import RecentPayoutsList from './RecentPayoutsList'
+import QuickActionsFooter from './QuickActionsFooter'
 import { cn } from '@/lib/utils'
 
 interface TaxAnalyticsDashboardProps {
@@ -158,6 +159,22 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         onExportPayout={(payoutId) => {
           // TODO: Implement payout export functionality
           console.log('Export payout:', payoutId)
+        }}
+      />
+
+      {/* Quick Actions Footer */}
+      <QuickActionsFooter
+        onMonthlyReport={() => {
+          // TODO: Navigate to monthly report page
+          console.log('Navigate to monthly report')
+        }}
+        onExportAll={() => {
+          // TODO: Implement export all functionality
+          console.log('Export all current month data')
+        }}
+        onSettings={() => {
+          // TODO: Navigate to settings page
+          console.log('Navigate to settings')
         }}
       />
 
