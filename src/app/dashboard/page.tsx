@@ -7,6 +7,7 @@ import TaxAnalyticsDashboard from '@/components/analytics/TaxAnalyticsDashboard'
 import DashboardPolaris from './dashboard-polaris'
 import { useEmbedded } from '@/hooks/useEmbedded'
 import { useStore } from '@/contexts/StoreContext'
+import { useSession } from 'next-auth/react'
 
 // Simple Error Boundary
 class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error?: Error}> {
@@ -41,6 +42,31 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
 function DashboardContent() {
   const { isEmbedded, isLoading: isEmbeddedLoading } = useEmbedded()
   const { stores, currentStore, setCurrentStore, loading: storeLoading, error: storeError } = useStore()
+  const { data: session } = useSession()
+
+  // Helper functions for premium layout
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const getUserFirstName = () => {
+    if (session?.user?.name) {
+      return session.user.name.split(' ')[0]
+    }
+    return 'there'
+  }
+
+  const formatDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
 
   // Use Polaris UI when embedded
   if (isEmbedded) {
@@ -125,18 +151,75 @@ function DashboardContent() {
     )
   }
 
+  // If we have a current store, show the premium Chosenly-inspired layout
+  if (currentStore) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen bg-gradient-to-br from-stone-50 to-zinc-50">
+          {/* Premium Dashboard Layout */}
+          <div className="max-w-5xl mx-auto px-6 md:px-8 lg:px-12 py-8">
+            <ErrorBoundary>
+              <div className="space-y-10">
+                
+                {/* Page Header with Greeting */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                  {/* Left side: Greeting and Date */}
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">
+                      {getGreeting()}, {getUserFirstName()}
+                    </h1>
+                    <p className="text-base text-zinc-600 mt-1">
+                      {formatDate()}
+                    </p>
+                  </div>
+                  
+                  {/* Right side: Shopify Status Badge */}
+                  <div className="flex items-center space-x-3">
+                    {stores.length > 1 && (
+                      <select
+                        value={currentStore?.id || ''}
+                        onChange={(e) => {
+                          const store = stores.find(s => s.id === e.target.value)
+                          if (store) setCurrentStore(store)
+                        }}
+                        className="px-3 py-1 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        {stores.map((store) => (
+                          <option key={store.id} value={store.id}>
+                            {store.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm font-medium">Connected</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Dashboard Content */}
+                <TaxAnalyticsDashboard 
+                  organizationId={currentStore.organizationId}
+                  integrationId={currentStore.id}
+                />
+                
+              </div>
+            </ErrorBoundary>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
+
+  // Fallback to original layout for store management and setup
   return (
     <AuthGuard>
       <DashboardLayout>
         <ErrorBoundary>
           <div className="space-y-6">
             <StoreSelector />
-            {currentStore ? (
-              <TaxAnalyticsDashboard 
-                organizationId={currentStore.organizationId}
-                integrationId={currentStore.id}
-              />
-            ) : stores.length === 0 ? (
+            {stores.length === 0 ? (
               <div className="card p-8 text-center">
                 <svg className="mx-auto h-12 w-12 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />

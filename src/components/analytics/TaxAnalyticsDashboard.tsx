@@ -3,7 +3,6 @@ import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
 import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
 import { useRecentPayouts } from '@/hooks/useRecentPayouts'
-import TaxHeroSection from './TaxHeroSection'
 import HeroPayoutCard from './HeroPayoutCard'
 import MonthlyTrackingCard from './MonthlyTrackingCard'
 import RecentPayoutsList from './RecentPayoutsList'
@@ -107,16 +106,6 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 
   return (
     <div className={cn("space-y-8", className)}>
-      {/* Shopify connection status indicator */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span className="text-sm text-gray-600">
-            Connected to {data?.storeInfo?.storeName || 'Shopify Store'}
-          </span>
-        </div>
-      </div>
-
       {/* Hero Payout Card - New Design */}
       <HeroPayoutCard
         data={payoutData ? {
@@ -176,12 +165,6 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           // TODO: Navigate to settings page
           console.log('Navigate to settings')
         }}
-      />
-
-      {/* Keep the existing Tax Hero Section for now */}
-      <TaxHeroSection 
-        data={data.taxToSetAside} 
-        isLoading={state.isLoading}
       />
     </div>
   )
