@@ -103,7 +103,16 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 
       {/* Hero Payout Card - New Design */}
       <HeroPayoutCard
-        data={payoutData}
+        data={payoutData ? {
+          amount: payoutData.payoutAmount,
+          currency: payoutData.currency,
+          taxToSetAside: payoutData.taxToSetAside,
+          safeToSpend: payoutData.safeToSpend,
+          orderCount: payoutData.orderCount,
+          date: payoutData.date,
+          dateRange: payoutData.dateRange,
+          isConfirmed: payoutData.isSetAside
+        } : null}
         state={
           payoutData?.isSetAside 
             ? 'confirmed' 
