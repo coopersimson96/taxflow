@@ -2,9 +2,11 @@ import React from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
 import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
+import { useRecentPayouts } from '@/hooks/useRecentPayouts'
 import TaxHeroSection from './TaxHeroSection'
 import HeroPayoutCard from './HeroPayoutCard'
 import MonthlyTrackingCard from './MonthlyTrackingCard'
+import RecentPayoutsList from './RecentPayoutsList'
 import { cn } from '@/lib/utils'
 
 interface TaxAnalyticsDashboardProps {
@@ -36,6 +38,12 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     data: monthlyData,
     isLoading: monthlyLoading
   } = useMonthlyTracking()
+
+  const {
+    payouts: recentPayouts,
+    isLoading: payoutsLoading,
+    setPayoutAsAside
+  } = useRecentPayouts()
 
   // Show loading state for initial load
   if (isInitialLoading) {
@@ -139,6 +147,17 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         onViewReport={() => {
           // TODO: Navigate to detailed monthly report
           console.log('Navigate to monthly report')
+        }}
+      />
+
+      {/* Recent Payouts List */}
+      <RecentPayoutsList
+        payouts={recentPayouts}
+        isLoading={payoutsLoading}
+        onSetAside={setPayoutAsAside}
+        onExportPayout={(payoutId) => {
+          // TODO: Implement payout export functionality
+          console.log('Export payout:', payoutId)
         }}
       />
 
