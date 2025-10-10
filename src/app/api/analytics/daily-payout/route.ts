@@ -127,15 +127,19 @@ export async function GET(request: NextRequest) {
       include: {
         organizations: {
           include: {
-            integrations: {
-              where: { type: 'SHOPIFY', status: 'CONNECTED' }
+            organization: {
+              include: {
+                integrations: {
+                  where: { type: 'SHOPIFY', status: 'CONNECTED' }
+                }
+              }
             }
           }
         }
       }
     })
 
-    const organization = user?.organizations?.[0]
+    const organization = user?.organizations?.[0]?.organization
     const integration = organization?.integrations?.[0]
 
     // Check if we're in sample data mode
@@ -175,7 +179,7 @@ export async function GET(request: NextRequest) {
         success: true, 
         data: {
           hasPayoutToday: false,
-          currency: organization.currency || 'USD',
+          currency: 'USD',
           date: new Date().toLocaleDateString(),
           dateRange: 'Today'
         },
@@ -248,15 +252,19 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
-        organizations: true
+        organizations: {
+          include: {
+            organization: true
+          }
+        }
       }
     })
 
-    if (!user?.organizations?.[0]) {
+    if (!user?.organizations?.[0]?.organization) {
       return NextResponse.json({ error: 'No organization found' }, { status: 404 })
     }
 
-    const organization = user.organizations[0]
+    const organization = user.organizations[0].organization
     
     if (action === 'confirm_set_aside') {
       // Mark payout as set aside
