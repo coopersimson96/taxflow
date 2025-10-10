@@ -1,8 +1,10 @@
 import React from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
+import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
 import TaxHeroSection from './TaxHeroSection'
 import HeroPayoutCard from './HeroPayoutCard'
+import MonthlyTrackingCard from './MonthlyTrackingCard'
 import { cn } from '@/lib/utils'
 
 interface TaxAnalyticsDashboardProps {
@@ -29,6 +31,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     confirmSetAside,
     undoSetAside 
   } = useDailyPayout()
+
+  const {
+    data: monthlyData,
+    isLoading: monthlyLoading
+  } = useMonthlyTracking()
 
   // Show loading state for initial load
   if (isInitialLoading) {
@@ -123,6 +130,16 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         isLoading={payoutLoading}
         onConfirmSetAside={confirmSetAside}
         onUndo={undoSetAside}
+      />
+
+      {/* Monthly Tracking Summary Card */}
+      <MonthlyTrackingCard
+        data={monthlyData}
+        isLoading={monthlyLoading}
+        onViewReport={() => {
+          // TODO: Navigate to detailed monthly report
+          console.log('Navigate to monthly report')
+        }}
       />
 
       {/* Keep the existing Tax Hero Section for now */}
