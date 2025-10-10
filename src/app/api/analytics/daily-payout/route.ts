@@ -188,18 +188,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if payout has been marked as set aside in database
-    const payoutStatus = await prisma.transaction.findFirst({
-      where: {
-        organizationId: organization.id,
-        payoutId: payoutData.payoutId,
-        metadata: {
-          path: '$.payoutSetAside',
-          equals: true
+    if (payoutData.payoutId) {
+      const payoutStatus = await prisma.payoutStatus.findUnique({
+        where: {
+          organizationId_payoutId: {
+            organizationId: organization.id,
+            payoutId: payoutData.payoutId
+          }
         }
-      }
-    })
-    
-    payoutData.isSetAside = !!payoutStatus
+      })
+      
+      payoutData.isSetAside = payoutStatus?.isSetAside || false
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -267,33 +267,43 @@ export async function POST(request: NextRequest) {
     const organization = user.organizations[0].organization
     
     if (action === 'confirm_set_aside') {
-      // Mark payout as set aside
-      await prisma.transaction.updateMany({
+      // Create or update payout status record
+      await prisma.payoutStatus.upsert({
         where: {
-          organizationId: organization.id,
-          payoutId: payoutId
-        },
-        data: {
-          metadata: {
-            payoutSetAside: true,
-            setAsideTimestamp: new Date().toISOString(),
-            setAsideBy: session.user.email
+          organizationId_payoutId: {
+            organizationId: organization.id,
+            payoutId: payoutId
           }
+        },
+        update: {
+          isSetAside: true,
+          setAsideAt: new Date(),
+          setAsideBy: session.user.email
+        },
+        create: {
+          organizationId: organization.id,
+          payoutId: payoutId,
+          payoutDate: new Date(payoutDate),
+          payoutAmount: 0, // This would be populated from actual payout data
+          taxAmount: 0, // This would be calculated from orders
+          isSetAside: true,
+          setAsideAt: new Date(),
+          setAsideBy: session.user.email
         }
       })
     } else {
       // Undo set aside
-      await prisma.transaction.updateMany({
+      await prisma.payoutStatus.update({
         where: {
-          organizationId: organization.id,
-          payoutId: payoutId
+          organizationId_payoutId: {
+            organizationId: organization.id,
+            payoutId: payoutId
+          }
         },
         data: {
-          metadata: {
-            payoutSetAside: false,
-            undoTimestamp: new Date().toISOString(),
-            undoBy: session.user.email
-          }
+          isSetAside: false,
+          setAsideAt: null,
+          setAsideBy: null
         }
       })
     }
