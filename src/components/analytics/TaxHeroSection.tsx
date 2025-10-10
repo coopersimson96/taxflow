@@ -167,18 +167,8 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-            <button className="group relative bg-white text-primary-900 px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-primary-700 opacity-0 group-hover:opacity-10 transition-opacity"></div>
-              <div className="relative flex items-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-                <span>Transfer to Tax Savings</span>
-              </div>
-            </button>
-            
+          {/* Action Button */}
+          <div className="flex items-center justify-center">
             <button
               onClick={() => setShowBreakdown(!showBreakdown)}
               className="bg-white/20 backdrop-blur-sm text-white px-6 py-4 rounded-xl font-medium hover:bg-white/30 transition-all duration-200 border border-white/30"
@@ -193,18 +183,6 @@ const TaxHeroSection: React.FC<TaxHeroSectionProps> = ({ data, isLoading = false
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-              </div>
-            </button>
-
-            <button
-              onClick={() => window.location.href = '/settings?tab=data'}
-              className="btn-secondary px-6 py-4 text-base"
-            >
-              <div className="flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                </svg>
-                <span>Import Historical Data</span>
               </div>
             </button>
           </div>
