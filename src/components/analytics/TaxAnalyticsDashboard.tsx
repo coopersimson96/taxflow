@@ -1,6 +1,8 @@
 import React from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
+import { useDailyPayout } from '@/hooks/useDailyPayout'
 import TaxHeroSection from './TaxHeroSection'
+import HeroPayoutCard from './HeroPayoutCard'
 import { cn } from '@/lib/utils'
 
 interface TaxAnalyticsDashboardProps {
@@ -20,6 +22,13 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     autoRefresh: true,
     refreshInterval: 5 * 60 * 1000 // 5 minutes
   })
+
+  const { 
+    data: payoutData, 
+    isLoading: payoutLoading,
+    confirmSetAside,
+    undoSetAside 
+  } = useDailyPayout()
 
   // Show loading state for initial load
   if (isInitialLoading) {
@@ -92,7 +101,22 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </div>
       </div>
 
-      {/* Tax Hero Section */}
+      {/* Hero Payout Card - New Design */}
+      <HeroPayoutCard
+        data={payoutData}
+        state={
+          payoutData?.isSetAside 
+            ? 'confirmed' 
+            : payoutData?.hasPayoutToday 
+              ? 'payout_received' 
+              : 'no_payout'
+        }
+        isLoading={payoutLoading}
+        onConfirmSetAside={confirmSetAside}
+        onUndo={undoSetAside}
+      />
+
+      {/* Keep the existing Tax Hero Section for now */}
       <TaxHeroSection 
         data={data.taxToSetAside} 
         isLoading={state.isLoading}
