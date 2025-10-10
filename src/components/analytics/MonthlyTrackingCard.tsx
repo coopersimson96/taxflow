@@ -67,7 +67,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   // Loading State
   if (isLoading) {
     return (
-      <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className={cn("w-full", className)}>
         <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8 animate-pulse">
           <div className="flex justify-between items-center mb-8">
             <div className="h-8 bg-gray-200 rounded w-48"></div>
@@ -92,7 +92,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
 
   if (!data) {
     return (
-      <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className={cn("w-full", className)}>
         <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-8">
           <div className="text-center py-12">
             <BarChart3 className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
@@ -107,13 +107,13 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   const status = getStatusBadge(data.completionPercentage)
 
   return (
-    <div className={cn("max-w-3xl mx-auto group", className)}>
-      <div className="bg-gradient-to-br from-white to-purple-50/30 rounded-2xl shadow-lg border border-zinc-200/50 p-8 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
+    <div className={cn("w-full group", className)}>
+      <div className="bg-gradient-to-br from-white to-green-50/30 rounded-2xl shadow-lg border border-zinc-200/50 p-8 hover:shadow-xl hover:scale-[1.02] transition-all duration-300">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center space-x-3">
-            <TrendingUp className="w-8 h-8 text-purple-600" />
+            <TrendingUp className="w-8 h-8 text-green-600" />
             <h2 className="text-2xl font-bold text-zinc-900">
               {data.month.toUpperCase()} {data.year}
             </h2>
@@ -179,7 +179,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
           <div className="relative">
             <div className="w-full h-4 bg-zinc-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full shadow-inner transition-all duration-700 ease-out"
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-inner transition-all duration-700 ease-out"
                 style={{ width: `${Math.min(data.completionPercentage, 100)}%` }}
               />
             </div>
@@ -209,7 +209,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         <div className="text-center">
           <button
             onClick={onViewReport}
-            className="text-purple-600 font-semibold hover:text-purple-800 transition-colors duration-200 inline-flex items-center space-x-2 group/btn"
+            className="text-green-600 font-semibold hover:text-green-800 transition-colors duration-200 inline-flex items-center space-x-2 group/btn"
           >
             <span>View Detailed Report</span>
             <span className="group-hover/btn:translate-x-1 transition-transform duration-200">→</span>

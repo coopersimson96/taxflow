@@ -54,8 +54,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // Loading State
   if (isLoading) {
     return (
-      <div className={cn("max-w-3xl mx-auto", className)}>
-        <div className="bg-white rounded-2xl shadow-xl p-10 animate-pulse">
+      <div className={cn("w-full", className)}>
+        <div className="bg-white rounded-2xl shadow-xl p-8 animate-pulse">
           <div className="text-center space-y-6">
             <div className="space-y-4">
               <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
@@ -75,7 +75,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // STATE 3: CONFIRMED SET ASIDE
   if (state === 'confirmed' && data) {
     return (
-      <div className={cn("max-w-3xl mx-auto", className)}>
+      <div className={cn("w-full", className)}>
         <div className="bg-green-100 rounded-2xl p-6 border-2 border-green-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -110,8 +110,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   // STATE 2: NO PAYOUT TODAY
   if (state === 'no_payout') {
     return (
-      <div className={cn("max-w-3xl mx-auto", className)}>
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-purple-200 p-10">
+      <div className={cn("w-full", className)}>
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8">
           <div className="text-center space-y-8">
             {/* Header */}
             <div className="space-y-2">
@@ -155,7 +155,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
 
             {/* Action Button */}
             <div className="flex justify-center">
-              <button className="flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200">
+              <button className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200">
                 <Bell className="w-5 h-5" />
                 <span>Remind Me Tomorrow</span>
               </button>
@@ -182,8 +182,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (!data) return null
 
   return (
-    <div className={cn("max-w-3xl mx-auto", className)}>
-      <div className="bg-white rounded-2xl shadow-xl p-10">
+    <div className={cn("w-full", className)}>
+      <div className="bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center space-y-8">
           {/* Header */}
           <div className="space-y-2">
@@ -238,7 +238,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
               onClick={handleConfirmSetAside}
               disabled={isProcessing}
               className={cn(
-                "group relative bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden",
+                "group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -252,7 +252,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
               </div>
             </button>
             
-            <button className="bg-white border-2 border-purple-600 text-purple-600 px-8 py-4 rounded-full font-semibold hover:bg-purple-50 transition-all duration-200">
+            <button className="bg-white border-2 border-green-600 text-green-600 px-8 py-4 rounded-full font-semibold hover:bg-green-50 transition-all duration-200">
               View {data.orderCount} Orders
             </button>
           </div>

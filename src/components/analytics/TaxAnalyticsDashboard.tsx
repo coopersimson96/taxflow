@@ -106,39 +106,46 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 
   return (
     <div className={cn("space-y-8", className)}>
-      {/* Hero Payout Card - New Design */}
-      <HeroPayoutCard
-        data={payoutData ? {
-          amount: payoutData.payoutAmount,
-          currency: payoutData.currency,
-          taxToSetAside: payoutData.taxToSetAside,
-          safeToSpend: payoutData.safeToSpend,
-          orderCount: payoutData.orderCount,
-          date: payoutData.date,
-          dateRange: payoutData.dateRange,
-          isConfirmed: payoutData.isSetAside
-        } : null}
-        state={
-          payoutData?.isSetAside 
-            ? 'confirmed' 
-            : payoutData?.hasPayoutToday 
-              ? 'payout_received' 
-              : 'no_payout'
-        }
-        isLoading={payoutLoading}
-        onConfirmSetAside={confirmSetAside}
-        onUndo={undoSetAside}
-      />
+      {/* Hero Cards Row - Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Hero Payout Card */}
+        <div className="lg:col-span-1">
+          <HeroPayoutCard
+            data={payoutData ? {
+              amount: payoutData.payoutAmount,
+              currency: payoutData.currency,
+              taxToSetAside: payoutData.taxToSetAside,
+              safeToSpend: payoutData.safeToSpend,
+              orderCount: payoutData.orderCount,
+              date: payoutData.date,
+              dateRange: payoutData.dateRange,
+              isConfirmed: payoutData.isSetAside
+            } : null}
+            state={
+              payoutData?.isSetAside 
+                ? 'confirmed' 
+                : payoutData?.hasPayoutToday 
+                  ? 'payout_received' 
+                  : 'no_payout'
+            }
+            isLoading={payoutLoading}
+            onConfirmSetAside={confirmSetAside}
+            onUndo={undoSetAside}
+          />
+        </div>
 
-      {/* Monthly Tracking Summary Card */}
-      <MonthlyTrackingCard
-        data={monthlyData}
-        isLoading={monthlyLoading}
-        onViewReport={() => {
-          // TODO: Navigate to detailed monthly report
-          console.log('Navigate to monthly report')
-        }}
-      />
+        {/* Monthly Tracking Summary Card */}
+        <div className="lg:col-span-1">
+          <MonthlyTrackingCard
+            data={monthlyData}
+            isLoading={monthlyLoading}
+            onViewReport={() => {
+              // TODO: Navigate to detailed monthly report
+              console.log('Navigate to monthly report')
+            }}
+          />
+        </div>
+      </div>
 
       {/* Recent Payouts List */}
       <RecentPayoutsList
