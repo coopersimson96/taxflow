@@ -155,9 +155,10 @@ function DashboardContent() {
   if (currentStore) {
     return (
       <AuthGuard>
-        <div className="min-h-screen bg-gradient-to-br from-stone-50 to-zinc-50">
-          {/* Premium Dashboard Layout */}
-          <div className="max-w-7xl mx-auto px-2 md:px-4 lg:px-6 py-8">
+        <DashboardLayout>
+          {/* Premium Dashboard Layout - Negative margins to expand beyond DashboardLayout's container */}
+          <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-8 bg-gradient-to-br from-stone-50 to-zinc-50 min-h-[calc(100vh-4rem)]">
+            <div className="max-w-7xl mx-auto px-2 md:px-4 lg:px-6 py-8">
             <ErrorBoundary>
               <div className="space-y-10">
                 
@@ -206,8 +207,9 @@ function DashboardContent() {
                 
               </div>
             </ErrorBoundary>
+            </div>
           </div>
-        </div>
+        </DashboardLayout>
       </AuthGuard>
     )
   }
