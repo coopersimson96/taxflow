@@ -128,7 +128,10 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
   if (isLoading) {
     return (
       <div className={cn("space-y-4", className)}>
-        <h3 className="text-xl font-semibold mb-4">RECENT PAYOUTS</h3>
+        {/* Title Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
+          <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        </div>
         {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 animate-pulse">
             <div className="flex justify-between items-start">
@@ -151,7 +154,10 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
   if (payouts.length === 0) {
     return (
       <div className={cn("space-y-4", className)}>
-        <h3 className="text-xl font-semibold mb-4">RECENT PAYOUTS</h3>
+        {/* Title Card */}
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
+          <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        </div>
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
           <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
           <h4 className="text-lg font-medium text-slate-700 mb-2">No Recent Payouts</h4>
@@ -163,7 +169,10 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <h3 className="text-xl font-semibold mb-4">RECENT PAYOUTS</h3>
+      {/* Title Card to match other sections */}
+      <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
+        <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+      </div>
       
       <div className="space-y-3">
         {payouts.slice(0, 5).map((payout) => {

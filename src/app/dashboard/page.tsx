@@ -162,39 +162,41 @@ function DashboardContent() {
             <ErrorBoundary>
               <div className="space-y-10">
                 
-                {/* Page Header with Greeting */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                  {/* Left side: Greeting and Date */}
-                  <div>
-                    <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">
-                      {getGreeting()}, {getUserFirstName()}
-                    </h1>
-                    <p className="text-base text-zinc-600 mt-1">
-                      {formatDate()}
-                    </p>
-                  </div>
-                  
-                  {/* Right side: Shopify Status Badge */}
-                  <div className="flex items-center space-x-3">
-                    {stores.length > 1 && (
-                      <select
-                        value={currentStore?.id || ''}
-                        onChange={(e) => {
-                          const store = stores.find(s => s.id === e.target.value)
-                          if (store) setCurrentStore(store)
-                        }}
-                        className="px-3 py-1 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        {stores.map((store) => (
-                          <option key={store.id} value={store.id}>
-                            {store.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Connected</span>
+                {/* Page Header with Greeting - Card Wrapper */}
+                <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6 animate-fade-in-up">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                    {/* Left side: Greeting and Date */}
+                    <div>
+                      <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">
+                        {getGreeting()}, {getUserFirstName()}
+                      </h1>
+                      <p className="text-base text-zinc-600 mt-1">
+                        {formatDate()}
+                      </p>
+                    </div>
+                    
+                    {/* Right side: Shopify Status Badge */}
+                    <div className="flex items-center space-x-3">
+                      {stores.length > 1 && (
+                        <select
+                          value={currentStore?.id || ''}
+                          onChange={(e) => {
+                            const store = stores.find(s => s.id === e.target.value)
+                            if (store) setCurrentStore(store)
+                          }}
+                          className="px-3 py-1 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                          {stores.map((store) => (
+                            <option key={store.id} value={store.id}>
+                              {store.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-medium">Connected</span>
+                      </div>
                     </div>
                   </div>
                 </div>
