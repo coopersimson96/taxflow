@@ -105,11 +105,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className={cn("space-y-8", className)}>
+    <div className={cn("space-y-8 animate-fade-in-up", className)}>
       {/* Hero Cards Row - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-slide-in-top animate-delay-100">
         {/* Hero Payout Card */}
-        <div className="lg:col-span-1 h-full">
+        <div className="lg:col-span-1 h-full animate-scale-in animate-delay-200">
           <HeroPayoutCard
             data={payoutData ? {
               amount: payoutData.payoutAmount,
@@ -135,7 +135,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </div>
 
         {/* Monthly Tracking Summary Card */}
-        <div className="lg:col-span-1 h-full">
+        <div className="lg:col-span-1 h-full animate-scale-in animate-delay-300">
           <MonthlyTrackingCard
             data={monthlyData}
             isLoading={monthlyLoading}
@@ -148,7 +148,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       </div>
 
       {/* Recent Payouts List */}
-      <RecentPayoutsList
+      <div className="animate-fade-in-up animate-delay-500">
+        <RecentPayoutsList
         payouts={recentPayouts}
         isLoading={payoutsLoading}
         onSetAside={setPayoutAsAside}
@@ -156,10 +157,12 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           // TODO: Implement payout export functionality
           console.log('Export payout:', payoutId)
         }}
-      />
+        />
+      </div>
 
       {/* Quick Actions Footer */}
-      <QuickActionsFooter
+      <div className="animate-slide-in-top animate-delay-500">
+        <QuickActionsFooter
         onMonthlyReport={() => {
           // TODO: Navigate to monthly report page
           console.log('Navigate to monthly report')
@@ -172,7 +175,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           // TODO: Navigate to settings page
           console.log('Navigate to settings')
         }}
-      />
+        />
+      </div>
     </div>
   )
 }

@@ -111,7 +111,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (state === 'no_payout') {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col">
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col transform transition-all duration-500 ease-out hover:shadow-2xl hover:scale-[1.02]">
           <div className="text-center space-y-8">
             {/* Header */}
             <div className="space-y-2">
@@ -155,8 +155,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
 
             {/* Action Button */}
             <div className="flex justify-center">
-              <button className="flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200">
-                <Bell className="w-5 h-5" />
+              <button className="group flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform active:scale-95">
+                <Bell className="w-5 h-5 group-hover:animate-pulse" />
                 <span>Remind Me Tomorrow</span>
               </button>
             </div>
@@ -238,7 +238,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
               onClick={handleConfirmSetAside}
               disabled={isProcessing}
               className={cn(
-                "group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 overflow-hidden",
+                "group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 overflow-hidden transform active:scale-95",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
             >
@@ -252,8 +252,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
               </div>
             </button>
             
-            <button className="bg-white border-2 border-green-600 text-green-600 px-8 py-4 rounded-full font-semibold hover:bg-green-50 transition-all duration-200">
-              View {data.orderCount} Orders
+            <button className="group bg-white border-2 border-green-600 text-green-600 px-8 py-4 rounded-full font-semibold hover:bg-green-50 hover:border-green-700 hover:text-green-700 transition-all duration-300 transform hover:scale-105 active:scale-95">
+              <span className="group-hover:translate-x-1 transition-transform duration-200">View {data.orderCount} Orders</span>
             </button>
           </div>
 

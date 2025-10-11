@@ -51,27 +51,27 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
       {/* Monthly Report Button */}
       <button
         onClick={handleMonthlyReport}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-200"
+        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
       >
-        <FileText className="w-4 h-4" />
+        <FileText className="w-4 h-4 group-hover:animate-pulse" />
         <span className="text-sm font-medium">Monthly Report</span>
       </button>
 
       {/* Export All Data Button */}
       <button
         onClick={handleExportAll}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-200"
+        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
       >
-        <Download className="w-4 h-4" />
+        <Download className="w-4 h-4 group-hover:animate-bounce" />
         <span className="text-sm font-medium">Export All Data</span>
       </button>
 
       {/* Settings Button */}
       <button
         onClick={handleSettings}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-200"
+        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
       >
-        <Settings className="w-4 h-4" />
+        <Settings className="w-4 h-4 group-hover:animate-spin" />
         <span className="text-sm font-medium">Settings</span>
       </button>
     </div>

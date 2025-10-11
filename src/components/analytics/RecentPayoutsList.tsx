@@ -174,7 +174,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
           return (
             <div
               key={payout.id}
-              className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md hover:border-indigo-200 transition-all duration-200"
+              className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 transform hover:scale-[1.01]"
             >
               {/* Main Payout Info */}
               <div className="flex justify-between items-start">
@@ -207,7 +207,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         onClick={() => handleSetAside(payout.id)}
                         disabled={isProcessing}
                         className={cn(
-                          "px-3 py-1 text-xs font-medium bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors",
+                          "px-3 py-1 text-xs font-medium bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-all duration-300 transform hover:scale-105 active:scale-95",
                           isProcessing && "opacity-50 cursor-not-allowed"
                         )}
                       >
@@ -229,12 +229,12 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => toggleExpanded(payout.id)}
-                  className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
+                  className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 transition-all duration-300 transform hover:scale-105"
                 >
                   <span>View {payout.orderCount} Orders</span>
                   <ChevronDown 
                     className={cn(
-                      "w-4 h-4 transition-transform duration-200",
+                      "w-4 h-4 transition-all duration-300 group-hover:text-indigo-600",
                       isExpanded && "rotate-180"
                     )} 
                   />
@@ -285,8 +285,8 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         ))}
                         
                         {payout.orderCount > 3 && (
-                          <button className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                            Show all {payout.orderCount} orders →
+                          <button className="group text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-all duration-300 transform hover:scale-105">
+                            <span className="group-hover:translate-x-1 transition-transform duration-200">Show all {payout.orderCount} orders →</span>
                           </button>
                         )}
                       </div>
@@ -327,9 +327,9 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         <div className="pt-3 border-t border-slate-200">
                           <button
                             onClick={() => onExportPayout?.(payout.id)}
-                            className="flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                            className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-all duration-300 transform hover:scale-105 active:scale-95"
                           >
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-4 h-4 group-hover:animate-pulse" />
                             <span>Export This Payout's Data</span>
                           </button>
                         </div>

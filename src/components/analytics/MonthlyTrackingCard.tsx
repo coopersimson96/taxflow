@@ -40,19 +40,19 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
     if (percentage >= 80) {
       return {
         text: 'On Track',
-        className: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md',
+        className: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md transform transition-all duration-300 hover:scale-105',
         pulse: false
       }
     } else if (percentage >= 50) {
       return {
         text: 'Falling Behind',
-        className: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md',
+        className: 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md transform transition-all duration-300 hover:scale-105',
         pulse: false
       }
     } else {
       return {
         text: 'Action Needed',
-        className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md animate-pulse',
+        className: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-md animate-pulse transform transition-all duration-300 hover:scale-105',
         pulse: true
       }
     }
@@ -139,7 +139,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         {/* Two-Column Grid */}
         <div className="grid grid-cols-2 gap-6 my-6 flex-grow">
           {/* Set Aside */}
-          <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
+          <div className="bg-green-50 rounded-2xl p-6 border border-green-200 transform transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
             <div className="flex items-center space-x-2 mb-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
               <div className="text-sm font-semibold text-green-900 uppercase tracking-wide">
@@ -152,7 +152,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
           </div>
 
           {/* Still Need */}
-          <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
+          <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200 transform transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
             <div className="flex items-center space-x-2 mb-2">
               <AlertTriangle className="w-5 h-5 text-orange-500" />
               <div className="text-sm font-semibold text-orange-900 uppercase tracking-wide">
@@ -179,8 +179,11 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
           <div className="relative">
             <div className="w-full h-4 bg-zinc-200 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-inner transition-all duration-700 ease-out"
-                style={{ width: `${Math.min(data.completionPercentage, 100)}%` }}
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-inner transition-all duration-1000 ease-out"
+                style={{ 
+                  width: `${Math.min(data.completionPercentage, 100)}%`,
+                  animation: 'progressFill 2s ease-out forwards'
+                }}
               />
             </div>
             {/* Celebration effect for high completion */}
@@ -209,10 +212,10 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         <div className="text-center">
           <button
             onClick={onViewReport}
-            className="text-green-600 font-semibold hover:text-green-800 transition-colors duration-200 inline-flex items-center space-x-2 group/btn"
+            className="group text-green-600 font-semibold hover:text-green-800 transition-all duration-300 inline-flex items-center space-x-2 transform hover:scale-105 active:scale-95"
           >
             <span>View Detailed Report</span>
-            <span className="group-hover/btn:translate-x-1 transition-transform duration-200">→</span>
+            <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
           </button>
         </div>
       </div>
