@@ -195,7 +195,7 @@ function DashboardContent() {
                       )}
                       <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium">Connected</span>
+                        <span className="text-sm font-medium">Connected to {currentStore.name}</span>
                       </div>
                     </div>
                   </div>
