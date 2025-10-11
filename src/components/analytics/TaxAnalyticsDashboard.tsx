@@ -107,9 +107,9 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   return (
     <div className={cn("space-y-8 animate-fade-in-up", className)}>
       {/* Hero Cards Row - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-slide-in-top animate-delay-100">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch">
         {/* Hero Payout Card */}
-        <div className="lg:col-span-1 h-full animate-scale-in animate-delay-200">
+        <div className="lg:col-span-1 h-full min-h-[600px] animate-scale-in animate-delay-200">
           <HeroPayoutCard
             data={payoutData ? {
               amount: payoutData.payoutAmount,
@@ -135,7 +135,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </div>
 
         {/* Monthly Tracking Summary Card */}
-        <div className="lg:col-span-1 h-full animate-scale-in animate-delay-300">
+        <div className="lg:col-span-1 h-full min-h-[600px] animate-scale-in animate-delay-300">
           <MonthlyTrackingCard
             data={monthlyData}
             isLoading={monthlyLoading}

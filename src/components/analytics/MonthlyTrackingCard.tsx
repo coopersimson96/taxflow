@@ -127,7 +127,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         </div>
 
         {/* Large Display Row */}
-        <div className="mb-6 flex-grow">
+        <div className="mb-6">
           <div className="text-sm uppercase tracking-wide text-zinc-500 font-semibold mb-2">
             TOTAL TAX TO TRACK THIS MONTH
           </div>

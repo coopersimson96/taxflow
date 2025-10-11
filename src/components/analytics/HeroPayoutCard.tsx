@@ -111,8 +111,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (state === 'no_payout') {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col transform transition-all duration-500 ease-out hover:shadow-2xl hover:scale-[1.02]">
-          <div className="text-center space-y-8">
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col justify-between transform transition-all duration-500 ease-out hover:shadow-2xl hover:scale-[1.02]">
+          <div className="text-center space-y-6 flex-grow flex flex-col justify-center">
             {/* Header */}
             <div className="space-y-2">
               <div className="text-xs uppercase tracking-wide text-zinc-500 font-semibold">
@@ -127,7 +127,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             </div>
 
             {/* Estimated amounts */}
-            <div className="my-8 space-y-6">
+            <div className="space-y-6 flex-grow">
               <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
                 <div className="flex items-center justify-center space-x-3 mb-2">
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
@@ -154,7 +154,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             </div>
 
             {/* Action Button */}
-            <div className="flex justify-center">
+            <div className="flex justify-center mt-auto">
               <button className="group flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform active:scale-95">
                 <Bell className="w-5 h-5 group-hover:animate-pulse" />
                 <span>Remind Me Tomorrow</span>
@@ -162,7 +162,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             </div>
 
             {/* Footer metadata */}
-            <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-6">
+            <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-4">
               <div className="flex items-center space-x-1">
                 <Clock className="w-4 h-4" />
                 <span>Updated {new Date().toLocaleTimeString()}</span>
@@ -183,8 +183,8 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
 
   return (
     <div className={cn("w-full h-full", className)}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 h-full flex flex-col">
-        <div className="text-center space-y-8">
+      <div className="bg-white rounded-2xl shadow-xl p-8 h-full flex flex-col justify-between">
+        <div className="text-center space-y-6 flex-grow flex flex-col justify-center">
           {/* Header */}
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wide text-zinc-500 font-semibold">
@@ -198,7 +198,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             </div>
           </div>
 
-          <div className="my-8 space-y-6">
+          <div className="space-y-6 flex-grow">
             {/* Warning section - Tax to set aside */}
             <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
               <div className="flex items-center justify-center space-x-3 mb-2">
@@ -233,7 +233,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4 mt-auto">
             <button 
               onClick={handleConfirmSetAside}
               disabled={isProcessing}
@@ -258,7 +258,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
           </div>
 
           {/* Footer metadata */}
-          <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-6">
+          <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-4">
             <div className="flex items-center space-x-1">
               <Clock className="w-4 h-4" />
               <span>{data.date}</span>
