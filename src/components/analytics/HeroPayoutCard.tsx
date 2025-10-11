@@ -55,16 +55,16 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (isLoading) {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl p-8 animate-pulse h-full flex flex-col justify-center">
+        <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 animate-pulse h-full flex flex-col justify-center">
           <div className="text-center space-y-6">
             <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
-              <div className="h-16 bg-gray-200 rounded w-80 mx-auto"></div>
-              <div className="h-6 bg-gray-200 rounded w-64 mx-auto"></div>
+              <div className="h-4 bg-gray-200 rounded w-32 sm:w-48 mx-auto"></div>
+              <div className="h-12 sm:h-16 bg-gray-200 rounded w-48 sm:w-80 mx-auto"></div>
+              <div className="h-6 bg-gray-200 rounded w-40 sm:w-64 mx-auto"></div>
             </div>
-            <div className="flex justify-center space-x-4">
-              <div className="h-12 bg-gray-200 rounded w-32"></div>
-              <div className="h-12 bg-gray-200 rounded w-32"></div>
+            <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <div className="h-12 bg-gray-200 rounded w-full sm:w-32 mx-auto sm:mx-0"></div>
+              <div className="h-12 bg-gray-200 rounded w-full sm:w-32 mx-auto sm:mx-0"></div>
             </div>
           </div>
         </div>
@@ -76,14 +76,14 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (state === 'confirmed' && data) {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-green-100 rounded-2xl p-6 border-2 border-green-200 h-full flex flex-col justify-center">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-white" />
+        <div className="bg-green-100 rounded-2xl p-4 md:p-6 border-2 border-green-200 h-full flex flex-col justify-center">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <div>
-                <div className="text-lg font-semibold text-green-900">
+              <div className="min-w-0 flex-1">
+                <div className="text-base sm:text-lg font-semibold text-green-900">
                   Today's payout of {formatCurrency(data.amount, data.currency)} set aside for taxes ✓
                 </div>
                 <div className="text-sm text-green-700 mt-1">
@@ -96,7 +96,7 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             {onUndo && (
               <button 
                 onClick={onUndo}
-                className="text-sm text-green-600 hover:text-green-900 underline transition-colors"
+                className="text-sm text-green-600 hover:text-green-900 underline transition-colors self-start sm:self-center mt-2 sm:mt-0 min-h-[44px] px-2 py-2"
               >
                 Undo
               </button>
@@ -111,43 +111,43 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (state === 'no_payout') {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-8 h-full flex flex-col justify-between transform transition-all duration-500 ease-out hover:shadow-2xl hover:scale-[1.02]">
-          <div className="text-center space-y-6 flex-grow flex flex-col justify-center">
+        <div className="bg-white rounded-2xl shadow-xl border-2 border-green-200 p-4 md:p-8 h-full flex flex-col justify-between transform transition-all duration-500 ease-out hover:shadow-2xl hover:scale-[1.02]">
+          <div className="text-center space-y-4 md:space-y-6 flex-grow flex flex-col justify-center">
             {/* Header */}
             <div className="space-y-2">
               <div className="text-xs uppercase tracking-wide text-zinc-500 font-semibold">
                 NEXT PAYOUT EXPECTED
               </div>
-              <div className="text-7xl font-bold text-zinc-400">
+              <div className="text-4xl sm:text-5xl md:text-7xl font-bold text-zinc-400">
                 ~{formatCurrency(data?.amount || 0, data?.currency)}
               </div>
-              <div className="text-base text-zinc-400">
+              <div className="text-sm sm:text-base text-zinc-400">
                 estimated based on recent activity
               </div>
             </div>
 
             {/* Estimated amounts */}
-            <div className="space-y-6 flex-grow">
-              <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
-                <div className="flex items-center justify-center space-x-3 mb-2">
+            <div className="space-y-4 md:space-y-6 flex-grow">
+              <div className="bg-orange-50 rounded-2xl p-4 md:p-6 border border-orange-200">
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
-                  <div className="text-sm font-semibold text-orange-900 uppercase tracking-wide">
+                  <div className="text-xs sm:text-sm font-semibold text-orange-900 uppercase tracking-wide text-center sm:text-left">
                     Estimated Tax to Set Aside
                   </div>
                 </div>
-                <div className="text-4xl font-bold text-orange-600">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-600">
                   ~{formatCurrency(data?.taxToSetAside || 0, data?.currency)}
                 </div>
               </div>
 
-              <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
-                <div className="flex items-center justify-center space-x-3 mb-2">
+              <div className="bg-green-50 rounded-2xl p-4 md:p-6 border border-green-200">
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  <div className="text-sm font-semibold text-green-900 uppercase tracking-wide">
+                  <div className="text-xs sm:text-sm font-semibold text-green-900 uppercase tracking-wide text-center sm:text-left">
                     Estimated Safe to Spend
                   </div>
                 </div>
-                <div className="text-4xl font-bold text-green-600">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600">
                   ~{formatCurrency(data?.safeToSpend || 0, data?.currency)}
                 </div>
               </div>
@@ -155,19 +155,19 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
 
             {/* Action Button */}
             <div className="flex justify-center mt-auto">
-              <button className="group flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform active:scale-95">
+              <button className="group flex items-center space-x-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 transform active:scale-95 min-h-[44px] w-full sm:w-auto">
                 <Bell className="w-5 h-5 group-hover:animate-pulse" />
-                <span>Remind Me Tomorrow</span>
+                <span className="text-sm sm:text-base">Remind Me Tomorrow</span>
               </button>
             </div>
 
             {/* Footer metadata */}
-            <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-4">
-              <div className="flex items-center space-x-1">
+            <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs sm:text-sm text-zinc-500 mt-4">
+              <div className="flex items-center justify-center space-x-1">
                 <Clock className="w-4 h-4" />
                 <span>Updated {new Date().toLocaleTimeString()}</span>
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center justify-center space-x-1">
                 <Calendar className="w-4 h-4" />
                 <span>{data?.dateRange || 'Today'}</span>
               </div>
@@ -183,50 +183,50 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
 
   return (
     <div className={cn("w-full h-full", className)}>
-      <div className="bg-white rounded-2xl shadow-xl p-8 h-full flex flex-col justify-between">
-        <div className="text-center space-y-6 flex-grow flex flex-col justify-center">
+      <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 h-full flex flex-col justify-between">
+        <div className="text-center space-y-4 md:space-y-6 flex-grow flex flex-col justify-center">
           {/* Header */}
           <div className="space-y-2">
             <div className="text-xs uppercase tracking-wide text-zinc-500 font-semibold">
               TODAY'S PAYOUT RECEIVED
             </div>
-            <div className="text-7xl font-bold text-zinc-900">
+            <div className="text-4xl sm:text-5xl md:text-7xl font-bold text-zinc-900">
               {formatCurrency(data.amount, data.currency)}
             </div>
-            <div className="text-base text-zinc-600">
+            <div className="text-sm sm:text-base text-zinc-600">
               deposited to your bank
             </div>
           </div>
 
-          <div className="space-y-6 flex-grow">
+          <div className="space-y-4 md:space-y-6 flex-grow">
             {/* Warning section - Tax to set aside */}
-            <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
-              <div className="flex items-center justify-center space-x-3 mb-2">
+            <div className="bg-orange-50 rounded-2xl p-4 md:p-6 border border-orange-200">
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                 <AlertTriangle className="w-5 h-5 text-orange-500" />
-                <div className="text-sm font-semibold text-orange-900 uppercase tracking-wide">
+                <div className="text-xs sm:text-sm font-semibold text-orange-900 uppercase tracking-wide text-center sm:text-left">
                   SET ASIDE FOR TAXES
                 </div>
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-200 text-orange-800">
                   Action Required
                 </span>
               </div>
-              <div className="text-5xl font-bold text-orange-600">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-orange-600">
                 {formatCurrency(data.taxToSetAside, data.currency)}
               </div>
             </div>
 
             {/* Success section - Safe to spend */}
-            <div className="bg-green-50 rounded-2xl p-6 border border-green-200">
-              <div className="flex items-center justify-center space-x-3 mb-2">
+            <div className="bg-green-50 rounded-2xl p-4 md:p-6 border border-green-200">
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-3 mb-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                <div className="text-sm font-semibold text-green-900 uppercase tracking-wide">
+                <div className="text-xs sm:text-sm font-semibold text-green-900 uppercase tracking-wide text-center sm:text-left">
                   SAFE TO SPEND
                 </div>
                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-200 text-green-800">
                   Available Now
                 </span>
               </div>
-              <div className="text-5xl font-bold text-green-600">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-600">
                 {formatCurrency(data.safeToSpend, data.currency)}
               </div>
             </div>
@@ -238,32 +238,32 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
               onClick={handleConfirmSetAside}
               disabled={isProcessing}
               className={cn(
-                "group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 overflow-hidden transform active:scale-95",
+                "group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold shadow-lg hover:shadow-xl hover:scale-105 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 overflow-hidden transform active:scale-95 min-h-[44px] w-full sm:w-auto",
                 isProcessing && "opacity-50 cursor-not-allowed"
               )}
             >
-              <div className="relative flex items-center space-x-2">
+              <div className="relative flex items-center justify-center space-x-2">
                 {isProcessing ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <CheckCircle className="w-5 h-5" />
                 )}
-                <span>{isProcessing ? 'Processing...' : "I've Set This Aside"}</span>
+                <span className="text-sm sm:text-base">{isProcessing ? 'Processing...' : "I've Set This Aside"}</span>
               </div>
             </button>
             
-            <button className="group bg-white border-2 border-green-600 text-green-600 px-8 py-4 rounded-full font-semibold hover:bg-green-50 hover:border-green-700 hover:text-green-700 transition-all duration-300 transform hover:scale-105 active:scale-95">
-              <span className="group-hover:translate-x-1 transition-transform duration-200">View {data.orderCount} Orders</span>
+            <button className="group bg-white border-2 border-green-600 text-green-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full font-semibold hover:bg-green-50 hover:border-green-700 hover:text-green-700 transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] w-full sm:w-auto">
+              <span className="group-hover:translate-x-1 transition-transform duration-200 text-sm sm:text-base">View {data.orderCount} Orders</span>
             </button>
           </div>
 
           {/* Footer metadata */}
-          <div className="flex justify-center space-x-6 text-sm text-zinc-500 mt-4">
-            <div className="flex items-center space-x-1">
+          <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-xs sm:text-sm text-zinc-500 mt-4">
+            <div className="flex items-center justify-center space-x-1">
               <Clock className="w-4 h-4" />
               <span>{data.date}</span>
             </div>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center justify-center space-x-1">
               <Calendar className="w-4 h-4" />
               <span>{data.dateRange}</span>
             </div>

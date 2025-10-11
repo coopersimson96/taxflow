@@ -129,21 +129,21 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     return (
       <div className={cn("space-y-4", className)}>
         {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
-          <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
         </div>
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 animate-pulse">
-            <div className="flex justify-between items-start">
+          <div key={i} className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 md:p-4 animate-pulse">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
               <div className="space-y-2">
                 <div className="h-4 bg-gray-200 rounded w-20"></div>
-                <div className="h-8 bg-gray-200 rounded w-32"></div>
-                <div className="h-4 bg-gray-200 rounded w-28"></div>
+                <div className="h-6 sm:h-8 bg-gray-200 rounded w-28 sm:w-32"></div>
+                <div className="h-4 bg-gray-200 rounded w-24 sm:w-28"></div>
               </div>
-              <div className="h-6 bg-gray-200 rounded w-20"></div>
+              <div className="h-6 bg-gray-200 rounded w-16 sm:w-20 self-start sm:self-center"></div>
             </div>
             <div className="mt-3 pt-3 border-t border-slate-100">
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-4 bg-gray-200 rounded w-20 sm:w-24"></div>
             </div>
           </div>
         ))}
@@ -155,13 +155,13 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     return (
       <div className={cn("space-y-4", className)}>
         {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
-          <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+          <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
-          <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h4 className="text-lg font-medium text-slate-700 mb-2">No Recent Payouts</h4>
-          <p className="text-slate-500">Your recent payouts will appear here once you start receiving them.</p>
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8 text-center">
+          <Calendar className="w-10 h-10 md:w-12 md:h-12 text-slate-300 mx-auto mb-4" />
+          <h4 className="text-base md:text-lg font-medium text-slate-700 mb-2">No Recent Payouts</h4>
+          <p className="text-sm md:text-base text-slate-500">Your recent payouts will appear here once you start receiving them.</p>
         </div>
       </div>
     )
@@ -170,8 +170,8 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
   return (
     <div className={cn("space-y-4", className)}>
       {/* Title Card to match other sections */}
-      <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
-        <h3 className="text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+      <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+        <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
       </div>
       
       <div className="space-y-3">
@@ -183,16 +183,16 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
           return (
             <div
               key={payout.id}
-              className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 transform hover:scale-[1.01]"
+              className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 md:p-4 hover:shadow-md hover:border-indigo-200 transition-all duration-300 transform hover:scale-[1.01]"
             >
               {/* Main Payout Info */}
-              <div className="flex justify-between items-start">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start space-y-3 sm:space-y-0">
                 {/* Left side: Date and amounts */}
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0 flex-1">
                   <div className="text-sm font-medium text-slate-900">
                     {formatDate(payout.date)}
                   </div>
-                  <div className="text-2xl font-bold text-slate-900">
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900">
                     {formatCurrency(payout.amount, payout.currency)}
                   </div>
                   <div className="text-sm text-amber-600">
@@ -201,7 +201,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                 </div>
 
                 {/* Right side: Status and action */}
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
                   {payout.isSetAside ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -216,14 +216,14 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         onClick={() => handleSetAside(payout.id)}
                         disabled={isProcessing}
                         className={cn(
-                          "px-3 py-1 text-xs font-medium bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-all duration-300 transform hover:scale-105 active:scale-95",
+                          "px-3 py-2 text-xs font-medium bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[36px] min-w-[80px]",
                           isProcessing && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         {isProcessing ? (
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center justify-center space-x-1">
                             <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                            <span>Setting...</span>
+                            <span className="hidden sm:inline">Setting...</span>
                           </div>
                         ) : (
                           'Set Aside'
@@ -238,7 +238,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
               <div className="mt-3 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => toggleExpanded(payout.id)}
-                  className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 transition-all duration-300 transform hover:scale-105"
+                  className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 transition-all duration-300 transform hover:scale-105 min-h-[44px] px-2 py-2 -mx-2"
                 >
                   <span>View {payout.orderCount} Orders</span>
                   <ChevronDown 
@@ -275,7 +275,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                                 #{1000 + i} - {new Date().toLocaleDateString()}
                               </span>
                             </div>
-                            <div className="ml-6 space-y-1">
+                            <div className="ml-4 sm:ml-6 space-y-1">
                               <div className="flex items-center space-x-2 text-sm text-slate-600">
                                 <User className="w-3 h-3" />
                                 <span>Customer {i + 1}</span>
@@ -284,25 +284,25 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                                 <DollarSign className="w-3 h-3" />
                                 <span>{formatCurrency(150 + (i * 75), payout.currency)}</span>
                               </div>
-                              <div className="ml-4 space-y-1 text-xs text-slate-600">
+                              <div className="ml-2 sm:ml-4 space-y-1 text-xs text-slate-600">
                                 <div>└─ Tax collected: {formatCurrency(15 + (i * 7.5), payout.currency)}</div>
-                                <div className="ml-4">├─ State Tax (CA): {formatCurrency(10 + (i * 5), payout.currency)} (8.25%)</div>
-                                <div className="ml-4">└─ Local Tax: {formatCurrency(5 + (i * 2.5), payout.currency)} (2.5%)</div>
+                                <div className="ml-2 sm:ml-4">├─ State Tax (CA): {formatCurrency(10 + (i * 5), payout.currency)} (8.25%)</div>
+                                <div className="ml-2 sm:ml-4">└─ Local Tax: {formatCurrency(5 + (i * 2.5), payout.currency)} (2.5%)</div>
                               </div>
                             </div>
                           </div>
                         ))}
                         
                         {payout.orderCount > 3 && (
-                          <button className="group text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-all duration-300 transform hover:scale-105">
+                          <button className="group text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-all duration-300 transform hover:scale-105 min-h-[44px] px-2 py-2 -mx-2">
                             <span className="group-hover:translate-x-1 transition-transform duration-200">Show all {payout.orderCount} orders →</span>
                           </button>
                         )}
                       </div>
 
                       {/* Tax Breakdown Visualization */}
-                      <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                        <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                      <div className="bg-slate-50 rounded-lg p-3 md:p-4 space-y-3">
+                        <h4 className="text-xs sm:text-sm font-semibold text-slate-900 uppercase tracking-wide">
                           TAX BREAKDOWN FOR THIS PAYOUT
                         </h4>
                         
@@ -313,7 +313,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                             { type: 'Special District', amount: payout.taxAmount * 0.1, percentage: 10, color: 'purple' }
                           ].map((tax, i) => (
                             <div key={i} className="space-y-1">
-                              <div className="flex justify-between text-sm">
+                              <div className="flex flex-col sm:flex-row sm:justify-between text-xs sm:text-sm space-y-1 sm:space-y-0">
                                 <span className="font-medium text-slate-700">{tax.type}</span>
                                 <span className="text-slate-900 font-semibold">
                                   {formatCurrency(tax.amount, payout.currency)} ({tax.percentage}%)
@@ -336,7 +336,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         <div className="pt-3 border-t border-slate-200">
                           <button
                             onClick={() => onExportPayout?.(payout.id)}
-                            className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-all duration-300 transform hover:scale-105 active:scale-95"
+                            className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] px-2 py-2 -mx-2"
                           >
                             <FileText className="w-4 h-4 group-hover:animate-pulse" />
                             <span>Export This Payout's Data</span>

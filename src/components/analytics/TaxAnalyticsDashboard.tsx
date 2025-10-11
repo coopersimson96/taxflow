@@ -48,9 +48,9 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   // Show loading state for initial load
   if (isInitialLoading) {
     return (
-      <div className={cn("space-y-8", className)}>
+      <div className={cn("space-y-6 md:space-y-8", className)}>
         {/* Hero section skeleton */}
-        <div className="h-80 bg-gray-200 rounded-2xl animate-pulse"></div>
+        <div className="h-64 sm:h-80 bg-gray-200 rounded-2xl animate-pulse"></div>
       </div>
     )
   }
@@ -58,15 +58,15 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   // Show error state
   if (state.error) {
     return (
-      <div className={cn("space-y-8", className)}>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6">
-          <div className="flex items-center space-x-3">
-            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={cn("space-y-6 md:space-y-8", className)}>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+            <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            <div>
-              <h3 className="text-lg font-semibold text-red-900">Error Loading Dashboard</h3>
-              <p className="text-red-700 mt-1">{state.error}</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base md:text-lg font-semibold text-red-900">Error Loading Dashboard</h3>
+              <p className="text-sm md:text-base text-red-700 mt-1 break-words">{state.error}</p>
             </div>
           </div>
         </div>
@@ -77,21 +77,21 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   // Show no data state - Shopify store not connected
   if (!data) {
     return (
-      <div className={cn("space-y-8", className)}>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12">
+      <div className={cn("space-y-6 md:space-y-8", className)}>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 md:p-12">
           <div className="text-center max-w-2xl mx-auto">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 md:w-20 md:h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6">
+              <svg className="w-8 h-8 md:w-10 md:h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Connect Your Shopify Store</h2>
-            <p className="text-gray-600 mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">Connect Your Shopify Store</h2>
+            <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8">
               Start tracking your tax obligations by connecting your Shopify store.
             </p>
             <button
               onClick={() => window.location.href = '/connect'}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="inline-flex items-center px-4 md:px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium min-h-[44px] text-sm md:text-base w-full sm:w-auto justify-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -105,11 +105,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className={cn("space-y-8 animate-fade-in-up", className)}>
+    <div className={cn("space-y-6 md:space-y-8 animate-fade-in-up", className)}>
       {/* Hero Cards Row - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch">
         {/* Hero Payout Card */}
-        <div className="lg:col-span-1 h-full min-h-[600px] animate-scale-in animate-delay-200">
+        <div className="lg:col-span-1 h-full min-h-[500px] sm:min-h-[600px] animate-scale-in animate-delay-200">
           <HeroPayoutCard
             data={payoutData ? {
               amount: payoutData.payoutAmount,
@@ -135,7 +135,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         </div>
 
         {/* Monthly Tracking Summary Card */}
-        <div className="lg:col-span-1 h-full min-h-[600px] animate-scale-in animate-delay-300">
+        <div className="lg:col-span-1 h-full min-h-[500px] sm:min-h-[600px] animate-scale-in animate-delay-300">
           <MonthlyTrackingCard
             data={monthlyData}
             isLoading={monthlyLoading}
@@ -148,7 +148,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       </div>
 
       {/* Recent Payouts List */}
-      <div className="animate-fade-in-up animate-delay-500">
+      <div className="animate-fade-in-up animate-delay-500 w-full">
         <RecentPayoutsList
         payouts={recentPayouts}
         isLoading={payoutsLoading}
@@ -161,7 +161,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       </div>
 
       {/* Quick Actions Footer */}
-      <div className="animate-slide-in-top animate-delay-500">
+      <div className="animate-slide-in-top animate-delay-500 w-full">
         <QuickActionsFooter
         onMonthlyReport={() => {
           // TODO: Navigate to monthly report page

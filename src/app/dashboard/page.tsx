@@ -158,25 +158,25 @@ function DashboardContent() {
         <DashboardLayout>
           {/* Premium Dashboard Layout - Negative margins to expand beyond DashboardLayout's container */}
           <div className="-mx-4 sm:-mx-6 lg:-mx-8 -mt-8 min-h-[calc(100vh-4rem)]" style={{ backgroundColor: '#F3F3E4' }}>
-            <div className="max-w-7xl mx-auto px-2 md:px-4 lg:px-6 py-8">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
             <ErrorBoundary>
-              <div className="space-y-10">
+              <div className="space-y-6 md:space-y-10">
                 
                 {/* Page Header with Greeting - Card Wrapper */}
-                <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6 animate-fade-in-up">
+                <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 animate-fade-in-up">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
                     {/* Left side: Greeting and Date */}
                     <div>
-                      <h1 className="text-2xl md:text-3xl font-bold text-zinc-900">
+                      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-zinc-900">
                         {getGreeting()}, {getUserFirstName()}
                       </h1>
-                      <p className="text-base text-zinc-600 mt-1">
+                      <p className="text-sm sm:text-base text-zinc-600 mt-1">
                         {formatDate()}
                       </p>
                     </div>
                     
                     {/* Right side: Shopify Status Badge */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
                       {stores.length > 1 && (
                         <select
                           value={currentStore?.id || ''}
@@ -184,7 +184,7 @@ function DashboardContent() {
                             const store = stores.find(s => s.id === e.target.value)
                             if (store) setCurrentStore(store)
                           }}
-                          className="px-3 py-1 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          className="px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[44px] w-full sm:w-auto"
                         >
                           {stores.map((store) => (
                             <option key={store.id} value={store.id}>
@@ -193,19 +193,21 @@ function DashboardContent() {
                           ))}
                         </select>
                       )}
-                      <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
+                      <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-3 sm:px-4 py-2 rounded-full">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm font-medium">Connected to {currentStore.name}</span>
+                        <span className="text-xs sm:text-sm font-medium">Connected to {currentStore.name}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Main Dashboard Content */}
-                <TaxAnalyticsDashboard 
-                  organizationId={currentStore.organizationId}
-                  integrationId={currentStore.id}
-                />
+                <div className="w-full">
+                  <TaxAnalyticsDashboard 
+                    organizationId={currentStore.organizationId}
+                    integrationId={currentStore.id}
+                  />
+                </div>
                 
               </div>
             </ErrorBoundary>

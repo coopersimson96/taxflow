@@ -45,13 +45,13 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
 
   return (
     <div className={cn(
-      "flex flex-row items-center justify-center gap-4 bg-slate-50 rounded-lg p-4 border-t border-slate-200",
+      "flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 bg-slate-50 rounded-lg p-3 sm:p-4 border-t border-slate-200",
       className
     )}>
       {/* Monthly Report Button */}
       <button
         onClick={handleMonthlyReport}
-        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
+        className="group flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-3 sm:px-4 py-3 sm:py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] flex-1 sm:flex-initial"
       >
         <FileText className="w-4 h-4 group-hover:animate-pulse" />
         <span className="text-sm font-medium">Monthly Report</span>
@@ -60,7 +60,7 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
       {/* Export All Data Button */}
       <button
         onClick={handleExportAll}
-        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
+        className="group flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-3 sm:px-4 py-3 sm:py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] flex-1 sm:flex-initial"
       >
         <Download className="w-4 h-4 group-hover:animate-bounce" />
         <span className="text-sm font-medium">Export All Data</span>
@@ -69,7 +69,7 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
       {/* Settings Button */}
       <button
         onClick={handleSettings}
-        className="group flex items-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-4 py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95"
+        className="group flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-md px-3 sm:px-4 py-3 sm:py-2 hover:bg-white hover:border-slate-300 transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] flex-1 sm:flex-initial"
       >
         <Settings className="w-4 h-4 group-hover:animate-spin" />
         <span className="text-sm font-medium">Settings</span>
