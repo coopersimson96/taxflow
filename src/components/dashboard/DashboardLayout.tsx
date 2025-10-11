@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth()
 
   return (
-    <div className="min-h-screen bg-secondary-300">
+    <div className="min-h-screen" style={{ backgroundColor: '#F3F3E4' }}>
       {/* Header */}
       <header className="bg-primary card border-0 rounded-none shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
