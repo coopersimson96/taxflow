@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { AlertTriangle, CheckCircle, Clock, Calendar, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface PayoutData {
   amount: number
@@ -46,6 +47,14 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
     setIsProcessing(true)
     try {
       await onConfirmSetAside()
+      toast.success('Tax amount set aside successfully!', {
+        description: `${formatCurrency(data?.taxToSetAside || 0, data?.currency)} has been marked as set aside.`,
+        duration: 4000,
+      })
+    } catch (error) {
+      toast.error('Failed to set aside tax amount', {
+        description: 'Please try again or contact support if the problem persists.',
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -95,7 +104,18 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
             </div>
             {onUndo && (
               <button 
-                onClick={onUndo}
+                onClick={async () => {
+                  try {
+                    await onUndo()
+                    toast.info('Tax set aside has been undone', {
+                      description: 'You can mark it as set aside again anytime.',
+                    })
+                  } catch (error) {
+                    toast.error('Failed to undo action', {
+                      description: 'Please try again.',
+                    })
+                  }
+                }}
                 className="text-sm text-green-600 hover:text-green-900 underline transition-colors self-start sm:self-center mt-2 sm:mt-0 min-h-[44px] px-2 py-2"
               >
                 Undo

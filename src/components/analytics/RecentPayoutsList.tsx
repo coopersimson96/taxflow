@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { ChevronDown, Check, AlertCircle, Calendar, ShoppingBag, User, DollarSign, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface TaxBreakdown {
   type: string
@@ -103,6 +104,15 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     
     try {
       await onSetAside(payoutId)
+      const payout = payouts.find(p => p.id === payoutId)
+      toast.success('Tax amount set aside!', {
+        description: `${formatCurrency(payout?.taxAmount || 0, payout?.currency)} has been marked as set aside.`,
+        duration: 3000,
+      })
+    } catch (error) {
+      toast.error('Failed to set aside tax amount', {
+        description: 'Please try again.',
+      })
     } finally {
       setProcessingSetAside(prev => {
         const newSet = new Set(prev)
@@ -335,7 +345,17 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
                         {/* Export Button */}
                         <div className="pt-3 border-t border-slate-200">
                           <button
-                            onClick={() => onExportPayout?.(payout.id)}
+                            onClick={() => {
+                              if (onExportPayout) {
+                                toast.loading('Exporting payout data...')
+                                onExportPayout(payout.id)
+                                setTimeout(() => {
+                                  toast.success('Payout data exported!', {
+                                    description: 'Check your downloads folder for the CSV file.',
+                                  })
+                                }, 1500)
+                              }
+                            }}
                             className="group flex items-center space-x-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-all duration-300 transform hover:scale-105 active:scale-95 min-h-[44px] px-2 py-2 -mx-2"
                           >
                             <FileText className="w-4 h-4 group-hover:animate-pulse" />

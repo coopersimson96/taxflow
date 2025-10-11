@@ -8,6 +8,8 @@ import MonthlyTrackingCard from './MonthlyTrackingCard'
 import RecentPayoutsList from './RecentPayoutsList'
 import QuickActionsFooter from './QuickActionsFooter'
 import { cn } from '@/lib/utils'
+import { exportPayoutData, exportMonthlyTaxSummary } from '@/lib/csv-export'
+import { useRouter } from 'next/navigation'
 
 interface TaxAnalyticsDashboardProps {
   organizationId: string
@@ -20,6 +22,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   integrationId: propIntegrationId,
   className
 }) => {
+  const router = useRouter()
+  
   const { data, state, isInitialLoading } = useTaxDashboard({
     organizationId,
     integrationId: propIntegrationId,
@@ -140,8 +144,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
             data={monthlyData}
             isLoading={monthlyLoading}
             onViewReport={() => {
-              // TODO: Navigate to detailed monthly report
-              console.log('Navigate to monthly report')
+              router.push('/reports')
             }}
           />
         </div>
@@ -154,8 +157,10 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
         isLoading={payoutsLoading}
         onSetAside={setPayoutAsAside}
         onExportPayout={(payoutId) => {
-          // TODO: Implement payout export functionality
-          console.log('Export payout:', payoutId)
+          const payout = recentPayouts.find(p => p.id === payoutId)
+          if (payout) {
+            exportPayoutData([payout])
+          }
         }}
         />
       </div>
@@ -164,16 +169,22 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       <div className="animate-slide-in-top animate-delay-500 w-full">
         <QuickActionsFooter
         onMonthlyReport={() => {
-          // TODO: Navigate to monthly report page
-          console.log('Navigate to monthly report')
+          router.push('/reports')
         }}
         onExportAll={() => {
-          // TODO: Implement export all functionality
-          console.log('Export all current month data')
+          // Export all recent payouts
+          if (recentPayouts.length > 0) {
+            exportPayoutData(recentPayouts)
+          }
+          // Export monthly summary if available
+          if (monthlyData) {
+            setTimeout(() => {
+              exportMonthlyTaxSummary(monthlyData)
+            }, 500)
+          }
         }}
         onSettings={() => {
-          // TODO: Navigate to settings page
-          console.log('Navigate to settings')
+          router.push('/settings')
         }}
         />
       </div>

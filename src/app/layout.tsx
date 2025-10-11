@@ -4,6 +4,7 @@ import './globals.css'
 import SessionProvider from '@/components/providers/SessionProvider'
 import ShopifyAppProvider from '@/components/providers/AppBridgeProvider'
 import { StoreProvider } from '@/contexts/StoreContext'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,20 @@ export default function RootLayout({
           <StoreProvider>
             <ShopifyAppProvider>
               {children}
+              <Toaster 
+                richColors
+                theme="light"
+                position="bottom-right"
+                toastOptions={{
+                  style: {
+                    background: '#fff',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '14px',
+                  },
+                  className: 'sonner-toast',
+                }}
+              />
             </ShopifyAppProvider>
           </StoreProvider>
         </SessionProvider>

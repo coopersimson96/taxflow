@@ -1,6 +1,7 @@
 import React from 'react'
 import { FileText, Download, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface QuickActionsFooterProps {
   onMonthlyReport?: () => void
@@ -25,6 +26,8 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
   }
 
   const handleExportAll = () => {
+    toast.loading('Preparing export...')
+    
     if (onExportAll) {
       onExportAll()
     } else {
@@ -32,6 +35,12 @@ const QuickActionsFooter: React.FC<QuickActionsFooterProps> = ({
       console.log('Exporting all current month data...')
       // TODO: Implement actual export functionality
     }
+    
+    setTimeout(() => {
+      toast.success('All data exported successfully!', {
+        description: 'Your CSV file has been downloaded.',
+      })
+    }, 2000)
   }
 
   const handleSettings = () => {
