@@ -204,7 +204,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
             <span>{data.payoutCount} payouts this month</span>
           </div>
           <div>
-            <span>Avg: {formatCurrency(data.averagePerPayout, data.currency)} per payout</span>
+            <span>Avg tax: {formatCurrency(data.payoutCount > 0 ? data.totalTaxToTrack / data.payoutCount : 0, data.currency)} per payout</span>
           </div>
         </div>
 
