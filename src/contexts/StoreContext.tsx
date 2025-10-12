@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 
 interface Store {
@@ -32,9 +32,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (session?.user) {
       fetchStores()
     }
-  }, [session])
+  }, [session, fetchStores])
 
-  const fetchStores = async () => {
+  const fetchStores = useCallback(async () => {
     try {
       setLoading(true)
       // Add cache-busting to force fresh data
@@ -67,9 +67,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const checkForOrphanedStores = async () => {
+  const checkForOrphanedStores = useCallback(async () => {
     try {
       console.log('🔍 Checking for orphaned stores...')
       const orphanedResponse = await fetch('/api/user/find-orphaned-stores')
@@ -106,7 +106,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setCurrentStore(null)
       localStorage.removeItem('currentStoreId')
     }
-  }
+  }, [fetchStores])
 
   const handleSetCurrentStore = (store: Store) => {
     setCurrentStore(store)

@@ -130,7 +130,7 @@ export function useDailyPayout(): UseDailyPayoutReturn {
 
   useEffect(() => {
     fetchDailyPayout()
-  }, [])
+  }, [fetchDailyPayout])
 
   return {
     data,

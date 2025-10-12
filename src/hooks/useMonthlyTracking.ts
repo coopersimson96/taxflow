@@ -70,7 +70,7 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
 
   useEffect(() => {
     fetchMonthlyTracking()
-  }, [targetMonth, targetYear])
+  }, [fetchMonthlyTracking])
 
   return {
     data,

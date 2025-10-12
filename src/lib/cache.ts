@@ -40,11 +40,15 @@ class ClientCache {
   // Clean up expired entries
   cleanup(): void {
     const now = Date.now()
-    for (const [key, entry] of this.cache.entries()) {
+    const keysToDelete: string[] = []
+    
+    this.cache.forEach((entry, key) => {
       if (now - entry.timestamp > entry.ttl) {
-        this.cache.delete(key)
+        keysToDelete.push(key)
       }
-    }
+    })
+    
+    keysToDelete.forEach(key => this.cache.delete(key))
   }
 }
 
