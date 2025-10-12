@@ -177,9 +177,10 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
             </span>
           </div>
           <div className="relative">
-            <div className="w-full h-3 sm:h-4 bg-zinc-200 rounded-full overflow-hidden">
+            <div className="w-full h-3 sm:h-4 bg-gray-300 rounded-full overflow-hidden relative">
+              {/* Progress bar fill */}
               <div 
-                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-inner transition-all duration-1000 ease-out"
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full shadow-inner transition-all duration-1000 ease-out"
                 style={{ 
                   width: `${Math.min(data.completionPercentage, 100)}%`,
                   animation: 'progressFill 2s ease-out forwards'
