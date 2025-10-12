@@ -44,6 +44,12 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     isLoading: monthlyLoading,
     refresh: refreshMonthlyTracking
   } = useMonthlyTracking()
+
+  const {
+    payouts: recentPayouts,
+    isLoading: payoutsLoading,
+    setPayoutAsAside
+  } = useRecentPayouts()
   
   // Wrap set aside functions to also refresh monthly tracking
   const handleConfirmSetAside = useCallback(async () => {
@@ -69,12 +75,6 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       refreshMonthlyTracking()
     }, 1500)
   }, [setPayoutAsAside, refreshMonthlyTracking])
-
-  const {
-    payouts: recentPayouts,
-    isLoading: payoutsLoading,
-    setPayoutAsAside
-  } = useRecentPayouts()
 
   // Show loading state for initial load
   if (isInitialLoading) {
