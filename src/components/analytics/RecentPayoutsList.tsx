@@ -139,7 +139,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     return (
       <div className={cn("space-y-4", className)}>
         {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 text-center md:text-left">
           <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
         </div>
         {[...Array(3)].map((_, i) => (
@@ -165,7 +165,7 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     return (
       <div className={cn("space-y-4", className)}>
         {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 text-center md:text-left">
           <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8 text-center">

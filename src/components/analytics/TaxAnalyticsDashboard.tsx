@@ -111,7 +111,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   return (
     <div className={cn("space-y-6 md:space-y-8 animate-fade-in-up", className)}>
       {/* Hero Cards Row - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch text-center lg:text-left">
         {/* Hero Payout Card */}
         <div className="lg:col-span-1 h-full min-h-[500px] sm:min-h-[600px] animate-scale-in animate-delay-200">
           <HeroPayoutCard

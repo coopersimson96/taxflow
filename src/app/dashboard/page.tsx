@@ -164,7 +164,7 @@ function DashboardContent() {
                 
                 {/* Page Header with Greeting - Card Wrapper */}
                 <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 animate-fade-in-up">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 text-center md:text-left">
                     {/* Left side: Greeting and Date */}
                     <div>
                       <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-zinc-900">
@@ -176,7 +176,7 @@ function DashboardContent() {
                     </div>
                     
                     {/* Right side: Shopify Status Badge */}
-                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 items-center">
                       {stores.length > 1 && (
                         <select
                           value={currentStore?.id || ''}
