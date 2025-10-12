@@ -59,7 +59,7 @@ export default function UserProfile() {
       {isMenuOpen && (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-40"
             onClick={() => setIsMenuOpen(false)}
           />
           <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">

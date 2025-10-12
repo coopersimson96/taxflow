@@ -15,7 +15,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F3F3E4' }}>
       {/* Header */}
-      <header className="bg-primary card border-0 rounded-none shadow-sm">
+      <header className="bg-primary card border-0 rounded-none shadow-sm relative z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left side - Logo and Organization Switcher */}
