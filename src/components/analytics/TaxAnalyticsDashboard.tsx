@@ -48,7 +48,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
   const {
     payouts: recentPayouts,
     isLoading: payoutsLoading,
-    setPayoutAsAside
+    setPayoutAsAside,
+    updatePeriod
   } = useRecentPayouts()
   
   // Wrap set aside functions to also refresh monthly tracking
@@ -226,6 +227,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           payouts={recentPayouts}
           isLoading={payoutsLoading}
           onSetAside={handleRecentPayoutSetAside}
+          onPeriodChange={(period, dateRange) => updatePeriod(period, dateRange)}
           onExportPayout={(payoutId) => {
             const payout = recentPayouts.find(p => p.id === payoutId)
             if (payout) {

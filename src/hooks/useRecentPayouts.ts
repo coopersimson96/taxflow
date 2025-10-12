@@ -35,19 +35,36 @@ interface UseRecentPayoutsReturn {
   error: string | null
   setPayoutAsAside: (payoutId: string) => Promise<void>
   refresh: () => Promise<void>
+  updatePeriod: (period: string, dateRange?: { startDate: string; endDate: string }) => Promise<void>
 }
 
-export function useRecentPayouts(): UseRecentPayoutsReturn {
+interface UseRecentPayoutsOptions {
+  period?: string
+  startDate?: string
+  endDate?: string
+}
+
+export function useRecentPayouts(options: UseRecentPayoutsOptions = {}): UseRecentPayoutsReturn {
   const [payouts, setPayouts] = useState<PayoutItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [currentOptions, setCurrentOptions] = useState(options)
 
-  const fetchRecentPayouts = async () => {
+  const fetchRecentPayouts = async (fetchOptions = currentOptions) => {
     try {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch('/api/analytics/recent-payouts')
+      // Build query string from options
+      const queryParams = new URLSearchParams()
+      if (fetchOptions.period) queryParams.set('period', fetchOptions.period)
+      if (fetchOptions.startDate) queryParams.set('startDate', fetchOptions.startDate)
+      if (fetchOptions.endDate) queryParams.set('endDate', fetchOptions.endDate)
+      
+      const queryString = queryParams.toString()
+      const url = `/api/analytics/recent-payouts${queryString ? `?${queryString}` : ''}`
+      
+      const response = await fetch(url)
       
       if (!response.ok) {
         throw new Error('Failed to fetch recent payouts')
@@ -104,15 +121,25 @@ export function useRecentPayouts(): UseRecentPayoutsReturn {
     }
   }
 
+  const updatePeriod = async (period: string, dateRange?: { startDate: string; endDate: string }) => {
+    const newOptions = {
+      period,
+      ...(dateRange && { startDate: dateRange.startDate, endDate: dateRange.endDate })
+    }
+    setCurrentOptions(newOptions)
+    await fetchRecentPayouts(newOptions)
+  }
+
   useEffect(() => {
     fetchRecentPayouts()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     payouts,
     isLoading,
     error,
     setPayoutAsAside,
-    refresh: fetchRecentPayouts
+    refresh: fetchRecentPayouts,
+    updatePeriod
   }
 }

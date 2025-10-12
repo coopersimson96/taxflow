@@ -37,13 +37,37 @@ interface PayoutItem {
 /**
  * Generates sample recent payouts data for development
  */
-function generateSampleRecentPayouts(): PayoutItem[] {
+function generateSampleRecentPayouts(period?: string, startDate?: string, endDate?: string): PayoutItem[] {
   const payouts: PayoutItem[] = []
   const today = new Date()
   
-  for (let i = 0; i < 5; i++) {
-    const payoutDate = new Date(today)
-    payoutDate.setDate(payoutDate.getDate() - i)
+  // Calculate date range based on period
+  let rangeStartDate: Date
+  let rangeEndDate: Date = new Date(today)
+  
+  if (startDate && endDate) {
+    rangeStartDate = new Date(startDate)
+    rangeEndDate = new Date(endDate)
+  } else if (period === 'week') {
+    rangeStartDate = new Date(today)
+    rangeStartDate.setDate(today.getDate() - 7)
+  } else if (period === 'month') {
+    rangeStartDate = new Date(today)
+    rangeStartDate.setMonth(today.getMonth() - 1)
+  } else {
+    // Default to last week
+    rangeStartDate = new Date(today)
+    rangeStartDate.setDate(today.getDate() - 7)
+  }
+  
+  // Generate payouts within the date range
+  const daysDiff = Math.ceil((rangeEndDate.getTime() - rangeStartDate.getTime()) / (1000 * 60 * 60 * 24))
+  const payoutCount = Math.min(Math.max(daysDiff / 2, 3), 10) // Generate 3-10 payouts based on range
+  
+  for (let i = 0; i < payoutCount; i++) {
+    const payoutDate = new Date(rangeStartDate)
+    const dayOffset = Math.floor((daysDiff / payoutCount) * i)
+    payoutDate.setDate(payoutDate.getDate() + dayOffset)
     
     const seed = payoutDate.getDate() + i
     const baseAmount = 1000 + (seed * 123) % 2000
@@ -72,17 +96,33 @@ function generateSampleRecentPayouts(): PayoutItem[] {
 /**
  * Fetches recent payouts from database for production
  */
-async function fetchProductionRecentPayouts(organizationId: string): Promise<PayoutItem[]> {
+async function fetchProductionRecentPayouts(organizationId: string, period?: string, startDate?: string, endDate?: string): Promise<PayoutItem[]> {
   try {
-    // Get recent payout statuses from the last 30 days
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    // Calculate date range based on period
+    let rangeStartDate: Date
+    let rangeEndDate: Date = new Date()
+    
+    if (startDate && endDate) {
+      rangeStartDate = new Date(startDate)
+      rangeEndDate = new Date(endDate)
+    } else if (period === 'week') {
+      rangeStartDate = new Date()
+      rangeStartDate.setDate(rangeStartDate.getDate() - 7)
+    } else if (period === 'month') {
+      rangeStartDate = new Date()
+      rangeStartDate.setMonth(rangeStartDate.getMonth() - 1)
+    } else {
+      // Default to last 30 days
+      rangeStartDate = new Date()
+      rangeStartDate.setDate(rangeStartDate.getDate() - 30)
+    }
 
     const payoutStatuses = await prisma.payoutStatus.findMany({
       where: {
         organizationId,
         payoutDate: {
-          gte: thirtyDaysAgo
+          gte: rangeStartDate,
+          lte: rangeEndDate
         }
       },
       orderBy: {
@@ -116,15 +156,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Extract query parameters
+    const { searchParams } = new URL(request.url)
+    const period = searchParams.get('period')
+    const startDate = searchParams.get('startDate')
+    const endDate = searchParams.get('endDate')
+
     // Check if we're in sample data mode
     if (process.env.USE_SAMPLE_DATA === 'true') {
       console.log('🎲 Using sample data for recent payouts')
-      const data = generateSampleRecentPayouts()
+      const data = generateSampleRecentPayouts(period || undefined, startDate || undefined, endDate || undefined)
       
       return NextResponse.json({ 
         success: true, 
         data,
-        mode: 'sample'
+        mode: 'sample',
+        filter: { period, startDate, endDate }
       })
     }
 
@@ -152,12 +199,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch production recent payouts data
-    const recentPayouts = await fetchProductionRecentPayouts(organization.id)
+    const recentPayouts = await fetchProductionRecentPayouts(organization.id, period || undefined, startDate || undefined, endDate || undefined)
 
     return NextResponse.json({ 
       success: true, 
       data: recentPayouts,
-      mode: 'production'
+      mode: 'production',
+      filter: { period, startDate, endDate }
     })
 
   } catch (error) {

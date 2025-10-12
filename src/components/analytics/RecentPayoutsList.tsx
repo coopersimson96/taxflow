@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { ChevronDown, Check, AlertCircle, Calendar, ShoppingBag, User, DollarSign, FileText } from 'lucide-react'
+import { ChevronDown, Check, AlertCircle, Calendar, ShoppingBag, User, DollarSign, FileText, Filter, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -31,11 +31,19 @@ interface PayoutItem {
   orders?: OrderDetail[]
 }
 
+type PeriodType = 'week' | 'month' | 'custom'
+
+interface DateRange {
+  startDate: string
+  endDate: string
+}
+
 interface RecentPayoutsListProps {
   payouts?: PayoutItem[]
   isLoading?: boolean
   onSetAside?: (payoutId: string) => Promise<void>
   onExportPayout?: (payoutId: string) => void
+  onPeriodChange?: (period: PeriodType, dateRange?: DateRange) => void
   className?: string
 }
 
@@ -44,11 +52,17 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
   isLoading = false,
   onSetAside,
   onExportPayout,
+  onPeriodChange,
   className
 }) => {
   const [expandedPayouts, setExpandedPayouts] = useState<Set<string>>(new Set())
   const [loadingPayouts, setLoadingPayouts] = useState<Set<string>>(new Set())
   const [processingSetAside, setProcessingSetAside] = useState<Set<string>>(new Set())
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>('week')
+  const [showPeriodDropdown, setShowPeriodDropdown] = useState(false)
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
 
   const formatCurrency = (amount: number, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
@@ -134,13 +148,74 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
     return colors[type.toLowerCase()] || 'bg-gray-500'
   }
 
+  const getPeriodDisplayName = (period: PeriodType) => {
+    switch (period) {
+      case 'week':
+        return 'Last Week'
+      case 'month':
+        return 'Last Month'
+      case 'custom':
+        return 'Custom Range'
+      default:
+        return 'Last Week'
+    }
+  }
+
+  const handlePeriodSelect = (period: PeriodType) => {
+    setSelectedPeriod(period)
+    setShowPeriodDropdown(false)
+    
+    if (period === 'custom') {
+      setShowCustomDatePicker(true)
+    } else {
+      setShowCustomDatePicker(false)
+      // Calculate date range for week/month
+      const today = new Date()
+      let startDate: Date
+      const endDate = new Date(today)
+      
+      if (period === 'week') {
+        startDate = new Date(today)
+        startDate.setDate(today.getDate() - 7)
+      } else {
+        startDate = new Date(today)
+        startDate.setMonth(today.getMonth() - 1)
+      }
+      
+      if (onPeriodChange) {
+        onPeriodChange(period, {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0]
+        })
+      }
+    }
+  }
+
+  const handleCustomDateSubmit = () => {
+    if (customStartDate && customEndDate && onPeriodChange) {
+      onPeriodChange('custom', {
+        startDate: customStartDate,
+        endDate: customEndDate
+      })
+      setShowCustomDatePicker(false)
+    }
+  }
+
   // Loading State
   if (isLoading) {
     return (
       <div className={cn("space-y-4", className)}>
-        {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 text-center md:text-left">
-          <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        {/* Title Card with Period Selector */}
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <h3 className="text-lg md:text-xl font-semibold text-zinc-900 text-center sm:text-left">RECENT PAYOUTS</h3>
+            
+            {/* Period Selector - Loading State */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-24 h-8 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
         </div>
         {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-lg shadow-sm border border-slate-200 p-3 md:p-4 animate-pulse">
@@ -164,9 +239,42 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
   if (payouts.length === 0) {
     return (
       <div className={cn("space-y-4", className)}>
-        {/* Title Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6 text-center md:text-left">
-          <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        {/* Title Card with Period Selector */}
+        <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <h3 className="text-lg md:text-xl font-semibold text-zinc-900 text-center sm:text-left">RECENT PAYOUTS</h3>
+            
+            {/* Period Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+                className="flex items-center space-x-2 px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm hover:border-slate-400 transition-colors text-sm font-medium text-slate-700 min-h-[40px]"
+              >
+                <Filter className="w-4 h-4" />
+                <span>{getPeriodDisplayName(selectedPeriod)}</span>
+                <ChevronDown className={cn("w-4 h-4 transition-transform", showPeriodDropdown && "rotate-180")} />
+              </button>
+              
+              {showPeriodDropdown && (
+                <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                  <div className="py-1">
+                    {(['week', 'month', 'custom'] as PeriodType[]).map((period) => (
+                      <button
+                        key={period}
+                        onClick={() => handlePeriodSelect(period)}
+                        className={cn(
+                          "w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors",
+                          selectedPeriod === period && "bg-indigo-50 text-indigo-700"
+                        )}
+                      >
+                        {getPeriodDisplayName(period)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 md:p-8 text-center">
           <Calendar className="w-10 h-10 md:w-12 md:h-12 text-slate-300 mx-auto mb-4" />
@@ -179,10 +287,95 @@ const RecentPayoutsList: React.FC<RecentPayoutsListProps> = ({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Title Card to match other sections */}
+      {/* Title Card with Period Selector */}
       <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-4 md:p-6">
-        <h3 className="text-lg md:text-xl font-semibold text-zinc-900">RECENT PAYOUTS</h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+          <h3 className="text-lg md:text-xl font-semibold text-zinc-900 text-center sm:text-left">RECENT PAYOUTS</h3>
+          
+          {/* Period Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+              className="flex items-center space-x-2 px-3 py-2 bg-white border border-slate-300 rounded-lg shadow-sm hover:border-slate-400 transition-colors text-sm font-medium text-slate-700 min-h-[40px]"
+            >
+              <Filter className="w-4 h-4" />
+              <span>{getPeriodDisplayName(selectedPeriod)}</span>
+              <ChevronDown className={cn("w-4 h-4 transition-transform", showPeriodDropdown && "rotate-180")} />
+            </button>
+            
+            {showPeriodDropdown && (
+              <div className="absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
+                <div className="py-1">
+                  {(['week', 'month', 'custom'] as PeriodType[]).map((period) => (
+                    <button
+                      key={period}
+                      onClick={() => handlePeriodSelect(period)}
+                      className={cn(
+                        "w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition-colors",
+                        selectedPeriod === period && "bg-indigo-50 text-indigo-700"
+                      )}
+                    >
+                      {getPeriodDisplayName(period)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Custom Date Range Picker */}
+      {showCustomDatePicker && (
+        <div className="bg-white rounded-lg shadow-lg border border-slate-200 p-4 md:p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <CalendarDays className="w-5 h-5 text-slate-600" />
+            <h4 className="text-lg font-semibold text-slate-900">Select Custom Date Range</h4>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">End Date</label>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={handleCustomDateSubmit}
+              disabled={!customStartDate || !customEndDate}
+              className={cn(
+                "px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium transition-colors",
+                (!customStartDate || !customEndDate) 
+                  ? "opacity-50 cursor-not-allowed" 
+                  : "hover:bg-indigo-700"
+              )}
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => setShowCustomDatePicker(false)}
+              className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       
       <div className="space-y-3">
         {payouts.slice(0, 5).map((payout) => {
