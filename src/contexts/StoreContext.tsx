@@ -28,11 +28,45 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (session?.user) {
-      fetchStores()
+  const checkForOrphanedStores = useCallback(async () => {
+    try {
+      console.log('🔍 Checking for orphaned stores...')
+      const orphanedResponse = await fetch('/api/user/find-orphaned-stores')
+      if (orphanedResponse.ok) {
+        const orphanedData = await orphanedResponse.json()
+        const hasOrphaned = orphanedData.orphanedOrganizations?.length > 0 || orphanedData.pendingIntegrations?.length > 0
+        
+        if (hasOrphaned) {
+          console.log('✅ Found orphaned stores, attempting auto-link...')
+          // Try to auto-link the first orphaned store
+          const linkResponse = await fetch('/api/user/link-store', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              organizationId: orphanedData.orphanedOrganizations?.[0]?.id || orphanedData.pendingIntegrations?.[0]?.organizationId
+            })
+          })
+          
+          if (linkResponse.ok) {
+            console.log('✅ Auto-linked orphaned store, refreshing...')
+            // Note: This will create a dependency cycle, so we'll handle it differently
+            return true // Signal that we should refetch
+          }
+        }
+      }
+      
+      // No orphaned stores found or linking failed - clear cached data
+      setCurrentStore(null)
+      localStorage.removeItem('currentStoreId')
+      return false
+    } catch (error) {
+      console.error('Error checking orphaned stores:', error)
+      // Fallback to clearing cached data
+      setCurrentStore(null)
+      localStorage.removeItem('currentStoreId')
+      return false
     }
-  }, [session, fetchStores])
+  }, [])
 
   const fetchStores = useCallback(async () => {
     try {
@@ -57,7 +91,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('currentStoreId', data.stores[0].id)
         } else {
           // No stores found - check for orphaned stores that might belong to this user
-          await checkForOrphanedStores()
+          const shouldRefetch = await checkForOrphanedStores()
+          if (shouldRefetch) {
+            // Recursive call if orphaned stores were found and linked
+            setTimeout(() => fetchStores(), 1000)
+          }
         }
       } else {
         setError('Failed to fetch stores')
@@ -67,46 +105,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [checkForOrphanedStores])
 
-  const checkForOrphanedStores = useCallback(async () => {
-    try {
-      console.log('🔍 Checking for orphaned stores...')
-      const orphanedResponse = await fetch('/api/user/find-orphaned-stores')
-      if (orphanedResponse.ok) {
-        const orphanedData = await orphanedResponse.json()
-        const hasOrphaned = orphanedData.orphanedOrganizations?.length > 0 || orphanedData.pendingIntegrations?.length > 0
-        
-        if (hasOrphaned) {
-          console.log('✅ Found orphaned stores, attempting auto-link...')
-          // Try to auto-link the first orphaned store
-          const linkResponse = await fetch('/api/user/link-store', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              organizationId: orphanedData.orphanedOrganizations?.[0]?.id || orphanedData.pendingIntegrations?.[0]?.organizationId
-            })
-          })
-          
-          if (linkResponse.ok) {
-            console.log('✅ Auto-linked orphaned store, refreshing...')
-            // Refresh stores after successful link
-            await fetchStores()
-            return
-          }
-        }
-      }
-      
-      // No orphaned stores found or linking failed - clear cached data
-      setCurrentStore(null)
-      localStorage.removeItem('currentStoreId')
-    } catch (error) {
-      console.error('Error checking orphaned stores:', error)
-      // Fallback to clearing cached data
-      setCurrentStore(null)
-      localStorage.removeItem('currentStoreId')
+  useEffect(() => {
+    if (session?.user) {
+      fetchStores()
     }
-  }, [fetchStores])
+  }, [session, fetchStores])
 
   const handleSetCurrentStore = (store: Store) => {
     setCurrentStore(store)
