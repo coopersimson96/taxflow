@@ -129,7 +129,7 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         {/* Large Display Row */}
         <div className="mb-4 md:mb-6">
           <div className="text-xs sm:text-sm uppercase tracking-wide text-zinc-500 font-semibold mb-2">
-            TOTAL TAX TO TRACK THIS MONTH
+            TOTAL TAX COLLECTED THIS MONTH
           </div>
           <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-zinc-900">
             {formatCurrency(data.totalTaxToTrack, data.currency)}
@@ -177,14 +177,13 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
             </span>
           </div>
           <div className="relative">
-            <div className="w-full h-3 sm:h-4 bg-gray-300 rounded-full overflow-hidden relative">
+            <div className="w-full h-3 sm:h-4 bg-gray-300 rounded-full relative">
               {/* Progress bar fill */}
               <div 
-                className="absolute top-0 left-0 h-full rounded-full shadow-inner transition-all duration-1000 ease-out"
+                className="absolute top-0 left-0 h-full rounded-full transition-all duration-1000 ease-out"
                 style={{ 
                   backgroundColor: '#119F53',
-                  width: `${Math.min(data.completionPercentage, 100)}%`,
-                  animation: 'progressFill 2s ease-out forwards'
+                  width: `${Math.max(Math.min(data.completionPercentage, 100), 2)}%`
                 }}
               />
             </div>
