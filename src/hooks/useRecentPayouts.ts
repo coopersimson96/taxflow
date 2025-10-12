@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { clientCache, createCacheKey } from '@/lib/cache'
 
 interface TaxBreakdown {
   type: string
@@ -88,6 +89,14 @@ export function useRecentPayouts(): UseRecentPayoutsReturn {
           ? { ...payout, isSetAside: true }
           : payout
       ))
+      
+      // Invalidate monthly tracking cache to update progress bar
+      const currentDate = new Date()
+      const monthlyCacheKey = createCacheKey('monthly-tracking', { 
+        month: currentDate.getMonth() + 1, 
+        year: currentDate.getFullYear() 
+      })
+      clientCache.delete(monthlyCacheKey)
       
     } catch (err) {
       console.error('Error setting payout aside:', err)

@@ -87,9 +87,19 @@ export function useDailyPayout(): UseDailyPayoutReturn {
       // Update local state optimistically
       setData(prev => prev ? { ...prev, isSetAside: true } : null)
       
-      // Invalidate cache and refresh data
-      const cacheKey = createCacheKey('daily-payout')
-      clientCache.delete(cacheKey)
+      // Invalidate both daily and monthly cache to ensure progress bar updates
+      const dailyCacheKey = createCacheKey('daily-payout')
+      clientCache.delete(dailyCacheKey)
+      
+      // Invalidate monthly tracking cache for current month
+      const currentDate = new Date()
+      const monthlyCacheKey = createCacheKey('monthly-tracking', { 
+        month: currentDate.getMonth() + 1, 
+        year: currentDate.getFullYear() 
+      })
+      clientCache.delete(monthlyCacheKey)
+      
+      // Refresh data after a short delay
       setTimeout(() => fetchDailyPayout(), 1000)
       
     } catch (err) {
@@ -118,6 +128,17 @@ export function useDailyPayout(): UseDailyPayoutReturn {
 
       // Update local state optimistically
       setData(prev => prev ? { ...prev, isSetAside: false } : null)
+      
+      // Invalidate both daily and monthly cache
+      const dailyCacheKey = createCacheKey('daily-payout')
+      clientCache.delete(dailyCacheKey)
+      
+      const currentDate = new Date()
+      const monthlyCacheKey = createCacheKey('monthly-tracking', { 
+        month: currentDate.getMonth() + 1, 
+        year: currentDate.getFullYear() 
+      })
+      clientCache.delete(monthlyCacheKey)
       
       // Refresh data to ensure consistency
       setTimeout(() => fetchDailyPayout(), 1000)

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react'
+import React, { lazy, Suspense, useCallback } from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
 import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
@@ -41,8 +41,34 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 
   const {
     data: monthlyData,
-    isLoading: monthlyLoading
+    isLoading: monthlyLoading,
+    refresh: refreshMonthlyTracking
   } = useMonthlyTracking()
+  
+  // Wrap set aside functions to also refresh monthly tracking
+  const handleConfirmSetAside = useCallback(async () => {
+    await confirmSetAside()
+    // Wait a bit for the backend to update, then refresh monthly data
+    setTimeout(() => {
+      refreshMonthlyTracking()
+    }, 1500)
+  }, [confirmSetAside, refreshMonthlyTracking])
+  
+  const handleUndoSetAside = useCallback(async () => {
+    await undoSetAside()
+    // Wait a bit for the backend to update, then refresh monthly data
+    setTimeout(() => {
+      refreshMonthlyTracking()
+    }, 1500)
+  }, [undoSetAside, refreshMonthlyTracking])
+  
+  const handleRecentPayoutSetAside = useCallback(async (payoutId: string) => {
+    await setPayoutAsAside(payoutId)
+    // Wait a bit for the backend to update, then refresh monthly data
+    setTimeout(() => {
+      refreshMonthlyTracking()
+    }, 1500)
+  }, [setPayoutAsAside, refreshMonthlyTracking])
 
   const {
     payouts: recentPayouts,
@@ -144,8 +170,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
                     : 'no_payout'
               }
               isLoading={payoutLoading}
-              onConfirmSetAside={confirmSetAside}
-              onUndo={undoSetAside}
+              onConfirmSetAside={handleConfirmSetAside}
+              onUndo={handleUndoSetAside}
             />
           </Suspense>
         </div>
@@ -199,7 +225,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
           <RecentPayoutsList
           payouts={recentPayouts}
           isLoading={payoutsLoading}
-          onSetAside={setPayoutAsAside}
+          onSetAside={handleRecentPayoutSetAside}
           onExportPayout={(payoutId) => {
             const payout = recentPayouts.find(p => p.id === payoutId)
             if (payout) {
