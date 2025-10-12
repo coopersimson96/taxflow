@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Force dynamic rendering as this route uses searchParams
+export const dynamic = 'force-dynamic'
+
 // GET /api/user/emails/verify?token=xxx - Verify an email address
 export async function GET(request: NextRequest) {
   try {

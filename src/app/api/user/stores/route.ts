@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/session-utils'
 import { prisma } from '@/lib/prisma'
 
+// Force dynamic rendering for this route as it accesses session data
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 [/api/user/stores] Starting request with unified session management...')
