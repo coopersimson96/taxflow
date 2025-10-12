@@ -149,11 +149,15 @@ export async function GET(request: NextRequest) {
       
       // Check if this payout has been marked as set aside in session storage
       // In production, this would check the database
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         success: true, 
         data,
         mode: 'sample'
       })
+      
+      // Cache for 2 minutes in sample mode
+      response.headers.set('Cache-Control', 'public, max-age=120, stale-while-revalidate=300')
+      return response
     }
 
     // PRODUCTION MODE: Check for real Shopify integration
@@ -201,11 +205,15 @@ export async function GET(request: NextRequest) {
       payoutData.isSetAside = payoutStatus?.isSetAside || false
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: payoutData,
       mode: 'production'
     })
+    
+    // Cache for 5 minutes in production
+    response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+    return response
 
   } catch (error) {
     console.error('Daily payout API error:', error)

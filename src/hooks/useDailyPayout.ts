@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { clientCache, createCacheKey } from '@/lib/cache'
 
 interface DailyPayoutData {
   payoutAmount: number
@@ -27,10 +28,20 @@ export function useDailyPayout(): UseDailyPayoutReturn {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchDailyPayout = async () => {
+  const fetchDailyPayout = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
+
+      // Check cache first
+      const cacheKey = createCacheKey('daily-payout')
+      const cachedData = clientCache.get<DailyPayoutData>(cacheKey)
+      
+      if (cachedData) {
+        setData(cachedData)
+        setIsLoading(false)
+        return
+      }
 
       const response = await fetch('/api/analytics/daily-payout')
       
@@ -42,6 +53,8 @@ export function useDailyPayout(): UseDailyPayoutReturn {
       
       if (result.success) {
         setData(result.data)
+        // Cache for 2 minutes
+        clientCache.set(cacheKey, result.data, 120000)
       } else {
         throw new Error(result.error || 'Failed to load payout data')
       }
@@ -51,9 +64,9 @@ export function useDailyPayout(): UseDailyPayoutReturn {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const confirmSetAside = async () => {
+  const confirmSetAside = useCallback(async () => {
     if (!data || data.isSetAside) return
 
     try {
@@ -74,14 +87,16 @@ export function useDailyPayout(): UseDailyPayoutReturn {
       // Update local state optimistically
       setData(prev => prev ? { ...prev, isSetAside: true } : null)
       
-      // Refresh data to ensure consistency
+      // Invalidate cache and refresh data
+      const cacheKey = createCacheKey('daily-payout')
+      clientCache.delete(cacheKey)
       setTimeout(() => fetchDailyPayout(), 1000)
       
     } catch (err) {
       console.error('Error confirming set aside:', err)
       throw err
     }
-  }
+  }, [data, fetchDailyPayout])
 
   const undoSetAside = async () => {
     if (!data || !data.isSetAside) return

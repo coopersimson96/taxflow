@@ -1,12 +1,13 @@
-import React from 'react'
+import React, { lazy, Suspense } from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
 import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
 import { useRecentPayouts } from '@/hooks/useRecentPayouts'
-import HeroPayoutCard from './HeroPayoutCard'
-import MonthlyTrackingCard from './MonthlyTrackingCard'
-import RecentPayoutsList from './RecentPayoutsList'
-import QuickActionsFooter from './QuickActionsFooter'
+// Lazy load dashboard components for better performance
+const HeroPayoutCard = lazy(() => import('./HeroPayoutCard'))
+const MonthlyTrackingCard = lazy(() => import('./MonthlyTrackingCard'))
+const RecentPayoutsList = lazy(() => import('./RecentPayoutsList'))
+const QuickActionsFooter = lazy(() => import('./QuickActionsFooter'))
 import { cn } from '@/lib/utils'
 import { exportPayoutData, exportMonthlyTaxSummary } from '@/lib/csv-export'
 import { useRouter } from 'next/navigation'
@@ -114,79 +115,133 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8 animate-slide-in-top animate-delay-100 items-stretch text-center lg:text-left">
         {/* Hero Payout Card */}
         <div className="lg:col-span-1 h-full min-h-[500px] sm:min-h-[600px] animate-scale-in animate-delay-200">
-          <HeroPayoutCard
-            data={payoutData ? {
-              amount: payoutData.payoutAmount,
-              currency: payoutData.currency,
-              taxToSetAside: payoutData.taxToSetAside,
-              safeToSpend: payoutData.safeToSpend,
-              orderCount: payoutData.orderCount,
-              date: payoutData.date,
-              dateRange: payoutData.dateRange,
-              isConfirmed: payoutData.isSetAside
-            } : null}
-            state={
-              payoutData?.isSetAside 
-                ? 'confirmed' 
-                : payoutData?.hasPayoutToday 
-                  ? 'payout_received' 
-                  : 'no_payout'
-            }
-            isLoading={payoutLoading}
-            onConfirmSetAside={confirmSetAside}
-            onUndo={undoSetAside}
-          />
+          <Suspense fallback={
+            <div className="h-full bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+              <div className="h-20 bg-gray-200 rounded mb-6"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </div>
+          }>
+            <HeroPayoutCard
+              data={payoutData ? {
+                amount: payoutData.payoutAmount,
+                currency: payoutData.currency,
+                taxToSetAside: payoutData.taxToSetAside,
+                safeToSpend: payoutData.safeToSpend,
+                orderCount: payoutData.orderCount,
+                date: payoutData.date,
+                dateRange: payoutData.dateRange,
+                isConfirmed: payoutData.isSetAside
+              } : null}
+              state={
+                payoutData?.isSetAside 
+                  ? 'confirmed' 
+                  : payoutData?.hasPayoutToday 
+                    ? 'payout_received' 
+                    : 'no_payout'
+              }
+              isLoading={payoutLoading}
+              onConfirmSetAside={confirmSetAside}
+              onUndo={undoSetAside}
+            />
+          </Suspense>
         </div>
 
         {/* Monthly Tracking Summary Card */}
         <div className="lg:col-span-1 h-full min-h-[500px] sm:min-h-[600px] animate-scale-in animate-delay-300">
-          <MonthlyTrackingCard
-            data={monthlyData}
-            isLoading={monthlyLoading}
-            onViewReport={() => {
-              router.push('/reports')
-            }}
-          />
+          <Suspense fallback={
+            <div className="h-full bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6 animate-pulse">
+              <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+              <div className="h-12 bg-gray-200 rounded mb-6"></div>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
+              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded"></div>
+            </div>
+          }>
+            <MonthlyTrackingCard
+              data={monthlyData}
+              isLoading={monthlyLoading}
+              onViewReport={() => {
+                router.push('/reports')
+              }}
+            />
+          </Suspense>
         </div>
       </div>
 
       {/* Recent Payouts List */}
       <div className="animate-fade-in-up animate-delay-500 w-full">
-        <RecentPayoutsList
-        payouts={recentPayouts}
-        isLoading={payoutsLoading}
-        onSetAside={setPayoutAsAside}
-        onExportPayout={(payoutId) => {
-          const payout = recentPayouts.find(p => p.id === payoutId)
-          if (payout) {
-            exportPayoutData([payout])
-          }
-        }}
-        />
+        <Suspense fallback={
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/50 p-6">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+            </div>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 animate-pulse">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    <div className="h-6 bg-gray-200 rounded w-32"></div>
+                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                  </div>
+                  <div className="h-6 bg-gray-200 rounded w-20"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        }>
+          <RecentPayoutsList
+          payouts={recentPayouts}
+          isLoading={payoutsLoading}
+          onSetAside={setPayoutAsAside}
+          onExportPayout={(payoutId) => {
+            const payout = recentPayouts.find(p => p.id === payoutId)
+            if (payout) {
+              exportPayoutData([payout])
+            }
+          }}
+          />
+        </Suspense>
       </div>
 
       {/* Quick Actions Footer */}
       <div className="animate-slide-in-top animate-delay-500 w-full">
-        <QuickActionsFooter
-        onMonthlyReport={() => {
-          router.push('/reports')
-        }}
-        onExportAll={() => {
-          // Export all recent payouts
-          if (recentPayouts.length > 0) {
-            exportPayoutData(recentPayouts)
-          }
-          // Export monthly summary if available
-          if (monthlyData) {
-            setTimeout(() => {
-              exportMonthlyTaxSummary(monthlyData)
-            }, 500)
-          }
-        }}
-        onSettings={() => {
-          router.push('/settings')
-        }}
-        />
+        <Suspense fallback={
+          <div className="bg-slate-50 rounded-lg p-4 border-t border-slate-200 animate-pulse">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-12 bg-gray-200 rounded flex-1 sm:flex-initial min-w-[140px]"></div>
+              ))}
+            </div>
+          </div>
+        }>
+          <QuickActionsFooter
+          onMonthlyReport={() => {
+            router.push('/reports')
+          }}
+          onExportAll={() => {
+            // Export all recent payouts
+            if (recentPayouts.length > 0) {
+              exportPayoutData(recentPayouts)
+            }
+            // Export monthly summary if available
+            if (monthlyData) {
+              setTimeout(() => {
+                exportMonthlyTaxSummary(monthlyData)
+              }, 500)
+            }
+          }}
+          onSettings={() => {
+            router.push('/settings')
+          }}
+          />
+        </Suspense>
       </div>
     </div>
   )

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { clientCache, createCacheKey } from '@/lib/cache'
 
 interface MonthlyTrackingData {
   month: string
@@ -29,10 +30,20 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
   const targetMonth = month ?? currentDate.getMonth() + 1
   const targetYear = year ?? currentDate.getFullYear()
 
-  const fetchMonthlyTracking = async () => {
+  const fetchMonthlyTracking = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
+
+      // Check cache first
+      const cacheKey = createCacheKey('monthly-tracking', { month: targetMonth, year: targetYear })
+      const cachedData = clientCache.get<MonthlyTrackingData>(cacheKey)
+      
+      if (cachedData) {
+        setData(cachedData)
+        setIsLoading(false)
+        return
+      }
 
       const response = await fetch(`/api/analytics/monthly-tracking?month=${targetMonth}&year=${targetYear}`)
       
@@ -44,6 +55,8 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
       
       if (result.success) {
         setData(result.data)
+        // Cache for 5 minutes
+        clientCache.set(cacheKey, result.data, 300000)
       } else {
         throw new Error(result.error || 'Failed to load monthly tracking data')
       }
@@ -53,7 +66,7 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [targetMonth, targetYear])
 
   useEffect(() => {
     fetchMonthlyTracking()
