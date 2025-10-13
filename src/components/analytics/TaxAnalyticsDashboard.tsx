@@ -191,6 +191,8 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
               onViewReport={() => {
                 router.push('/reports')
               }}
+              onSetAside={handleRecentPayoutSetAside}
+              onRefreshData={refreshMonthlyTracking}
             />
           </Suspense>
         </div>

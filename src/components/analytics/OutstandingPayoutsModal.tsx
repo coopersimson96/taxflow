@@ -1,6 +1,7 @@
-import React from 'react'
-import { X, AlertTriangle, Calendar, DollarSign } from 'lucide-react'
+import React, { useState } from 'react'
+import { X, AlertTriangle, Calendar, DollarSign, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface OutstandingPayout {
   id: string
@@ -19,6 +20,8 @@ interface OutstandingPayoutsModalProps {
   monthYear: string
   totalOutstanding: number
   currency: string
+  onSetAside?: (payoutId: string) => Promise<void>
+  onRefresh?: () => void
 }
 
 const OutstandingPayoutsModal: React.FC<OutstandingPayoutsModalProps> = ({
@@ -27,8 +30,12 @@ const OutstandingPayoutsModal: React.FC<OutstandingPayoutsModalProps> = ({
   payouts,
   monthYear,
   totalOutstanding,
-  currency
+  currency,
+  onSetAside,
+  onRefresh
 }) => {
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const formatCurrency = (amount: number, curr = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -45,6 +52,41 @@ const OutstandingPayoutsModal: React.FC<OutstandingPayoutsModalProps> = ({
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const handleSetAside = async (payoutId: string, taxAmount: number) => {
+    if (!onSetAside || processingIds.has(payoutId)) return
+
+    setProcessingIds(prev => new Set(prev).add(payoutId))
+    
+    try {
+      await onSetAside(payoutId)
+      
+      // Mark as completed
+      setCompletedIds(prev => new Set(prev).add(payoutId))
+      
+      toast.success(`Tax amount set aside successfully!`, {
+        description: `${formatCurrency(taxAmount, currency)} has been marked as set aside.`,
+      })
+      
+      // Refresh data after a short delay
+      if (onRefresh) {
+        setTimeout(() => {
+          onRefresh()
+        }, 1000)
+      }
+      
+    } catch (error) {
+      toast.error('Failed to set aside tax amount', {
+        description: 'Please try again or close and reopen this dialog.',
+      })
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(payoutId)
+        return next
+      })
+    }
   }
 
   if (!isOpen) return null
@@ -112,42 +154,78 @@ const OutstandingPayoutsModal: React.FC<OutstandingPayoutsModalProps> = ({
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
-                {payouts.map((payout, index) => (
-                  <div 
-                    key={payout.id}
-                    className={cn(
-                      "px-6 py-4 hover:bg-gray-50 transition-colors",
-                      index === 0 && "bg-orange-25"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Calendar className="w-4 h-4 text-orange-600" />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">
-                            {formatDate(payout.date)}
+                {payouts.map((payout, index) => {
+                  const isProcessing = processingIds.has(payout.id)
+                  const isCompleted = completedIds.has(payout.id)
+                  
+                  return (
+                    <div 
+                      key={payout.id}
+                      className={cn(
+                        "px-6 py-4 hover:bg-gray-50 transition-colors",
+                        index === 0 && "bg-orange-25",
+                        isCompleted && "opacity-50"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 flex-1">
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-4 h-4 text-orange-600" />
                           </div>
-                          <div className="text-sm text-gray-600">
-                            Payout: {formatCurrency(payout.amount, payout.currency)}
-                            {payout.orderCount && (
-                              <span className="ml-2">• {payout.orderCount} orders</span>
-                            )}
+                          <div>
+                            <div className="font-semibold text-gray-900">
+                              {formatDate(payout.date)}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              Payout: {formatCurrency(payout.amount, payout.currency)}
+                              {payout.orderCount && (
+                                <span className="ml-2">• {payout.orderCount} orders</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-orange-600">
-                          {formatCurrency(payout.taxAmount, payout.currency)}
-                        </div>
-                        <div className="text-xs text-gray-500 uppercase tracking-wide">
-                          Tax Needed
+                        <div className="flex items-center space-x-4">
+                          <div className="text-right">
+                            <div className="font-bold text-orange-600">
+                              {formatCurrency(payout.taxAmount, payout.currency)}
+                            </div>
+                            <div className="text-xs text-gray-500 uppercase tracking-wide">
+                              Tax Needed
+                            </div>
+                          </div>
+                          {onSetAside && (
+                            <button
+                              onClick={() => handleSetAside(payout.id, payout.taxAmount)}
+                              disabled={isProcessing || isCompleted}
+                              className={cn(
+                                "px-3 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 min-w-[100px] justify-center",
+                                isCompleted 
+                                  ? "bg-green-100 text-green-700 cursor-default"
+                                  : isProcessing
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-green-600 text-white hover:bg-green-700 hover:shadow-md active:scale-95"
+                              )}
+                            >
+                              {isCompleted ? (
+                                <>
+                                  <Check className="w-4 h-4" />
+                                  <span>Set Aside</span>
+                                </>
+                              ) : isProcessing ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                                  <span>Setting...</span>
+                                </>
+                              ) : (
+                                <span>Set Aside</span>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

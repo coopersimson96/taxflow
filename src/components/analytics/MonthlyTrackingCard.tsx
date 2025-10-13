@@ -19,6 +19,8 @@ interface MonthlyTrackingCardProps {
   data?: MonthlyTrackingData | null
   isLoading?: boolean
   onViewReport?: () => void
+  onSetAside?: (payoutId: string) => Promise<void>
+  onRefreshData?: () => void
   className?: string
 }
 
@@ -26,6 +28,8 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   data,
   isLoading = false,
   onViewReport,
+  onSetAside,
+  onRefreshData,
   className
 }) => {
   const [showOutstandingModal, setShowOutstandingModal] = useState(false)
@@ -90,6 +94,19 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
       console.error('Error fetching outstanding payouts:', error)
     } finally {
       setIsLoadingOutstanding(false)
+    }
+  }
+
+  const handleSetAsideFromModal = async (payoutId: string) => {
+    if (!onSetAside) {
+      throw new Error('onSetAside handler not provided')
+    }
+    
+    await onSetAside(payoutId)
+    
+    // Refresh parent data if handler provided
+    if (onRefreshData) {
+      onRefreshData()
     }
   }
 
@@ -272,6 +289,8 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         monthYear={`${data.month} ${data.year}`}
         totalOutstanding={data.totalRemaining}
         currency={data.currency}
+        onSetAside={handleSetAsideFromModal}
+        onRefresh={handleViewOutstanding}
       />
     </div>
   )
