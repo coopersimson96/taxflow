@@ -87,8 +87,10 @@ export function useDailyPayout(): UseDailyPayoutReturn {
       // Update local state optimistically
       setData(prev => prev ? { ...prev, isSetAside: true } : null)
       
-      // Refresh data after a short delay to get updated status
-      setTimeout(() => fetchDailyPayout(), 1000)
+      // Clear cache and refresh to get the updated data from shared store
+      const cacheKey = createCacheKey('daily-payout')
+      clientCache.delete(cacheKey)
+      setTimeout(() => fetchDailyPayout(), 500)
       
     } catch (err) {
       console.error('Error confirming set aside:', err)
@@ -117,8 +119,10 @@ export function useDailyPayout(): UseDailyPayoutReturn {
       // Update local state optimistically
       setData(prev => prev ? { ...prev, isSetAside: false } : null)
       
-      // Refresh data to ensure consistency
-      setTimeout(() => fetchDailyPayout(), 1000)
+      // Clear cache and refresh to get the updated data from shared store
+      const cacheKey = createCacheKey('daily-payout')
+      clientCache.delete(cacheKey)
+      setTimeout(() => fetchDailyPayout(), 500)
       
     } catch (err) {
       console.error('Error undoing set aside:', err)
