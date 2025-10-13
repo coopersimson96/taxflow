@@ -84,13 +84,12 @@ export function useDailyPayout(): UseDailyPayoutReturn {
         throw new Error('Failed to update payout status')
       }
 
-      // Update local state optimistically
+      // Update local state permanently - no need for delayed fetch since API call succeeded
       setData(prev => prev ? { ...prev, isSetAside: true } : null)
       
-      // Clear cache and refresh to get the updated data from shared store
+      // Clear cache so next fetch gets fresh data, but don't force a fetch now
       const cacheKey = createCacheKey('daily-payout')
       clientCache.delete(cacheKey)
-      setTimeout(() => fetchDailyPayout(), 500)
       
     } catch (err) {
       console.error('Error confirming set aside:', err)
@@ -116,13 +115,12 @@ export function useDailyPayout(): UseDailyPayoutReturn {
         throw new Error('Failed to update payout status')
       }
 
-      // Update local state optimistically
+      // Update local state permanently - no need for delayed fetch since API call succeeded
       setData(prev => prev ? { ...prev, isSetAside: false } : null)
       
-      // Clear cache and refresh to get the updated data from shared store
+      // Clear cache so next fetch gets fresh data, but don't force a fetch now
       const cacheKey = createCacheKey('daily-payout')
       clientCache.delete(cacheKey)
-      setTimeout(() => fetchDailyPayout(), 500)
       
     } catch (err) {
       console.error('Error undoing set aside:', err)
