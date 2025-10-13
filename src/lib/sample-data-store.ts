@@ -77,10 +77,22 @@ class SampleDataStore {
       payoutId
     }
 
-    // Generate recent payouts (last 5 days)
+    // Generate recent payouts (last 5 days within current month)
+    // This ensures payouts are in the same month as the monthly tracking
+    const currentMonth = today.getMonth()
+    const currentYear = today.getFullYear()
+    
     for (let i = 0; i < 5; i++) {
       const payoutDate = new Date(today)
       payoutDate.setDate(payoutDate.getDate() - i)
+      
+      // If this would go to previous month, use current month days instead
+      if (payoutDate.getMonth() !== currentMonth || payoutDate.getFullYear() !== currentYear) {
+        // Generate payouts for earlier days in current month
+        payoutDate.setFullYear(currentYear)
+        payoutDate.setMonth(currentMonth)
+        payoutDate.setDate(Math.max(1, today.getDate() - i))
+      }
       
       const daySeeds = payoutDate.getDate() + i
       const dayAmount = 1000 + (daySeeds * 123) % 2000
@@ -94,25 +106,11 @@ class SampleDataStore {
         amount: Math.round(dayAmount * 100) / 100,
         currency: 'USD',
         taxAmount: dayTaxAmount,
-        isSetAside: i === 0 ? false : Math.random() > 0.4, // Vary status
+        isSetAside: false, // Start with nothing set aside for clean demo
         orderCount
       }
 
       this.recentPayouts.push(payoutItem)
-
-      // Add to payout statuses if set aside
-      if (payoutItem.isSetAside) {
-        this.payoutStatuses.set(payoutItem.id, {
-          id: payoutItem.id,
-          payoutId: payoutItem.id,
-          payoutDate: payoutItem.date,
-          payoutAmount: payoutItem.amount,
-          taxAmount: payoutItem.taxAmount,
-          isSetAside: true,
-          setAsideAt: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
-          currency: payoutItem.currency
-        })
-      }
     }
 
     this.initialized = true
@@ -207,6 +205,7 @@ class SampleDataStore {
     
     // Calculate actual set aside amount from current statuses
     let actualSetAside = 0
+    
     this.payoutStatuses.forEach(status => {
       const statusDate = new Date(status.payoutDate)
       if (statusDate.getMonth() + 1 === month && statusDate.getFullYear() === year) {
@@ -225,11 +224,8 @@ class SampleDataStore {
       }
     })
     
-    // If current month and we have real data, use it; otherwise use sample percentage
-    const isCurrentMonth = month === new Date().getMonth() + 1 && year === new Date().getFullYear()
-    const totalSetAside = isCurrentMonth && actualSetAside > 0 
-      ? actualSetAside 
-      : Math.round(totalTaxToTrack * (0.45 + ((seed * 0.05) % 0.50)))
+    // Use actual set aside amount directly - this is the true state
+    const totalSetAside = actualSetAside
     
     const totalRemaining = totalTaxToTrack - totalSetAside
     const completionPercentage = totalTaxToTrack > 0 ? (totalSetAside / totalTaxToTrack) * 100 : 0

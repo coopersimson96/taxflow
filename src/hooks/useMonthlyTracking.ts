@@ -74,10 +74,17 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
     fetchMonthlyTracking()
   }, [fetchMonthlyTracking])
 
+  const refresh = useCallback(() => {
+    // Always force refresh to get latest data from shared store
+    const cacheKey = createCacheKey('monthly-tracking', { month: targetMonth, year: targetYear })
+    clientCache.delete(cacheKey)
+    return fetchMonthlyTracking(true)
+  }, [fetchMonthlyTracking, targetMonth, targetYear])
+
   return {
     data,
     isLoading,
     error,
-    refresh: fetchMonthlyTracking
+    refresh
   }
 }
