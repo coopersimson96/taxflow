@@ -1,6 +1,7 @@
-import React from 'react'
-import { CheckCircle, AlertTriangle, TrendingUp, Clock, BarChart3 } from 'lucide-react'
+import React, { useState } from 'react'
+import { CheckCircle, AlertTriangle, TrendingUp, Clock, BarChart3, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import OutstandingPayoutsModal from './OutstandingPayoutsModal'
 
 interface MonthlyTrackingData {
   month: string
@@ -27,6 +28,10 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   onViewReport,
   className
 }) => {
+  const [showOutstandingModal, setShowOutstandingModal] = useState(false)
+  const [outstandingPayouts, setOutstandingPayouts] = useState<any[]>([])
+  const [isLoadingOutstanding, setIsLoadingOutstanding] = useState(false)
+
   const formatCurrency = (amount: number, currency = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -62,6 +67,30 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
     if (percentage >= 80) return 'text-green-600'
     if (percentage >= 50) return 'text-orange-600'
     return 'text-red-600'
+  }
+
+  const handleViewOutstanding = async () => {
+    if (!data) return
+    
+    setIsLoadingOutstanding(true)
+    try {
+      const monthNum = new Date(Date.parse(data.month + " 1, 2000")).getMonth() + 1
+      const response = await fetch(
+        `/api/analytics/outstanding-payouts?month=${monthNum}&year=${data.year}`
+      )
+      
+      if (!response.ok) throw new Error('Failed to fetch outstanding payouts')
+      
+      const result = await response.json()
+      if (result.success) {
+        setOutstandingPayouts(result.data.payouts)
+        setShowOutstandingModal(true)
+      }
+    } catch (error) {
+      console.error('Error fetching outstanding payouts:', error)
+    } finally {
+      setIsLoadingOutstanding(false)
+    }
   }
 
   // Loading State
@@ -153,18 +182,32 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
 
           {/* Still Need */}
           <div className="bg-orange-50 rounded-2xl p-4 md:p-6 border border-orange-200 transform transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div className="flex items-center space-x-2 mb-2">
-              <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
-              <div className="text-xs sm:text-sm font-semibold text-orange-900 uppercase tracking-wide">
-                STILL NEED
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
+                <div className="text-xs sm:text-sm font-semibold text-orange-900 uppercase tracking-wide">
+                  STILL NEED
+                </div>
               </div>
             </div>
             <div className={cn(
-              "text-2xl sm:text-3xl font-bold",
+              "text-2xl sm:text-3xl font-bold mb-3",
               getRemainingAmountColor(data.completionPercentage)
             )}>
               {formatCurrency(data.totalRemaining, data.currency)}
             </div>
+            {data.totalRemaining > 0 && (
+              <button
+                onClick={handleViewOutstanding}
+                disabled={isLoadingOutstanding}
+                className="flex items-center space-x-2 text-xs sm:text-sm text-orange-700 hover:text-orange-900 font-medium transition-colors group"
+              >
+                <Eye className="w-4 h-4" />
+                <span className="group-hover:underline">
+                  {isLoadingOutstanding ? 'Loading...' : 'View Outstanding'}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -220,6 +263,16 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
           </button>
         </div>
       </div>
+      
+      {/* Outstanding Payouts Modal */}
+      <OutstandingPayoutsModal
+        isOpen={showOutstandingModal}
+        onClose={() => setShowOutstandingModal(false)}
+        payouts={outstandingPayouts}
+        monthYear={`${data.month} ${data.year}`}
+        totalOutstanding={data.totalRemaining}
+        currency={data.currency}
+      />
     </div>
   )
 }

@@ -269,6 +269,51 @@ class SampleDataStore {
     }
   }
 
+  // Get outstanding payouts for a specific month (not set aside yet)
+  getOutstandingPayouts(month: number, year: number): PayoutItem[] {
+    this.initialize()
+    
+    const outstanding: PayoutItem[] = []
+    
+    // Check daily payout if it's in the target month and not set aside
+    if (this.dailyPayout && !this.dailyPayout.isSetAside) {
+      const today = new Date()
+      if (today.getMonth() + 1 === month && today.getFullYear() === year) {
+        outstanding.push({
+          id: this.dailyPayout.payoutId || 'daily-payout',
+          date: new Date().toISOString(),
+          amount: this.dailyPayout.payoutAmount,
+          currency: this.dailyPayout.currency,
+          taxAmount: this.dailyPayout.taxToSetAside,
+          isSetAside: false,
+          orderCount: this.dailyPayout.orderCount
+        })
+      }
+    }
+    
+    // Check recent payouts that are not set aside for the target month
+    this.recentPayouts.forEach(payout => {
+      const payoutDate = new Date(payout.date)
+      if (payoutDate.getMonth() + 1 === month && payoutDate.getFullYear() === year) {
+        const isSetAside = this.payoutStatuses.has(payout.id) 
+          ? this.payoutStatuses.get(payout.id)!.isSetAside 
+          : payout.isSetAside
+        
+        if (!isSetAside) {
+          outstanding.push({
+            ...payout,
+            isSetAside
+          })
+        }
+      }
+    })
+    
+    // Sort by date (most recent first)
+    outstanding.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    
+    return outstanding
+  }
+
   // Get all payout statuses (for debugging)
   getAllStatuses(): PayoutStatus[] {
     this.initialize()
