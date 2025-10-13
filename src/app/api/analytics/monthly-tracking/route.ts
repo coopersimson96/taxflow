@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sampleDataStore } from '@/lib/sample-data-store'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -18,44 +19,7 @@ interface MonthlyTrackingData {
   completionPercentage: number
 }
 
-/**
- * Generates sample monthly tracking data for development
- */
-function generateSampleMonthlyTracking(month: number, year: number): MonthlyTrackingData {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-  
-  // Create deterministic but realistic sample data based on month/year
-  const seed = month + (year * 12)
-  const basePayoutCount = 12 + (seed % 8)
-  const averagePayout = 1200 + (seed * 47) % 800
-  const totalPayouts = basePayoutCount * averagePayout
-  
-  // Tax rate between 8-12%
-  const taxRate = 0.08 + ((seed * 0.01) % 0.04)
-  const totalTaxToTrack = Math.round(totalPayouts * taxRate)
-  
-  // Set aside percentage between 45-95%
-  const setAsidePercentage = 0.45 + ((seed * 0.05) % 0.50)
-  const totalSetAside = Math.round(totalTaxToTrack * setAsidePercentage)
-  const totalRemaining = totalTaxToTrack - totalSetAside
-  
-  const completionPercentage = (totalSetAside / totalTaxToTrack) * 100
-
-  return {
-    month: monthNames[month - 1],
-    year,
-    totalTaxToTrack,
-    totalSetAside,
-    totalRemaining,
-    currency: 'USD',
-    payoutCount: basePayoutCount,
-    averagePerPayout: Math.round(averagePayout),
-    completionPercentage: Math.round(completionPercentage * 100) / 100
-  }
-}
+// Note: generateSampleMonthlyTracking function removed - now using shared store
 
 /**
  * Fetches monthly tracking data from database for production
@@ -154,7 +118,7 @@ export async function GET(request: NextRequest) {
     // Check if we're in sample data mode
     if (process.env.USE_SAMPLE_DATA === 'true') {
       console.log('🎲 Using sample data for monthly tracking')
-      const data = generateSampleMonthlyTracking(targetMonth, targetYear)
+      const data = sampleDataStore.getMonthlyTracking(targetMonth, targetYear)
       
       return NextResponse.json({ 
         success: true, 

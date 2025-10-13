@@ -107,14 +107,6 @@ export function useRecentPayouts(options: UseRecentPayoutsOptions = {}): UseRece
           : payout
       ))
       
-      // Invalidate monthly tracking cache to update progress bar
-      const currentDate = new Date()
-      const monthlyCacheKey = createCacheKey('monthly-tracking', { 
-        month: currentDate.getMonth() + 1, 
-        year: currentDate.getFullYear() 
-      })
-      clientCache.delete(monthlyCacheKey)
-      
     } catch (err) {
       console.error('Error setting payout aside:', err)
       throw err

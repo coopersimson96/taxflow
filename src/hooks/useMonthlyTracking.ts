@@ -30,19 +30,21 @@ export function useMonthlyTracking(month?: number, year?: number): UseMonthlyTra
   const targetMonth = month ?? currentDate.getMonth() + 1
   const targetYear = year ?? currentDate.getFullYear()
 
-  const fetchMonthlyTracking = useCallback(async () => {
+  const fetchMonthlyTracking = useCallback(async (forceRefresh = false) => {
     try {
       setIsLoading(true)
       setError(null)
 
-      // Check cache first
+      // Check cache first unless forcing refresh
       const cacheKey = createCacheKey('monthly-tracking', { month: targetMonth, year: targetYear })
-      const cachedData = clientCache.get<MonthlyTrackingData>(cacheKey)
-      
-      if (cachedData) {
-        setData(cachedData)
-        setIsLoading(false)
-        return
+      if (!forceRefresh) {
+        const cachedData = clientCache.get<MonthlyTrackingData>(cacheKey)
+        
+        if (cachedData) {
+          setData(cachedData)
+          setIsLoading(false)
+          return
+        }
       }
 
       const response = await fetch(`/api/analytics/monthly-tracking?month=${targetMonth}&year=${targetYear}`)

@@ -86,32 +86,9 @@ async function fetchShopifyDailyPayout(integration: any): Promise<DailyPayoutDat
   }
 }
 
-/**
- * Generates sample payout data for development
- */
-function generateSampleDailyPayout(date: Date = new Date()): DailyPayoutData {
-  const seed = date.getDate()
-  const baseAmount = 1500 + (seed * 47) % 1000
-  const taxRate = 0.08 + (seed * 0.01) % 0.05
-  
-  const payoutAmount = Math.round(baseAmount * 100) / 100
-  const taxToSetAside = Math.round(payoutAmount * taxRate * 100) / 100
-  const safeToSpend = payoutAmount - taxToSetAside
-  const orderCount = 8 + (seed % 12)
-  
-  return {
-    payoutAmount,
-    taxToSetAside,
-    safeToSpend,
-    orderCount,
-    currency: 'USD',
-    date: date.toLocaleDateString(),
-    dateRange: 'Today',
-    isSetAside: false,
-    hasPayoutToday: true,
-    payoutId: `sample_${date.toISOString().split('T')[0]}`
-  }
-}
+import { sampleDataStore } from '@/lib/sample-data-store'
+
+// Note: generateSampleDailyPayout function removed - now using shared store
 
 export async function GET(request: NextRequest) {
   try {
@@ -145,10 +122,21 @@ export async function GET(request: NextRequest) {
     // Check if we're in sample data mode
     if (process.env.USE_SAMPLE_DATA === 'true') {
       console.log('🎲 Using sample data for daily payout')
-      const data = generateSampleDailyPayout()
+      const data = sampleDataStore.getDailyPayout()
       
-      // Check if this payout has been marked as set aside in session storage
-      // In production, this would check the database
+      if (!data) {
+        return NextResponse.json({ 
+          success: true, 
+          data: {
+            hasPayoutToday: false,
+            currency: 'USD',
+            date: new Date().toLocaleDateString(),
+            dateRange: 'Today'
+          },
+          mode: 'sample'
+        })
+      }
+      
       const response = NextResponse.json({ 
         success: true, 
         data,
@@ -243,11 +231,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    // In sample mode, just return success
+    // In sample mode, update the shared store
     if (process.env.USE_SAMPLE_DATA === 'true') {
-      console.log('🎲 Sample mode: simulating payout status update')
+      console.log('🎲 Sample mode: updating payout status in shared store')
+      
+      let success = false
+      if (action === 'confirm_set_aside') {
+        success = sampleDataStore.setPayoutAsAside(payoutId)
+      } else if (action === 'undo_set_aside') {
+        success = sampleDataStore.undoSetAside(payoutId)
+      }
+      
       return NextResponse.json({ 
-        success: true, 
+        success,
         action,
         payoutId,
         payoutDate,

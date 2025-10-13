@@ -52,29 +52,23 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     updatePeriod
   } = useRecentPayouts()
   
-  // Wrap set aside functions to also refresh monthly tracking
+  // Wrap set aside functions to refresh monthly tracking immediately
   const handleConfirmSetAside = useCallback(async () => {
     await confirmSetAside()
-    // Wait a bit for the backend to update, then refresh monthly data
-    setTimeout(() => {
-      refreshMonthlyTracking()
-    }, 1500)
+    // Refresh monthly tracking to reflect changes
+    refreshMonthlyTracking()
   }, [confirmSetAside, refreshMonthlyTracking])
   
   const handleUndoSetAside = useCallback(async () => {
     await undoSetAside()
-    // Wait a bit for the backend to update, then refresh monthly data
-    setTimeout(() => {
-      refreshMonthlyTracking()
-    }, 1500)
+    // Refresh monthly tracking to reflect changes
+    refreshMonthlyTracking()
   }, [undoSetAside, refreshMonthlyTracking])
   
   const handleRecentPayoutSetAside = useCallback(async (payoutId: string) => {
     await setPayoutAsAside(payoutId)
-    // Wait a bit for the backend to update, then refresh monthly data
-    setTimeout(() => {
-      refreshMonthlyTracking()
-    }, 1500)
+    // Refresh monthly tracking to reflect changes
+    refreshMonthlyTracking()
   }, [setPayoutAsAside, refreshMonthlyTracking])
 
   // Show loading state for initial load

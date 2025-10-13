@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { sampleDataStore } from '@/lib/sample-data-store'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -34,64 +35,7 @@ interface PayoutItem {
   orders?: OrderDetail[]
 }
 
-/**
- * Generates sample recent payouts data for development
- */
-function generateSampleRecentPayouts(period?: string, startDate?: string, endDate?: string): PayoutItem[] {
-  const payouts: PayoutItem[] = []
-  const today = new Date()
-  
-  // Calculate date range based on period
-  let rangeStartDate: Date
-  let rangeEndDate: Date = new Date(today)
-  
-  if (startDate && endDate) {
-    rangeStartDate = new Date(startDate)
-    rangeEndDate = new Date(endDate)
-  } else if (period === 'week') {
-    rangeStartDate = new Date(today)
-    rangeStartDate.setDate(today.getDate() - 7)
-  } else if (period === 'month') {
-    rangeStartDate = new Date(today)
-    rangeStartDate.setMonth(today.getMonth() - 1)
-  } else {
-    // Default to last week
-    rangeStartDate = new Date(today)
-    rangeStartDate.setDate(today.getDate() - 7)
-  }
-  
-  // Generate payouts within the date range
-  const daysDiff = Math.ceil((rangeEndDate.getTime() - rangeStartDate.getTime()) / (1000 * 60 * 60 * 24))
-  const payoutCount = Math.min(Math.max(daysDiff / 2, 3), 10) // Generate 3-10 payouts based on range
-  
-  for (let i = 0; i < payoutCount; i++) {
-    const payoutDate = new Date(rangeStartDate)
-    const dayOffset = Math.floor((daysDiff / payoutCount) * i)
-    payoutDate.setDate(payoutDate.getDate() + dayOffset)
-    
-    const seed = payoutDate.getDate() + i
-    const baseAmount = 1000 + (seed * 123) % 2000
-    const taxRate = 0.08 + ((seed * 0.01) % 0.04)
-    const taxAmount = Math.round(baseAmount * taxRate * 100) / 100
-    const orderCount = 3 + (seed % 8)
-    
-    // Vary set aside status
-    const isSetAside = i === 0 ? false : Math.random() > 0.4
-    
-    payouts.push({
-      id: `sample_payout_${i}`,
-      date: payoutDate.toISOString(),
-      amount: Math.round(baseAmount * 100) / 100,
-      currency: 'USD',
-      taxAmount,
-      isSetAside,
-      orderCount,
-      orders: [] // Orders loaded lazily when expanded
-    })
-  }
-  
-  return payouts
-}
+// Note: generateSampleRecentPayouts function removed - now using shared store
 
 /**
  * Fetches recent payouts from database for production
@@ -165,11 +109,39 @@ export async function GET(request: NextRequest) {
     // Check if we're in sample data mode
     if (process.env.USE_SAMPLE_DATA === 'true') {
       console.log('🎲 Using sample data for recent payouts')
-      const data = generateSampleRecentPayouts(period || undefined, startDate || undefined, endDate || undefined)
+      const allPayouts = sampleDataStore.getRecentPayouts()
+      
+      // Filter payouts based on period parameters
+      let filteredPayouts = allPayouts
+      
+      if (period || startDate || endDate) {
+        const today = new Date()
+        let rangeStartDate: Date
+        let rangeEndDate: Date = new Date(today)
+        
+        if (startDate && endDate) {
+          rangeStartDate = new Date(startDate)
+          rangeEndDate = new Date(endDate)
+        } else if (period === 'week') {
+          rangeStartDate = new Date(today)
+          rangeStartDate.setDate(today.getDate() - 7)
+        } else if (period === 'month') {
+          rangeStartDate = new Date(today)
+          rangeStartDate.setMonth(today.getMonth() - 1)
+        } else {
+          rangeStartDate = new Date(today)
+          rangeStartDate.setDate(today.getDate() - 7)
+        }
+        
+        filteredPayouts = allPayouts.filter(payout => {
+          const payoutDate = new Date(payout.date)
+          return payoutDate >= rangeStartDate && payoutDate <= rangeEndDate
+        })
+      }
       
       return NextResponse.json({ 
         success: true, 
-        data,
+        data: filteredPayouts,
         mode: 'sample',
         filter: { period, startDate, endDate }
       })
@@ -236,11 +208,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    // In sample mode, just return success
+    // In sample mode, update the shared store
     if (process.env.USE_SAMPLE_DATA === 'true') {
-      console.log('🎲 Sample mode: simulating payout set aside update')
+      console.log('🎲 Sample mode: updating payout status in shared store')
+      const success = sampleDataStore.setPayoutAsAside(payoutId)
+      
       return NextResponse.json({ 
-        success: true, 
+        success,
         action,
         payoutId,
         timestamp: new Date().toISOString(),
