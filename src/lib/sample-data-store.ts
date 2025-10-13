@@ -146,9 +146,23 @@ class SampleDataStore {
   setPayoutAsAside(payoutId: string): boolean {
     this.initialize()
     
-    // Update daily payout if it matches
+    // Check if this is the daily payout
     if (this.dailyPayout?.payoutId === payoutId) {
       this.dailyPayout.isSetAside = true
+      
+      // Create a status record for the daily payout
+      this.payoutStatuses.set(payoutId, {
+        id: payoutId,
+        payoutId,
+        payoutDate: new Date().toISOString(),
+        payoutAmount: this.dailyPayout.payoutAmount,
+        taxAmount: this.dailyPayout.taxToSetAside,
+        isSetAside: true,
+        setAsideAt: new Date().toISOString(),
+        currency: this.dailyPayout.currency
+      })
+      
+      return true
     }
 
     // Find the payout in recent payouts
@@ -212,6 +226,18 @@ class SampleDataStore {
         actualSetAside += status.taxAmount
       }
     })
+    
+    // Check if today's daily payout is set aside for this month
+    if (this.dailyPayout?.isSetAside) {
+      const today = new Date()
+      if (today.getMonth() + 1 === month && today.getFullYear() === year) {
+        // Only add if not already counted in payoutStatuses
+        const existingStatus = this.payoutStatuses.get(this.dailyPayout.payoutId || '')
+        if (!existingStatus) {
+          actualSetAside += this.dailyPayout.taxToSetAside
+        }
+      }
+    }
     
     // Add any recent payouts that are set aside for this month
     this.recentPayouts.forEach(payout => {
