@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { AlertTriangle, CheckCircle, Clock, Calendar, Bell } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Clock, Calendar, Bell, PiggyBank, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -85,42 +85,86 @@ const HeroPayoutCard: React.FC<HeroPayoutCardProps> = ({
   if (state === 'confirmed' && data) {
     return (
       <div className={cn("w-full h-full", className)}>
-        <div className="bg-green-100 rounded-2xl p-4 md:p-6 border-2 border-green-200 h-full flex flex-col justify-center">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-4 sm:space-y-0">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-base sm:text-lg font-semibold text-green-900">
-                  Today's payout of {formatCurrency(data.amount, data.currency)} set aside for taxes ✓
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-xl p-4 md:p-8 h-full flex flex-col justify-between border-2 border-green-200">
+          <div className="text-center space-y-4 md:space-y-6 flex-grow flex flex-col justify-center">
+            {/* Success Header with Animation */}
+            <div className="space-y-2">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-green-500 rounded-full flex items-center justify-center shadow-lg transform scale-110 animate-pulse">
+                  <CheckCircle className="w-10 h-10 md:w-12 md:h-12 text-white" />
                 </div>
-                <div className="text-sm text-green-700 mt-1">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-200 text-green-800">
-                    Completed {new Date().toLocaleTimeString()}
-                  </span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-bold text-green-900">
+                Tax Set Aside Complete! ✓
+              </h2>
+              <p className="text-sm sm:text-base text-green-700">
+                You've successfully set aside today's tax amount
+              </p>
+            </div>
+
+            {/* Payout Amount Display */}
+            <div className="py-4 md:py-6 space-y-4">
+              <div className="bg-white rounded-xl p-4 md:p-6 shadow-inner border border-green-100">
+                <div className="text-xs sm:text-sm font-semibold text-green-600 uppercase tracking-wide mb-1">
+                  Today's Payout
+                </div>
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900">
+                  {formatCurrency(data.amount, data.currency)}
+                </div>
+                {data.orderCount && (
+                  <div className="text-xs sm:text-sm text-gray-600 mt-2">
+                    from {data.orderCount} orders
+                  </div>
+                )}
+              </div>
+
+              {/* Amount Set Aside */}
+              <div className="bg-green-100 rounded-xl p-4 border border-green-200">
+                <div className="flex items-center justify-center space-x-2">
+                  <PiggyBank className="w-6 h-6 text-green-600" />
+                  <div>
+                    <span className="text-lg font-semibold text-green-900">
+                      {formatCurrency(data.taxToSetAside, data.currency)}
+                    </span>
+                    <span className="text-green-700 ml-2 text-sm">
+                      safely set aside for taxes
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-            {onUndo && (
-              <button 
-                onClick={async () => {
-                  try {
-                    await onUndo()
-                    toast.info('Tax set aside has been undone', {
-                      description: 'You can mark it as set aside again anytime.',
-                    })
-                  } catch (error) {
-                    toast.error('Failed to undo action', {
-                      description: 'Please try again.',
-                    })
-                  }
-                }}
-                className="text-sm text-green-600 hover:text-green-900 underline transition-colors self-start sm:self-center mt-2 sm:mt-0 min-h-[44px] px-2 py-2"
-              >
-                Undo
-              </button>
-            )}
+
+            {/* Completion Status */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-center space-x-2 text-green-600">
+                <Clock className="w-4 h-4" />
+                <span className="text-sm font-medium">
+                  Completed at {new Date().toLocaleTimeString()}
+                </span>
+              </div>
+              
+              {/* Undo Button */}
+              {onUndo && (
+                <button 
+                  onClick={async () => {
+                    try {
+                      await onUndo()
+                      toast.info('Tax set aside has been undone', {
+                        description: 'You can mark it as set aside again anytime.',
+                      })
+                    } catch (error) {
+                      toast.error('Failed to undo action', {
+                        description: 'Please try again.',
+                      })
+                    }
+                  }}
+                  className="group flex items-center justify-center space-x-2 text-sm text-green-600 hover:text-green-800 font-medium transition-all mx-auto px-4 py-2 rounded-lg hover:bg-green-100"
+                >
+                  <X className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+                  <span>Undo this action</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
