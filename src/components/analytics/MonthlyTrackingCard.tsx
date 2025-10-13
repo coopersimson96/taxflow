@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CheckCircle, AlertTriangle, TrendingUp, Clock, BarChart3, Eye } from 'lucide-react'
+import { CheckCircle, AlertTriangle, TrendingUp, Clock, BarChart3, Eye, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import OutstandingPayoutsModal from './OutstandingPayoutsModal'
 
@@ -21,6 +21,9 @@ interface MonthlyTrackingCardProps {
   onViewReport?: () => void
   onSetAside?: (payoutId: string) => Promise<void>
   onRefreshData?: () => void
+  onMonthChange?: (month: number, year: number) => void
+  currentMonth?: number
+  currentYear?: number
   className?: string
 }
 
@@ -30,6 +33,9 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
   onViewReport,
   onSetAside,
   onRefreshData,
+  onMonthChange,
+  currentMonth,
+  currentYear,
   className
 }) => {
   const [showOutstandingModal, setShowOutstandingModal] = useState(false)
@@ -110,6 +116,57 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
     }
   }
 
+  // Navigation helpers
+  const today = new Date()
+  const todayMonth = today.getMonth() + 1
+  const todayYear = today.getFullYear()
+  
+  const canNavigateNext = () => {
+    if (!data || !onMonthChange) return false
+    const dataMonth = new Date(Date.parse(data.month + " 1, 2000")).getMonth() + 1
+    // Can't go beyond current month
+    if (data.year === todayYear) {
+      return dataMonth < todayMonth
+    }
+    return data.year < todayYear
+  }
+  
+  const canNavigatePrev = () => {
+    if (!data || !onMonthChange) return false
+    // Reasonable limit: don't go back more than 2 years
+    return data.year > todayYear - 2
+  }
+  
+  const handlePrevMonth = () => {
+    if (!data || !onMonthChange || !canNavigatePrev()) return
+    
+    const dataMonth = new Date(Date.parse(data.month + " 1, 2000")).getMonth() + 1
+    let newMonth = dataMonth - 1
+    let newYear = data.year
+    
+    if (newMonth < 1) {
+      newMonth = 12
+      newYear -= 1
+    }
+    
+    onMonthChange(newMonth, newYear)
+  }
+  
+  const handleNextMonth = () => {
+    if (!data || !onMonthChange || !canNavigateNext()) return
+    
+    const dataMonth = new Date(Date.parse(data.month + " 1, 2000")).getMonth() + 1
+    let newMonth = dataMonth + 1
+    let newYear = data.year
+    
+    if (newMonth > 12) {
+      newMonth = 1
+      newYear += 1
+    }
+    
+    onMonthChange(newMonth, newYear)
+  }
+
   // Loading State
   if (isLoading) {
     return (
@@ -160,9 +217,41 @@ const MonthlyTrackingCard: React.FC<MonthlyTrackingCardProps> = ({
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 md:mb-8 space-y-4 sm:space-y-0">
           <div className="flex items-center space-x-2 sm:space-x-3">
             <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-900">
-              {data.month.toUpperCase()} {data.year}
-            </h2>
+            <div className="flex items-center space-x-2">
+              {/* Previous Month Button */}
+              <button
+                onClick={handlePrevMonth}
+                disabled={!canNavigatePrev()}
+                className={cn(
+                  "p-1 sm:p-1.5 rounded-lg transition-all",
+                  canNavigatePrev() 
+                    ? "hover:bg-gray-100 text-gray-600 hover:text-gray-900" 
+                    : "text-gray-300 cursor-not-allowed"
+                )}
+                aria-label="Previous month"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+              
+              <h2 className="text-xl sm:text-2xl font-bold text-zinc-900 min-w-[140px] sm:min-w-[180px] text-center">
+                {data.month.toUpperCase()} {data.year}
+              </h2>
+              
+              {/* Next Month Button */}
+              <button
+                onClick={handleNextMonth}
+                disabled={!canNavigateNext()}
+                className={cn(
+                  "p-1 sm:p-1.5 rounded-lg transition-all",
+                  canNavigateNext() 
+                    ? "hover:bg-gray-100 text-gray-600 hover:text-gray-900" 
+                    : "text-gray-300 cursor-not-allowed"
+                )}
+                aria-label="Next month"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
           </div>
           <div className={cn(
             "px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-semibold self-start sm:self-center",

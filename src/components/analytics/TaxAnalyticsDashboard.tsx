@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback } from 'react'
+import React, { lazy, Suspense, useCallback, useState } from 'react'
 import { useTaxDashboard } from '@/hooks/useTaxDashboard'
 import { useDailyPayout } from '@/hooks/useDailyPayout'
 import { useMonthlyTracking } from '@/hooks/useMonthlyTracking'
@@ -25,6 +25,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
 }) => {
   const router = useRouter()
   
+  // State for selected month
+  const today = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear())
+  
   const { data, state, isInitialLoading } = useTaxDashboard({
     organizationId,
     integrationId: propIntegrationId,
@@ -43,7 +48,7 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     data: monthlyData,
     isLoading: monthlyLoading,
     refresh: refreshMonthlyTracking
-  } = useMonthlyTracking()
+  } = useMonthlyTracking(selectedMonth, selectedYear)
 
   const {
     payouts: recentPayouts,
@@ -70,6 +75,11 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
     // Refresh monthly tracking to reflect changes
     refreshMonthlyTracking()
   }, [setPayoutAsAside, refreshMonthlyTracking])
+  
+  const handleMonthChange = useCallback((month: number, year: number) => {
+    setSelectedMonth(month)
+    setSelectedYear(year)
+  }, [])
 
   // Show loading state for initial load
   if (isInitialLoading) {
@@ -193,6 +203,9 @@ const TaxAnalyticsDashboard: React.FC<TaxAnalyticsDashboardProps> = ({
               }}
               onSetAside={handleRecentPayoutSetAside}
               onRefreshData={refreshMonthlyTracking}
+              onMonthChange={handleMonthChange}
+              currentMonth={selectedMonth}
+              currentYear={selectedYear}
             />
           </Suspense>
         </div>
