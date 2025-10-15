@@ -483,7 +483,8 @@ export class BillingService {
   }
 
   /**
-   * Cancel billing subscription
+   * Cancel billing subscription (local database only)
+   * Use cancelBillingWithShopify for complete cancellation
    */
   static async cancelBilling(organizationId: string): Promise<void> {
     await prisma.billingPlan.update({
@@ -493,5 +494,112 @@ export class BillingService {
         cancelledAt: new Date()
       }
     })
+  }
+
+  /**
+   * Cancel Shopify subscription via GraphQL API
+   * SECURITY: Validates subscription belongs to shop before cancellation
+   */
+  private static async cancelShopifySubscription(
+    shop: string,
+    accessToken: string,
+    subscriptionId: string
+  ): Promise<void> {
+    if (!this.validateChargeId(subscriptionId)) {
+      throw new Error('Invalid subscription ID format')
+    }
+
+    const mutation = `
+      mutation appSubscriptionCancel($id: ID!) {
+        appSubscriptionCancel(id: $id) {
+          appSubscription {
+            id
+            status
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `
+
+    const result = await ShopifyGraphQLService.executeQuery<{
+      appSubscriptionCancel: {
+        appSubscription: {
+          id: string
+          status: string
+        }
+        userErrors: Array<{ field: string; message: string }>
+      }
+    }>(shop, accessToken, {
+      query: mutation,
+      variables: { id: subscriptionId }
+    })
+
+    if (result.appSubscriptionCancel.userErrors?.length > 0) {
+      throw new Error(`Subscription cancellation failed: ${result.appSubscriptionCancel.userErrors[0].message}`)
+    }
+  }
+
+  /**
+   * Complete billing cleanup when app is uninstalled
+   * Cancels with Shopify and updates local database
+   */
+  static async cleanupBillingOnUninstall(shop: string): Promise<void> {
+    if (!this.validateShopDomain(shop)) {
+      throw new Error('Invalid shop domain')
+    }
+
+    try {
+      // Get shop credentials
+      const credentials = await this.getShopCredentials(shop)
+
+      // Get active billing plan
+      const plan = await prisma.billingPlan.findUnique({
+        where: { organizationId: credentials.organizationId },
+        select: {
+          id: true,
+          recurringChargeId: true,
+          status: true
+        }
+      })
+
+      if (!plan) {
+        console.log(`No billing plan found for shop: ${shop}`)
+        return
+      }
+
+      // Cancel with Shopify if subscription is active
+      if (plan.status === 'ACTIVE' && plan.recurringChargeId) {
+        try {
+          await this.cancelShopifySubscription(
+            credentials.shop,
+            credentials.accessToken,
+            plan.recurringChargeId
+          )
+          console.log(`✅ Cancelled Shopify subscription: ${plan.recurringChargeId}`)
+        } catch (error) {
+          // Log error but continue with local cleanup
+          // Shopify may have already cancelled it
+          console.error('Failed to cancel Shopify subscription (continuing with local cleanup):', error)
+        }
+      }
+
+      // Update local database
+      await prisma.billingPlan.update({
+        where: { id: plan.id },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: new Date()
+        }
+      })
+
+      console.log(`✅ Billing cleanup completed for shop: ${shop}`)
+
+    } catch (error) {
+      console.error(`Failed to cleanup billing for shop ${shop}:`, error)
+      throw error
+    }
   }
 }

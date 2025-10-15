@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { BillingService } from '@/lib/services/billing-service'
 import { verifyUserOwnsShop } from '@/lib/auth/authorization'
 import { ShopifyService } from '@/lib/services/shopify-service'
+import { rateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,7 @@ export const dynamic = 'force-dynamic'
  * - Requires valid session
  * - Validates user owns the shop
  * - Validates shop domain format
+ * - Rate limited to prevent abuse
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +27,12 @@ export async function POST(request: NextRequest) {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // SECURITY: Rate limiting
+    const rateLimitResult = rateLimit(request, RateLimitPresets.BILLING, session)
+    if (rateLimitResult) {
+      return rateLimitResult
     }
 
     // Parse and validate input

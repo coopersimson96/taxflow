@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { BillingService } from '@/lib/services/billing-service'
 import { prisma } from '@/lib/prisma'
+import { rateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // SECURITY: Rate limiting
+    const rateLimitResult = rateLimit(request, RateLimitPresets.READ, session)
+    if (rateLimitResult) {
+      return rateLimitResult
     }
 
     const { searchParams } = new URL(request.url)

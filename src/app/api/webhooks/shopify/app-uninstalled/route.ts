@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { withWebhookDb } from '@/lib/prisma'
+import { BillingService } from '@/lib/services/billing-service'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,7 +62,7 @@ async function handleAppUninstall(shop: string) {
       const integration = await db.integration.findFirst({
         where: {
           type: 'SHOPIFY',
-          credentials: {
+          config: {
             path: ['shop'],
             equals: shop
           }
@@ -76,12 +77,18 @@ async function handleAppUninstall(shop: string) {
       // Log uninstall event
       console.log(`Processing uninstall for integration: ${integration.id}`)
 
-      // 1. Cancel any active subscriptions
-      // TODO: Implement when billing is added
-      
+      // 1. Cancel any active billing subscriptions with Shopify
+      try {
+        await BillingService.cleanupBillingOnUninstall(shop)
+        console.log(`✅ Billing cleanup completed for shop: ${shop}`)
+      } catch (billingError) {
+        // Log but don't fail the whole process
+        console.error(`⚠️ Billing cleanup failed (non-fatal):`, billingError)
+      }
+
       // 2. Remove webhook subscriptions from Shopify
       // (Shopify automatically removes them on uninstall)
-      
+
       // 3. Mark integration as inactive (update config with uninstall info)
       const currentConfig = integration.config as any || {}
       await db.integration.update({
@@ -97,7 +104,7 @@ async function handleAppUninstall(shop: string) {
       })
 
       console.log(`✅ App uninstall processed for shop: ${shop}`)
-      
+
       // Schedule data deletion after grace period (30 days)
       // In production, use a job queue like BullMQ or SQS
       scheduleDataDeletion(integration.id, 30)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ShopifyService } from '@/lib/services/shopify-service'
 import { prisma, withWebhookDb } from '@/lib/prisma'
 import { processTaxBreakdown, validateTaxBreakdown, formatTaxBreakdownSummary } from '@/lib/utils/tax-processor'
+import { rateLimit, RateLimitPresets } from '@/lib/middleware/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     description: 'This endpoint handles all Shopify webhook events',
     supportedTopics: [
       'orders/create',
-      'orders/updated', 
+      'orders/updated',
       'orders/cancelled',
       'refunds/create',
       'app/uninstalled'
@@ -27,7 +28,14 @@ export async function POST(request: NextRequest) {
   console.log('🚀 Webhook received at:', new Date().toISOString())
   console.log('🚀 Request method:', request.method)
   console.log('🚀 Request URL:', request.url)
-  
+
+  // SECURITY: Rate limiting for webhook endpoint
+  const rateLimitResult = rateLimit(request, RateLimitPresets.WEBHOOK)
+  if (rateLimitResult) {
+    console.log('⚠️ Webhook rate limited')
+    return rateLimitResult
+  }
+
   try {
     // Get all headers for debugging
     const headers = Object.fromEntries(request.headers.entries())
