@@ -1,9 +1,16 @@
 /**
  * Shopify GraphQL Admin API Service
- * 
+ *
  * Uses GraphQL API to avoid protected customer data restrictions
  * while still accessing all necessary order and tax information.
+ *
+ * Features:
+ * - Automatic retry with exponential backoff
+ * - Rate limit handling
+ * - Circuit breaker for failing endpoints
  */
+
+import { retryShopifyRequest, CircuitBreaker, parseShopifyRateLimitHeaders } from '@/lib/utils/retry'
 
 interface GraphQLQuery {
   query: string;
@@ -19,8 +26,21 @@ interface GraphQLResponse<T> {
 }
 
 export class ShopifyGraphQLService {
+  // Circuit breaker per shop to prevent hammering failing stores
+  private static circuitBreakers = new Map<string, CircuitBreaker>()
+
   /**
-   * Execute a GraphQL query against Shopify Admin API
+   * Get or create circuit breaker for a shop
+   */
+  private static getCircuitBreaker(shop: string): CircuitBreaker {
+    if (!this.circuitBreakers.has(shop)) {
+      this.circuitBreakers.set(shop, new CircuitBreaker(5, 60000))
+    }
+    return this.circuitBreakers.get(shop)!
+  }
+
+  /**
+   * Execute a GraphQL query against Shopify Admin API with retry logic
    */
   static async executeQuery<T>(
     shop: string,
@@ -31,38 +51,53 @@ export class ShopifyGraphQLService {
     const url = `https://${shopDomain}/admin/api/2024-01/graphql.json`
 
     console.log('🔗 GraphQL Query:', query.query.substring(0, 200) + '...')
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(query)
+
+    // Get circuit breaker for this shop
+    const circuitBreaker = this.getCircuitBreaker(shop)
+
+    // Execute with circuit breaker and retry logic
+    return circuitBreaker.execute(async () => {
+      const response = await retryShopifyRequest(
+        () => fetch(url, {
+          method: 'POST',
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(query)
+        }),
+        {
+          maxRetries: 5,
+          initialDelay: 2000,
+          onRetry: (error, attempt, delay) => {
+            console.log(
+              `⚠️ Retry attempt ${attempt} for ${shop} after ${delay}ms: ${error.message}`
+            )
+          }
+        }
+      )
+
+      // Log rate limit info
+      const rateLimitInfo = parseShopifyRateLimitHeaders(response.headers)
+      if (rateLimitInfo.callsRemaining !== undefined) {
+        console.log(
+          `📊 Shopify API calls: ${rateLimitInfo.callsRemaining}/${rateLimitInfo.callLimit} remaining`
+        )
+      }
+
+      const result: GraphQLResponse<T> = await response.json()
+
+      if (result.errors && result.errors.length > 0) {
+        console.error('❌ GraphQL errors:', result.errors)
+        throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`)
+      }
+
+      if (!result.data) {
+        throw new Error('No data returned from GraphQL query')
+      }
+
+      return result.data
     })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('❌ GraphQL API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        errorText
-      })
-      throw new Error(`GraphQL request failed: ${response.status} - ${errorText}`)
-    }
-
-    const result: GraphQLResponse<T> = await response.json()
-
-    if (result.errors && result.errors.length > 0) {
-      console.error('❌ GraphQL errors:', result.errors)
-      throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`)
-    }
-
-    if (!result.data) {
-      throw new Error('No data returned from GraphQL query')
-    }
-
-    return result.data
   }
 
   /**

@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { SHOPIFY_CONFIG } from '@/lib/config/constants'
+import { retryShopifyRequest, parseShopifyRateLimitHeaders } from '@/lib/utils/retry'
 
 export interface ShopifyTokens {
   accessToken: string
@@ -101,7 +102,7 @@ export class ShopifyService {
   }
 
   /**
-   * Make authenticated API request to Shopify
+   * Make authenticated API request to Shopify with retry logic
    */
   static async makeApiRequest(
     shop: string,
@@ -110,19 +111,33 @@ export class ShopifyService {
     options: RequestInit = {}
   ): Promise<any> {
     const url = `https://${shop}/admin/api/${this.API_VERSION}/${endpoint}`
-    
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'X-Shopify-Access-Token': accessToken,
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Shopify API request failed: ${response.status} ${errorText}`)
+    const response = await retryShopifyRequest(
+      () => fetch(url, {
+        ...options,
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      }),
+      {
+        maxRetries: 5,
+        initialDelay: 2000,
+        onRetry: (error, attempt, delay) => {
+          console.log(
+            `⚠️ Retry attempt ${attempt} for ${endpoint} after ${delay}ms: ${error.message}`
+          )
+        }
+      }
+    )
+
+    // Log rate limit info
+    const rateLimitInfo = parseShopifyRateLimitHeaders(response.headers)
+    if (rateLimitInfo.callsRemaining !== undefined) {
+      console.log(
+        `📊 Shopify API calls: ${rateLimitInfo.callsRemaining}/${rateLimitInfo.callLimit} remaining`
+      )
     }
 
     return response.json()
