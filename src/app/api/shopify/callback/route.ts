@@ -468,10 +468,38 @@ export async function GET(request: NextRequest) {
         // Don't fail the connection for import issues
       }
 
-      // Redirect to success page
-      return NextResponse.redirect(
-        new URL(`/connect?success=true&shop=${normalizedShop}`, request.url)
-      )
+      // After successful integration setup, redirect to billing
+      console.log('✅ Integration setup complete, redirecting to billing...')
+      
+      // Import billing service
+      const { billingService } = await import('@/lib/services/billing-service')
+      
+      try {
+        // Check if billing already exists and is active
+        const existingPlan = await billingService.getActivePlan(organizationId)
+        
+        if (existingPlan?.status === 'ACTIVE') {
+          console.log('Billing already active, redirecting to app')
+          return NextResponse.redirect(
+            new URL(`/?shop=${normalizedShop}&billing=active`, request.url)
+          )
+        }
+        
+        // Create billing and redirect to confirmation
+        console.log('Creating billing charge for new installation...')
+        const confirmationUrl = await billingService.initiateBilling(normalizedShop, organizationId)
+        
+        console.log('Redirecting to billing confirmation:', confirmationUrl)
+        return NextResponse.redirect(confirmationUrl)
+        
+      } catch (billingError) {
+        console.error('Billing setup failed during OAuth:', billingError)
+        
+        // Fall back to manual billing setup
+        return NextResponse.redirect(
+          new URL(`/billing/setup?shop=${normalizedShop}&error=auto_billing_failed`, request.url)
+        )
+      }
 
     } catch (tokenError) {
       console.error('Token exchange failed:', tokenError)

@@ -59,6 +59,7 @@ model Organization {
   taxPeriods    TaxPeriod[]
   transactions  Transaction[]
   payoutStatuses PayoutStatus[]
+  billingPlan   BillingPlan?
 
   @@map("organizations")
 }
@@ -350,4 +351,102 @@ model PayoutStatus {
   @@unique([organizationId, payoutId])
   @@index([organizationId, payoutDate])
   @@map("payout_statuses")
+}
+
+model BillingPlan {
+  id                String   @id @default(cuid())
+  organizationId    String   @unique
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  // Shopify charge IDs
+  recurringChargeId String?  @unique
+  status           BillingStatus @default(PENDING)
+  
+  // Pricing
+  baseFee          Float    @default(49.00)
+  usageRate        Float    @default(0.005) // 0.5%
+  currency         String   @default("USD")
+  
+  // Billing period
+  billingStartDate DateTime?
+  billingEndDate   DateTime?
+  
+  // Activation
+  activatedAt      DateTime?
+  cancelledAt      DateTime?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  // Relations
+  usageRecords     UsageRecord[]
+  invoices         Invoice[]
+  
+  @@map("billing_plans")
+}
+
+model UsageRecord {
+  id               String   @id @default(cuid())
+  billingPlanId    String
+  billingPlan      BillingPlan @relation(fields: [billingPlanId], references: [id], onDelete: Cascade)
+  
+  // Period
+  periodStart      DateTime
+  periodEnd        DateTime
+  
+  // Metrics
+  transactionCount Int      @default(0)
+  transactionVolume Float   @default(0)
+  taxCalculated    Float    @default(0)
+  
+  // Calculated fees
+  usageFee         Float    @default(0)
+  
+  createdAt        DateTime @default(now())
+  
+  @@unique([billingPlanId, periodStart, periodEnd])
+  @@index([billingPlanId, periodStart])
+  @@map("usage_records")
+}
+
+model Invoice {
+  id               String   @id @default(cuid())
+  billingPlanId    String
+  billingPlan      BillingPlan @relation(fields: [billingPlanId], references: [id], onDelete: Cascade)
+  
+  // Shopify charge info
+  shopifyUsageChargeId String?
+  
+  // Period
+  periodStart      DateTime
+  periodEnd        DateTime
+  
+  // Amounts
+  baseFee          Float
+  usageFee         Float
+  totalAmount      Float
+  currency         String   @default("USD")
+  
+  // Status
+  status           InvoiceStatus @default(PENDING)
+  paidAt           DateTime?
+  
+  createdAt        DateTime @default(now())
+  
+  @@index([billingPlanId, periodStart])
+  @@map("invoices")
+}
+
+enum BillingStatus {
+  PENDING          // Awaiting charge confirmation
+  ACTIVE           // Paid and active
+  CANCELLED        // Merchant cancelled
+  EXPIRED          // Payment failed
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
 }
