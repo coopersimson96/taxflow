@@ -1,6 +1,21 @@
 import { prisma } from '@/lib/prisma'
-import { shopifyApi } from '@/lib/shopify'
 import { BillingStatus, InvoiceStatus } from '@prisma/client'
+import { ShopifyGraphQLService } from './shopify-graphql'
+
+/**
+ * BillingService - Secure Shopify App Billing Management
+ *
+ * Security Architecture:
+ * - All Shopify API calls are validated
+ * - Charge IDs are verified against Shopify before activation
+ * - Input validation on all parameters
+ * - No user-controlled data in queries without sanitization
+ *
+ * Design Pattern:
+ * - Static methods for stateless operations
+ * - Follows existing codebase patterns
+ * - Uses ShopifyGraphQLService for all Shopify API calls
+ */
 
 export interface BillingPlan {
   id: string
@@ -23,65 +38,149 @@ export interface UsageMetrics {
   usageFee: number
 }
 
-export interface ShopSession {
+interface ShopCredentials {
   shop: string
   accessToken: string
+  organizationId: string
 }
 
 export class BillingService {
-  private readonly BASE_FEE = 49.00
-  private readonly USAGE_RATE = 0.005 // 0.5%
+  private static readonly BASE_FEE = 49.00
+  private static readonly USAGE_RATE = 0.005 // 0.5%
+  private static readonly BILLING_INTERVAL_DAYS = 30
+  private static readonly ALLOWED_CURRENCIES = ['USD', 'CAD'] as const
 
   /**
-   * Create billing plan and initiate immediate billing after app install
-   * No trial period - charge upfront
+   * SECURITY: Validate shop domain format
    */
-  async initiateBilling(shop: string, organizationId: string): Promise<string> {
-    // Check if billing plan already exists
+  private static validateShopDomain(shop: string): boolean {
+    // Must be a valid myshopify.com domain
+    const shopRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]\.myshopify\.com$/
+    return shopRegex.test(shop) && shop.length <= 100
+  }
+
+  /**
+   * SECURITY: Validate charge ID format (Shopify GID)
+   */
+  private static validateChargeId(chargeId: string): boolean {
+    // Shopify GraphQL IDs follow gid://shopify/Resource/ID pattern
+    const gidRegex = /^gid:\/\/shopify\/AppSubscription\/\d+$/
+    return gidRegex.test(chargeId)
+  }
+
+  /**
+   * SECURITY: Get shop credentials with validation
+   * Ensures the shop exists and is properly connected
+   */
+  private static async getShopCredentials(shop: string): Promise<ShopCredentials> {
+    if (!this.validateShopDomain(shop)) {
+      throw new Error('Invalid shop domain format')
+    }
+
+    const integration = await prisma.integration.findFirst({
+      where: {
+        type: 'SHOPIFY',
+        status: 'CONNECTED',
+        config: {
+          path: ['shop'],
+          equals: shop
+        }
+      },
+      select: {
+        credentials: true,
+        organizationId: true
+      }
+    })
+
+    if (!integration) {
+      throw new Error('Shop integration not found')
+    }
+
+    const credentials = integration.credentials as any
+
+    if (!credentials?.accessToken) {
+      throw new Error('Shop credentials invalid')
+    }
+
+    return {
+      shop,
+      accessToken: credentials.accessToken,
+      organizationId: integration.organizationId
+    }
+  }
+
+  /**
+   * Initiate billing subscription for organization
+   * SECURITY: Only creates billing if organization doesn't already have active billing
+   */
+  static async initiateBilling(
+    shop: string,
+    organizationId: string
+  ): Promise<string> {
+    // Validate inputs
+    if (!this.validateShopDomain(shop)) {
+      throw new Error('Invalid shop domain')
+    }
+
+    if (!organizationId || typeof organizationId !== 'string') {
+      throw new Error('Invalid organization ID')
+    }
+
+    // Get credentials and verify shop ownership
+    const credentials = await this.getShopCredentials(shop)
+
+    // SECURITY: Verify the organization owns this shop
+    if (credentials.organizationId !== organizationId) {
+      throw new Error('Shop does not belong to organization')
+    }
+
+    // Check if billing already exists
     const existingPlan = await prisma.billingPlan.findUnique({
-      where: { organizationId }
+      where: { organizationId },
+      select: { status: true }
     })
 
     if (existingPlan?.status === 'ACTIVE') {
       throw new Error('Organization already has active billing')
     }
 
-    // Create or update billing plan record
+    // Create or update billing plan
     const plan = await prisma.billingPlan.upsert({
       where: { organizationId },
-      update: {
-        status: 'PENDING'
-      },
+      update: { status: 'PENDING' },
       create: {
         organizationId,
         status: 'PENDING',
         baseFee: this.BASE_FEE,
-        usageRate: this.USAGE_RATE
+        usageRate: this.USAGE_RATE,
+        currency: 'USD'
       }
     })
 
-    // Create Shopify recurring charge
-    const charge = await this.createRecurringCharge(shop, plan)
+    // Create Shopify subscription
+    const subscription = await this.createShopifySubscription(
+      credentials.shop,
+      credentials.accessToken,
+      plan
+    )
 
-    // Update plan with charge ID
+    // Store charge ID for later verification
     await prisma.billingPlan.update({
       where: { id: plan.id },
-      data: { 
-        recurringChargeId: charge.appSubscription.id 
-      }
+      data: { recurringChargeId: subscription.id }
     })
 
-    // Return confirmation URL for immediate redirect
-    return charge.confirmationUrl
+    return subscription.confirmationUrl
   }
 
   /**
-   * Create recurring application charge in Shopify
+   * Create Shopify app subscription charge via GraphQL API
    */
-  private async createRecurringCharge(shop: string, plan: BillingPlan) {
-    const session = await this.getShopSession(shop)
-    const client = new shopifyApi.clients.Graphql({ session })
-
+  private static async createShopifySubscription(
+    shop: string,
+    accessToken: string,
+    plan: { baseFee: number; currency: string }
+  ): Promise<{ id: string; confirmationUrl: string }> {
     const mutation = `
       mutation appSubscriptionCreate($name: String!, $returnUrl: URL!, $test: Boolean!, $lineItems: [AppSubscriptionLineItemInput!]!) {
         appSubscriptionCreate(
@@ -122,42 +221,73 @@ export class BillingService {
       }]
     }
 
-    const response = await client.query({ 
-      data: { query: mutation, variables } 
-    })
+    const result = await ShopifyGraphQLService.executeQuery<{
+      appSubscriptionCreate: {
+        appSubscription: { id: string; name: string; status: string; currentPeriodEnd: string }
+        confirmationUrl: string
+        userErrors: Array<{ field: string; message: string }>
+      }
+    }>(shop, accessToken, { query: mutation, variables })
 
-    const result = response.body.data.appSubscriptionCreate
-
-    if (result.userErrors.length > 0) {
-      throw new Error(`Billing charge creation failed: ${result.userErrors[0].message}`)
+    if (result.appSubscriptionCreate.userErrors?.length > 0) {
+      throw new Error(`Shopify billing error: ${result.appSubscriptionCreate.userErrors[0].message}`)
     }
 
-    return result
+    return {
+      id: result.appSubscriptionCreate.appSubscription.id,
+      confirmationUrl: result.appSubscriptionCreate.confirmationUrl
+    }
   }
 
   /**
-   * Verify and activate billing after charge confirmation
+   * Activate billing after merchant confirms subscription
+   * SECURITY: Verifies charge_id directly with Shopify before activation
    */
-  async activateBilling(shop: string, chargeId: string): Promise<BillingPlan> {
-    // Verify charge status with Shopify
-    const charge = await this.getCharge(shop, chargeId)
-
-    if (charge.status !== 'ACTIVE') {
-      throw new Error(`Charge not active. Status: ${charge.status}`)
+  static async activateBilling(
+    shop: string,
+    chargeId: string
+  ): Promise<BillingPlan> {
+    // Validate inputs
+    if (!this.validateShopDomain(shop)) {
+      throw new Error('Invalid shop domain')
     }
 
-    // Find and activate billing plan
+    if (!this.validateChargeId(chargeId)) {
+      throw new Error('Invalid charge ID format')
+    }
+
+    // Get credentials
+    const credentials = await this.getShopCredentials(shop)
+
+    // SECURITY: Verify charge with Shopify BEFORE activating
+    const shopifySubscription = await this.verifyShopifySubscription(
+      credentials.shop,
+      credentials.accessToken,
+      chargeId
+    )
+
+    if (shopifySubscription.status !== 'ACTIVE') {
+      throw new Error(`Subscription not active. Status: ${shopifySubscription.status}`)
+    }
+
+    // Find billing plan by charge ID
     const plan = await prisma.billingPlan.findUnique({
       where: { recurringChargeId: chargeId }
     })
 
     if (!plan) {
-      throw new Error('Billing plan not found for charge ID')
+      throw new Error('Billing plan not found for charge')
     }
 
+    // SECURITY: Verify the plan belongs to the same organization as the shop
+    if (plan.organizationId !== credentials.organizationId) {
+      throw new Error('Charge does not belong to shop organization')
+    }
+
+    // Activate billing
     const now = new Date()
     const billingEndDate = new Date(now)
-    billingEndDate.setMonth(billingEndDate.getMonth() + 1)
+    billingEndDate.setDate(billingEndDate.getDate() + this.BILLING_INTERVAL_DAYS)
 
     return prisma.billingPlan.update({
       where: { id: plan.id },
@@ -171,12 +301,14 @@ export class BillingService {
   }
 
   /**
-   * Get charge details from Shopify
+   * SECURITY: Verify subscription status directly with Shopify
+   * This prevents fake charge_id attacks
    */
-  private async getCharge(shop: string, chargeId: string) {
-    const session = await this.getShopSession(shop)
-    const client = new shopifyApi.clients.Graphql({ session })
-
+  private static async verifyShopifySubscription(
+    shop: string,
+    accessToken: string,
+    chargeId: string
+  ): Promise<{ id: string; status: string }> {
     const query = `
       query appSubscription($id: ID!) {
         appSubscription(id: $id) {
@@ -189,25 +321,34 @@ export class BillingService {
       }
     `
 
-    const response = await client.query({
-      data: { 
-        query, 
-        variables: { id: chargeId } 
+    const result = await ShopifyGraphQLService.executeQuery<{
+      appSubscription: {
+        id: string
+        name: string
+        status: string
+        currentPeriodEnd: string
+        createdAt: string
       }
+    }>(shop, accessToken, {
+      query,
+      variables: { id: chargeId }
     })
 
-    return response.body.data.appSubscription
+    if (!result.appSubscription) {
+      throw new Error('Subscription not found in Shopify')
+    }
+
+    return result.appSubscription
   }
 
   /**
-   * Calculate usage for a billing period
+   * Calculate usage metrics for billing period
    */
-  async calculateUsageForPeriod(
-    organizationId: string, 
-    startDate: Date, 
+  static async calculateUsageForPeriod(
+    organizationId: string,
+    startDate: Date,
     endDate: Date
   ): Promise<UsageMetrics> {
-    // Get all transactions for the period
     const transactions = await prisma.transaction.aggregate({
       where: {
         organizationId,
@@ -215,18 +356,18 @@ export class BillingService {
           gte: startDate,
           lte: endDate
         },
-        type: 'SALE' // Only count sales, not refunds
+        type: 'SALE'
       },
       _sum: {
         subtotal: true,
-        totalTax: true
+        taxAmount: true
       },
       _count: true
     })
 
-    const volume = (transactions._sum.subtotal || 0) / 100 // Convert from cents
-    const usageFee = volume * this.USAGE_RATE // 0.5%
-    const taxCalculated = (transactions._sum.totalTax || 0) / 100 // Convert from cents
+    const volume = (transactions._sum.subtotal || 0) / 100
+    const usageFee = volume * this.USAGE_RATE
+    const taxCalculated = (transactions._sum.taxAmount || 0) / 100
 
     return {
       transactionCount: transactions._count,
@@ -237,16 +378,56 @@ export class BillingService {
   }
 
   /**
-   * Create usage charge in Shopify for additional fees
+   * Get current usage for active billing plan
    */
-  async createUsageCharge(
+  static async getCurrentUsage(organizationId: string): Promise<UsageMetrics | null> {
+    const plan = await prisma.billingPlan.findUnique({
+      where: { organizationId },
+      select: {
+        status: true,
+        billingStartDate: true,
+        billingEndDate: true
+      }
+    })
+
+    if (!plan || plan.status !== 'ACTIVE' || !plan.billingStartDate || !plan.billingEndDate) {
+      return null
+    }
+
+    return this.calculateUsageForPeriod(
+      organizationId,
+      plan.billingStartDate,
+      plan.billingEndDate
+    )
+  }
+
+  /**
+   * Get active billing plan for organization
+   */
+  static async getActivePlan(organizationId: string): Promise<BillingPlan | null> {
+    return prisma.billingPlan.findUnique({
+      where: { organizationId }
+    })
+  }
+
+  /**
+   * Create usage charge in Shopify
+   */
+  static async createUsageCharge(
     shop: string,
-    recurringChargeId: string,
+    subscriptionLineItemId: string,
     amount: number,
     description: string
-  ) {
-    const session = await this.getShopSession(shop)
-    const client = new shopifyApi.clients.Graphql({ session })
+  ): Promise<{ id: string }> {
+    if (amount <= 0) {
+      throw new Error('Usage amount must be positive')
+    }
+
+    if (!description || description.length > 500) {
+      throw new Error('Invalid usage description')
+    }
+
+    const credentials = await this.getShopCredentials(shop)
 
     const mutation = `
       mutation appUsageRecordCreate($subscriptionLineItemId: ID!, $price: MoneyInput!, $description: String!) {
@@ -272,130 +453,39 @@ export class BillingService {
       }
     `
 
-    const response = await client.query({
-      data: {
-        query: mutation,
-        variables: {
-          subscriptionLineItemId: recurringChargeId,
-          price: {
-            amount: amount,
-            currencyCode: "USD"
-          },
-          description
+    const result = await ShopifyGraphQLService.executeQuery<{
+      appUsageRecordCreate: {
+        appUsageRecord: {
+          id: string
+          description: string
+          price: { amount: number; currencyCode: string }
+          createdAt: string
         }
+        userErrors: Array<{ field: string; message: string }>
+      }
+    }>(shop, credentials.accessToken, {
+      query: mutation,
+      variables: {
+        subscriptionLineItemId,
+        price: {
+          amount: Math.round(amount * 100) / 100, // Round to 2 decimals
+          currencyCode: "USD"
+        },
+        description: description.substring(0, 500) // Truncate to safe length
       }
     })
 
-    const result = response.body.data.appUsageRecordCreate
-
-    if (result.userErrors.length > 0) {
-      throw new Error(`Usage charge failed: ${result.userErrors[0].message}`)
+    if (result.appUsageRecordCreate.userErrors?.length > 0) {
+      throw new Error(`Usage charge failed: ${result.appUsageRecordCreate.userErrors[0].message}`)
     }
 
-    return result.appUsageRecord
-  }
-
-  /**
-   * Calculate and charge usage fee at end of billing period
-   */
-  async calculateAndChargeUsage(plan: BillingPlan): Promise<any> {
-    if (!plan.billingStartDate || !plan.billingEndDate) {
-      throw new Error('Billing period not set')
-    }
-
-    const usage = await this.calculateUsageForPeriod(
-      plan.organizationId,
-      plan.billingStartDate,
-      plan.billingEndDate
-    )
-
-    // Create usage record
-    await prisma.usageRecord.create({
-      data: {
-        billingPlanId: plan.id,
-        periodStart: plan.billingStartDate,
-        periodEnd: plan.billingEndDate,
-        ...usage
-      }
-    })
-
-    // Create usage charge if there's volume
-    let invoice
-    if (usage.usageFee > 0) {
-      const shop = await this.getShopForPlan(plan.id)
-      
-      const usageCharge = await this.createUsageCharge(
-        shop,
-        plan.recurringChargeId!,
-        usage.usageFee,
-        `Usage fee: 0.5% of $${usage.transactionVolume.toFixed(2)} in sales`
-      )
-
-      // Create invoice
-      invoice = await prisma.invoice.create({
-        data: {
-          billingPlanId: plan.id,
-          periodStart: plan.billingStartDate,
-          periodEnd: plan.billingEndDate,
-          baseFee: plan.baseFee,
-          usageFee: usage.usageFee,
-          totalAmount: plan.baseFee + usage.usageFee,
-          shopifyUsageChargeId: usageCharge.id,
-          status: 'PAID',
-          paidAt: new Date()
-        }
-      })
-    } else {
-      // No usage fee, just base fee
-      invoice = await prisma.invoice.create({
-        data: {
-          billingPlanId: plan.id,
-          periodStart: plan.billingStartDate,
-          periodEnd: plan.billingEndDate,
-          baseFee: plan.baseFee,
-          usageFee: 0,
-          totalAmount: plan.baseFee,
-          status: 'PAID',
-          paidAt: new Date()
-        }
-      })
-    }
-
-    return invoice
-  }
-
-  /**
-   * Get current usage for an organization
-   */
-  async getCurrentUsage(organizationId: string): Promise<UsageMetrics | null> {
-    const plan = await prisma.billingPlan.findUnique({
-      where: { organizationId }
-    })
-
-    if (!plan || plan.status !== 'ACTIVE' || !plan.billingStartDate || !plan.billingEndDate) {
-      return null
-    }
-
-    return this.calculateUsageForPeriod(
-      organizationId,
-      plan.billingStartDate,
-      plan.billingEndDate
-    )
-  }
-
-  /**
-   * Get active billing plan for organization
-   */
-  async getActivePlan(organizationId: string): Promise<BillingPlan | null> {
-    return prisma.billingPlan.findUnique({
-      where: { organizationId }
-    })
+    return { id: result.appUsageRecordCreate.appUsageRecord.id }
   }
 
   /**
    * Cancel billing subscription
    */
-  async cancelBilling(organizationId: string): Promise<void> {
+  static async cancelBilling(organizationId: string): Promise<void> {
     await prisma.billingPlan.update({
       where: { organizationId },
       data: {
@@ -404,68 +494,4 @@ export class BillingService {
       }
     })
   }
-
-  /**
-   * Helper to get shop domain for a billing plan
-   */
-  private async getShopForPlan(billingPlanId: string): Promise<string> {
-    const plan = await prisma.billingPlan.findUnique({
-      where: { id: billingPlanId },
-      include: {
-        organization: {
-          include: {
-            integrations: {
-              where: { type: 'SHOPIFY' },
-              take: 1
-            }
-          }
-        }
-      }
-    })
-
-    if (!plan?.organization.integrations[0]) {
-      throw new Error('No Shopify integration found for billing plan')
-    }
-
-    const credentials = plan.organization.integrations[0].credentials as any
-    return credentials.shop
-  }
-
-  /**
-   * Helper to get Shopify session for shop
-   */
-  private async getShopSession(shop: string): Promise<ShopSession> {
-    const integration = await prisma.integration.findFirst({
-      where: {
-        type: 'SHOPIFY',
-        config: {
-          path: ['shop'],
-          equals: shop
-        }
-      }
-    })
-
-    if (!integration) {
-      throw new Error(`No integration found for shop: ${shop}`)
-    }
-
-    const credentials = integration.credentials as any
-    return {
-      shop,
-      accessToken: credentials.accessToken
-    }
-  }
-
-  /**
-   * Format currency for display
-   */
-  private formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-    }).format(amount)
-  }
 }
-
-export const billingService = new BillingService()

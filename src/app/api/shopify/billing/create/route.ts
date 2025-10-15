@@ -1,61 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { billingService } from '@/lib/services/billing-service'
-import { prisma } from '@/lib/prisma'
+import { BillingService } from '@/lib/services/billing-service'
+import { verifyUserOwnsShop } from '@/lib/auth/authorization'
+import { ShopifyService } from '@/lib/services/shopify-service'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
 
+/**
+ * POST /api/shopify/billing/create
+ *
+ * SECURITY: Create billing subscription (authenticated)
+ * - Requires valid session
+ * - Validates user owns the shop
+ * - Validates shop domain format
+ */
 export async function POST(request: NextRequest) {
   try {
-    // SECURITY: Check authentication
+    // SECURITY: Require authentication
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
-    const { shop } = await request.json()
-    
-    if (!shop) {
-      return NextResponse.json({ 
-        error: 'Shop parameter is required' 
-      }, { status: 400 })
+    // Parse and validate input
+    const body = await request.json()
+    const shop = body?.shop
+
+    if (!shop || typeof shop !== 'string') {
+      return NextResponse.json(
+        { error: 'Shop parameter is required' },
+        { status: 400 }
+      )
     }
 
-    // Find organization for this shop
-    const integration = await prisma.integration.findFirst({
-      where: {
-        type: 'SHOPIFY',
-        config: {
-          path: ['shop'],
-          equals: shop
-        }
-      },
-      include: {
-        organization: true
-      }
-    })
+    // SECURITY: Validate shop domain format
+    const normalizedShop = ShopifyService.normalizeShopDomain(shop)
+    if (!ShopifyService.validateShopDomain(normalizedShop)) {
+      return NextResponse.json(
+        { error: 'Invalid shop domain format' },
+        { status: 400 }
+      )
+    }
 
-    if (!integration?.organization) {
-      return NextResponse.json({ 
-        error: 'Organization not found for shop' 
-      }, { status: 404 })
+    // SECURITY: Verify user owns this shop
+    const shopAuth = await verifyUserOwnsShop(session.user.email, normalizedShop)
+    if (!shopAuth.authorized || !shopAuth.organizationId) {
+      return NextResponse.json(
+        { error: 'Access denied: Shop not found or not authorized' },
+        { status: 403 }
+      )
     }
 
     // Check if already has active billing
-    const existingPlan = await billingService.getActivePlan(integration.organization.id)
+    const existingPlan = await BillingService.getActivePlan(shopAuth.organizationId)
     if (existingPlan?.status === 'ACTIVE') {
-      return NextResponse.json({ 
-        error: 'Already has active billing',
-        redirectUrl: `/?shop=${shop}&billing=active`
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: 'Organization already has active billing',
+          redirectUrl: `/?shop=${normalizedShop}&billing=active`
+        },
+        { status: 400 }
+      )
     }
 
-    // Create billing and get confirmation URL
-    const confirmationUrl = await billingService.initiateBilling(
-      shop, 
-      integration.organization.id
+    // Create billing subscription
+    const confirmationUrl = await BillingService.initiateBilling(
+      normalizedShop,
+      shopAuth.organizationId
     )
 
     return NextResponse.json({
@@ -66,64 +82,34 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Billing creation error:', error)
-    
+
+    // Don't leak internal error details
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    const safeMessage = message.includes('Shop does not belong')
+      ? 'Access denied'
+      : 'Failed to create billing charge'
+
     return NextResponse.json(
-      { 
-        error: 'Failed to create billing charge',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: safeMessage },
       { status: 500 }
     )
   }
 }
 
-// GET method for direct access from browser
+/**
+ * GET /api/shopify/billing/create
+ *
+ * SECURITY: This endpoint should NOT exist in production
+ * Removing it prevents unauthenticated billing creation
+ *
+ * If needed, merchants should use the POST endpoint from authenticated context
+ */
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const shop = searchParams.get('shop')
-  
-  if (!shop) {
-    return NextResponse.json({ 
-      error: 'Shop parameter is required' 
-    }, { status: 400 })
-  }
-
-  try {
-    // Find organization for this shop
-    const integration = await prisma.integration.findFirst({
-      where: {
-        type: 'SHOPIFY',
-        config: {
-          path: ['shop'],
-          equals: shop
-        }
-      },
-      include: {
-        organization: true
-      }
-    })
-
-    if (!integration?.organization) {
-      return NextResponse.json({ 
-        error: 'Organization not found for shop' 
-      }, { status: 404 })
-    }
-
-    // Create billing and redirect to confirmation URL
-    const confirmationUrl = await billingService.initiateBilling(
-      shop, 
-      integration.organization.id
-    )
-
-    // Redirect to Shopify billing page
-    return NextResponse.redirect(confirmationUrl)
-
-  } catch (error) {
-    console.error('Billing creation error:', error)
-    
-    // Redirect to error page
-    return NextResponse.redirect(
-      `${process.env.APP_URL}/billing/error?shop=${shop}&error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`
-    )
-  }
+  return NextResponse.json(
+    {
+      error: 'Method not allowed. Use POST with authentication.',
+      hint: 'This endpoint requires authentication to prevent unauthorized billing charges.'
+    },
+    { status: 405 }
+  )
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { withAnalyticsBilling } from '@/lib/middleware/with-billing'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -90,7 +91,7 @@ import { sampleDataStore } from '@/lib/sample-data-store'
 
 // Note: generateSampleDailyPayout function removed - now using shared store
 
-export async function GET(request: NextRequest) {
+async function getDailyPayout(request: NextRequest) {
   try {
     // SECURITY: Check authentication
     const session = await getServerSession(authOptions)
@@ -212,7 +213,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function updateDailyPayout(request: NextRequest) {
   try {
     // SECURITY: Check authentication
     const session = await getServerSession(authOptions)
@@ -328,3 +329,7 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// Export wrapped handlers with billing enforcement
+export const GET = withAnalyticsBilling(getDailyPayout)
+export const POST = withAnalyticsBilling(updateDailyPayout)

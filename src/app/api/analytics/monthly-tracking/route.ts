@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sampleDataStore } from '@/lib/sample-data-store'
+import { withAnalyticsBilling } from '@/lib/middleware/with-billing'
 
 // Force this route to be dynamic
 export const dynamic = 'force-dynamic'
@@ -94,7 +95,7 @@ async function fetchProductionMonthlyTracking(
   }
 }
 
-export async function GET(request: NextRequest) {
+async function getMonthlyTracking(request: NextRequest) {
   try {
     // SECURITY: Check authentication
     const session = await getServerSession(authOptions)
@@ -195,3 +196,6 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+// Export wrapped handler with billing enforcement
+export const GET = withAnalyticsBilling(getMonthlyTracking)

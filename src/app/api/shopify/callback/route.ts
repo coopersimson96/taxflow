@@ -472,22 +472,22 @@ export async function GET(request: NextRequest) {
       console.log('✅ Integration setup complete, redirecting to billing...')
       
       // Import billing service
-      const { billingService } = await import('@/lib/services/billing-service')
-      
+      const { BillingService } = await import('@/lib/services/billing-service')
+
       try {
         // Check if billing already exists and is active
-        const existingPlan = await billingService.getActivePlan(organizationId)
-        
+        const existingPlan = await BillingService.getActivePlan(organizationId)
+
         if (existingPlan?.status === 'ACTIVE') {
           console.log('Billing already active, redirecting to app')
           return NextResponse.redirect(
             new URL(`/?shop=${normalizedShop}&billing=active`, request.url)
           )
         }
-        
+
         // Create billing and redirect to confirmation
         console.log('Creating billing charge for new installation...')
-        const confirmationUrl = await billingService.initiateBilling(normalizedShop, organizationId)
+        const confirmationUrl = await BillingService.initiateBilling(normalizedShop, organizationId)
         
         console.log('Redirecting to billing confirmation:', confirmationUrl)
         return NextResponse.redirect(confirmationUrl)

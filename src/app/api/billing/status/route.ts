@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { billingService } from '@/lib/services/billing-service'
+import { BillingService } from '@/lib/services/billing-service'
 import { prisma } from '@/lib/prisma'
 
 // Force this route to be dynamic
@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const integration = await prisma.integration.findFirst({
       where: {
         type: 'SHOPIFY',
+        status: 'CONNECTED',
         config: {
           path: ['shop'],
           equals: shop
@@ -46,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     // Get billing plan and current usage
     const [plan, usage] = await Promise.all([
-      billingService.getActivePlan(integration.organization.id),
-      billingService.getCurrentUsage(integration.organization.id)
+      BillingService.getActivePlan(integration.organization.id),
+      BillingService.getCurrentUsage(integration.organization.id)
     ])
 
     if (!plan) {
