@@ -67,7 +67,10 @@ export default function PrivacyPolicy() {
             <li><strong>Data Minimization:</strong> We only collect necessary data</li>
           </ul>
           <p className="mt-4">
-            To exercise these rights, contact us at privacy@setaside.app
+            To exercise these rights, contact us at{' '}
+            <a href="mailto:support@taxflow-smoky.vercel.app" className="text-blue-600 hover:text-blue-800">
+              support@taxflow-smoky.vercel.app
+            </a>
           </p>
         </section>
 
@@ -106,8 +109,18 @@ export default function PrivacyPolicy() {
           <h2 className="text-2xl font-semibold mt-6 mb-4">9. Contact Us</h2>
           <p>If you have any questions about this Privacy Policy, please contact us:</p>
           <ul className="list-disc pl-6 space-y-2 mt-4">
-            <li>Email: privacy@setaside.app</li>
-            <li>Support: support@setaside.app</li>
+            <li>
+              Email:{' '}
+              <a href="mailto:support@taxflow-smoky.vercel.app" className="text-blue-600 hover:text-blue-800">
+                support@taxflow-smoky.vercel.app
+              </a>
+            </li>
+            <li>
+              App URL:{' '}
+              <a href="https://taxflow-smoky.vercel.app" className="text-blue-600 hover:text-blue-800" target="_blank" rel="noopener noreferrer">
+                https://taxflow-smoky.vercel.app
+              </a>
+            </li>
           </ul>
         </section>
       </div>

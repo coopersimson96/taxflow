@@ -69,8 +69,11 @@ export default function TermsOfService() {
             <li>Provide insights and recommendations based on your data</li>
           </ul>
           <p className="mt-4">
-            See our <a href="/privacy" className="text-blue-600 hover:text-blue-800">Privacy Policy</a> for 
-            detailed information about data handling.
+            See our{' '}
+            <a href="https://taxflow-smoky.vercel.app/privacy" className="text-blue-600 hover:text-blue-800">
+              Privacy Policy
+            </a>{' '}
+            for detailed information about data handling.
           </p>
         </section>
 
@@ -116,8 +119,18 @@ export default function TermsOfService() {
           <h2 className="text-2xl font-semibold mt-6 mb-4">10. Support</h2>
           <p>For questions about these terms or the app:</p>
           <ul className="list-disc pl-6 space-y-2 mt-4">
-            <li>Email: support@setaside.app</li>
-            <li>Documentation: Available in-app</li>
+            <li>
+              Email:{' '}
+              <a href="mailto:support@taxflow-smoky.vercel.app" className="text-blue-600 hover:text-blue-800">
+                support@taxflow-smoky.vercel.app
+              </a>
+            </li>
+            <li>
+              App URL:{' '}
+              <a href="https://taxflow-smoky.vercel.app" className="text-blue-600 hover:text-blue-800" target="_blank" rel="noopener noreferrer">
+                https://taxflow-smoky.vercel.app
+              </a>
+            </li>
             <li>Response time: Within 24 hours</li>
           </ul>
         </section>
