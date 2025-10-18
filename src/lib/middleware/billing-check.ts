@@ -109,8 +109,15 @@ export async function requireActiveBilling(
   request: NextRequest,
   getShop: (request: NextRequest) => string | null
 ): Promise<NextResponse | null> {
+  // TODO: BEFORE PRODUCTION - Remove this sample data bypass
+  // This allows testing without Shopify billing during development
+  if (process.env.USE_SAMPLE_DATA === 'true') {
+    console.log('🎲 Billing check bypassed in sample data mode')
+    return null // Allow access
+  }
+
   const shop = getShop(request)
-  
+
   if (!shop) {
     return NextResponse.json(
       { error: 'Shop parameter is required' },

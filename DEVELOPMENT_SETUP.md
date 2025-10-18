@@ -54,5 +54,12 @@ This means the app needs Shopify approval. Set `USE_SAMPLE_DATA=true` for testin
 ## Files to Clean Before Submission
 
 - `/src/lib/services/sample-data-generator.ts` - DELETE ENTIRE FILE
+- `/src/lib/sample-data-store.ts` - DELETE ENTIRE FILE
 - `/src/lib/services/historical-import.ts` - Remove sample data logic
+- `/src/lib/middleware/billing-check.ts` - Remove USE_SAMPLE_DATA bypass (lines 112-117)
 - `/src/app/api/analytics/tax-dashboard/calculate-payouts.ts` - Remove sample data logic
+- `/src/app/api/analytics/daily-payout/route.ts` - Remove sample data logic (lines 123-150)
+- `/src/app/api/analytics/monthly-tracking/route.ts` - Remove sample data logic (lines 119-129)
+- `/src/app/api/analytics/recent-payouts/route.ts` - Remove sample data logic
+- `/src/app/api/analytics/outstanding-payouts/route.ts` - Remove sample data logic
+- Environment variables - Remove `USE_SAMPLE_DATA=true` from all environments
